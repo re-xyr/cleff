@@ -20,9 +20,6 @@ local f m = send $ Local f m
 {-# INLINE local #-}
 
 runReader :: forall r es a. Typeable r => r -> Eff (Reader r ': es) a -> Eff es a
-runReader r = interpret (h r)
-  where
-    h :: forall es'. r -> Handler es' (Reader r)
-    h x = \case
-      Ask        -> pure x
-      Local f m' -> unlift $ interpose (h (f x)) m'
+runReader r = interpret \case
+  Ask        -> pure r
+  Local f m' -> runReader (f r) $ unlift m'

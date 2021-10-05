@@ -5,7 +5,7 @@ import           Control.Concurrent.STM.TVar
 import           Data.Foldable               (traverse_)
 import           Data.Typeable               (Typeable)
 import           Effect
-import           Effect.IO                   (IOE)
+import           Effect.IO                   (IOE, primRunIOE)
 import           Effect.Primitive.IORef
 import           Effect.Primitive.MVar
 import           Effect.Primitive.STM
@@ -35,14 +35,30 @@ runLocalWriter m = do
   w' <- primReadIORef rw
   pure (x, w')
   where
-    h :: forall es'. [IORef w] -> Handler es' (Writer w)
+    h :: [IORef w] -> Handler es (Writer w)
     h rws = \case
       Tell w' -> traverse_ (\rw -> primModifyIORef' rw (<> w')) rws
       Listen m' -> do
         rw' <- primNewIORef mempty
-        x <- unlift $ interpose (h $ rw' : rws) m'
+        x <- interpret (h $ rw' : rws) $ unlift m'
         w' <- primReadIORef rw'
         pure (x, w')
+
+-- runLocalWriter :: forall w es a. (Typeable w, Monoid w) => Eff (Writer w ': es) a -> Eff es (a, w)
+-- runLocalWriter m = primRunIOE do
+--   rw <- newIORef mempty
+--   x <- reinterpret (h [rw]) m
+--   w' <- readIORef rw
+--   pure (x, w')
+--   where
+--     h :: [IORef w] -> Handler (IOE ': es) (Writer w)
+--     h rws = \case
+--       Tell w' -> traverse_ (\rw -> modifyIORef' rw (<> w')) rws
+--       Listen (m' :: Eff es'' a') -> do
+--         rw' <- newIORef mempty
+--         x <- interpret (h $ rw' : rws) $ unlift m'
+--         w' <- readIORef rw'
+--         pure (x, w')
 
 runAtomicLocalWriter :: forall w es a. (Typeable w, Monoid w) => Eff (Writer w ': es) a -> Eff es (a, w)
 runAtomicLocalWriter m = do

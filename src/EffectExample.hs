@@ -43,7 +43,6 @@ test :: [String] -> ((((), [String]), [String]), [String]) -- state, writer, dum
 test xs = runPure $ runLocalState [] $ runDummy $ runLocalWriter $ runLocalState xs $ runTeletypePure echo
 
 -- >>> test ["abc", "def", "ghci"]
--- ((((),[]),["abc","def","ghci"]),[])
 
 wowwee :: (Reader Integer :> es, Writer (Sum Integer) :> es) => Eff es ()
 wowwee = do
@@ -53,5 +52,7 @@ wowwee = do
     tell (Sum n)
     local (subtract (1 :: Integer)) wowwee
 
--- >>> runPure $ runReader 3 $ runLocalWriter @(Sum Integer) wowwee
--- ((),Sum {getSum = 6})
+r :: ((), Sum Integer)
+r = runPure $ runReader (100 :: Integer) $ runLocalWriter @(Sum Integer) wowwee
+
+-- >>> r
