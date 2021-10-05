@@ -8,7 +8,6 @@ import           Control.Monad.Trans.Resource          (InternalState,
 import           Control.Monad.Trans.Resource.Internal (ResourceT (..),
                                                         stateCleanupChecked)
 import           Effect
-import           Effect.IO
 import           UnliftIO.Exception
 
 data Resource :: Effect where

@@ -1,9 +1,9 @@
 module Effect.Error where
 
-import           Control.Exception          (Exception)
-import           Data.Bool                  (bool)
+import           Data.Bool            (bool)
 import           Effect
-import           Effect.Primitive.Exception
+import           Effect.Internal.Base (thisIsPureTrustMe)
+import           UnliftIO.Exception
 
 data Error e :: Effect where
   ThrowError :: e -> Error e m a
@@ -46,6 +46,6 @@ tryErrorJust f m = (Right <$> m) `catchError` \e -> maybe (throwError e) (pure .
 {-# INLINE tryErrorJust #-}
 
 runError :: forall e es a. (Exception e) => Eff (Error e ': es) a -> Eff es (Either e a)
-runError = primTry . interpret \case
-  ThrowError e     -> primThrow e
-  CatchError m' h' -> primCatch (unlift m') (unlift . h')
+runError = thisIsPureTrustMe . try . reinterpret \case
+  ThrowError e     -> throwIO e
+  CatchError m' h' -> catch (unlift m') (unlift . h')

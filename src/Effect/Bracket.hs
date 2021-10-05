@@ -1,7 +1,8 @@
 module Effect.Bracket where
 
 import           Effect
-import           Effect.Primitive.Exception
+import           Effect.Internal.Base (thisIsPureTrustMe)
+import qualified UnliftIO.Exception   as UnliftIO
 
 data Bracket :: Effect where
   Bracket :: m a -> (a -> m c) -> (a -> m b) -> Bracket m b
@@ -28,6 +29,6 @@ onError m mz = bracketOnError (pure ()) (const mz) (const m)
 {-# INLINE onError #-}
 
 runBracket :: forall es a. Eff (Bracket ': es) a -> Eff es a
-runBracket = interpret \case
-  Bracket ma mz m        -> unlift $ primBracket ma mz m
-  BracketOnError ma mz m -> unlift $ primBracketOnError ma mz m
+runBracket = thisIsPureTrustMe . reinterpret \case
+  Bracket ma mz m        -> UnliftIO.bracket (unlift ma) (unlift . mz) (unlift . m)
+  BracketOnError ma mz m -> UnliftIO.bracketOnError (unlift ma) (unlift . mz) (unlift . m)

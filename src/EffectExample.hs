@@ -1,9 +1,9 @@
 module EffectExample where
 
-import           Control.Monad (unless)
-import           Data.Monoid   (Sum (Sum))
+import           Control.Monad          (unless)
+import           Control.Monad.IO.Class (liftIO)
+import           Data.Monoid            (Sum (Sum))
 import           Effect
-import           Effect.IO
 import           Effect.Reader
 import           Effect.State
 import           Effect.Writer
@@ -17,8 +17,8 @@ data Dummy :: Effect where
 
 runTeletypeIO :: IOE :> es => Eff (Teletype ': es) a -> Eff es a
 runTeletypeIO = interpret \case
-  ReadTTY    -> send (Lift getLine)
-  WriteTTY s -> send (Lift $ putStrLn s)
+  ReadTTY    -> liftIO getLine
+  WriteTTY s -> liftIO $ putStrLn s
 
 runTeletypePure :: (State [String] :> es, Writer [String] :> es) => Eff (Teletype ': es) w -> Eff es w
 runTeletypePure = interpret \case

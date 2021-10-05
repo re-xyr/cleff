@@ -1,14 +1,13 @@
 module Effect.Internal.Monad where
 
-import           Control.Monad.Fix    (MonadFix)
-import           Control.Monad.Reader (ReaderT (..))
-import           Data.Coerce          (Coercible)
-import           Data.Kind            (Constraint)
-import           Data.Maybe           (fromJust)
-import           Data.Reflection      (Given, give)
-import           Data.TypeRepMap      (TypeRepMap)
-import qualified Data.TypeRepMap      as TMap
-import           Data.Typeable        (Typeable)
+import           Control.Monad.Fix (MonadFix (mfix))
+import           Data.Coerce       (Coercible)
+import           Data.Kind         (Constraint)
+import           Data.Maybe        (fromJust)
+import           Data.Reflection   (Given, give)
+import           Data.TypeRepMap   (TypeRepMap)
+import qualified Data.TypeRepMap   as TMap
+import           Data.Typeable     (Typeable)
 
 type Effect = (* -> *) -> * -> *
 
@@ -21,7 +20,34 @@ newtype Env es = PrimEnv { primGetEnv :: TypeRepMap InternalHandler }
 
 newtype Eff (es :: [Effect]) a = PrimEff { primRunEff :: Env es -> IO a }
   deriving (Semigroup, Monoid)
-  deriving (Functor, Applicative, Monad, MonadFix) via ReaderT (Env es) IO
+
+instance Functor (Eff es) where
+  fmap f (PrimEff m) = PrimEff (fmap f . m)
+  {-# INLINE fmap #-}
+  a <$ PrimEff m = PrimEff \es -> a <$ m es
+  {-# INLINE (<$) #-}
+
+instance Applicative (Eff es) where
+  pure x = PrimEff \_ -> pure x
+  {-# INLINE pure #-}
+  PrimEff mf <*> PrimEff mx = PrimEff \es -> mf es <*> mx es
+  {-# INLINE (<*>) #-}
+  PrimEff ma  *> PrimEff mb = PrimEff \es -> ma es  *> mb es
+  {-# INLINE  (*>) #-}
+  PrimEff ma <*  PrimEff mb = PrimEff \es -> ma es <*  mb es
+  {-# INLINE (<*)  #-}
+
+instance Monad (Eff es) where
+  return = pure
+  {-# INLINE return #-}
+  PrimEff m >>= f = PrimEff \es -> m es >>= \a -> primRunEff (f a) es
+  {-# INLINE (>>=) #-}
+  PrimEff ma >> PrimEff mb = PrimEff \es -> ma es >> mb es
+  {-# INLINE (>>) #-}
+
+instance MonadFix (Eff es) where
+  mfix f = PrimEff \es -> mfix $ \a -> primRunEff (f a) es
+  {-# INLINE mfix #-}
 
 class (forall m n a. Coercible m n => Coercible (e m a) (e n a)) => Representational e
 instance (forall m n a. Coercible m n => Coercible (e m a) (e n a)) => Representational e
@@ -42,22 +68,6 @@ type family xs ++ ys where
 send :: forall e es a. e :> es => e (Eff es) a -> Eff es a
 send eff = PrimEff \handlers -> give handlers $ runHandler (getHandler @e handlers) eff
 {-# INLINE send #-}
-
-raise :: forall e es a. Eff es a -> Eff (e ': es) a
-raise = raiseN @'[e]
-{-# INLINE raise #-}
-
-raiseN :: forall es' es a. Eff es a -> Eff (es' ++ es) a
-raiseN m = PrimEff (primRunEff m . contractEnv @es')
-{-# INLINE raiseN #-}
-
-subsume :: forall e es a. e :> es => Eff (e ': es) a -> Eff es a
-subsume = subsumeN @'[e]
-{-# INLINE subsume #-}
-
-subsumeN :: forall es' es a. es' :>> es => Eff (es' ++ es) a -> Eff es a
-subsumeN m = PrimEff (primRunEff m . expandEnv @es')
-{-# INLINE subsumeN #-}
 
 emptyEnv :: Env '[]
 emptyEnv = PrimEnv TMap.empty

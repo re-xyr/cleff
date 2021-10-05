@@ -4,7 +4,6 @@ module Effect.Prim where
 import           Control.Monad.IO.Class  (liftIO)
 import           Control.Monad.Primitive (PrimMonad (..))
 import           Effect
-import           Effect.IO               (IOE)
 import           GHC.Exts                (RealWorld, State#)
 import           GHC.IO                  (IO (IO))
 

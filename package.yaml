@@ -19,7 +19,6 @@ description:         Please see the README on GitHub at <https://github.com/dayl
 
 dependencies:
 - base
-- mtl
 - typerep-map
 - exceptions
 - unliftio
@@ -33,13 +32,23 @@ dependencies:
 - monad-control
 - transformers-base
 
+flags:
+  fast-ioe:
+    manual: false
+    default: false
+
 ghc-options:
-# - -O2
+- -O2
 - -Wall
 - -Wincomplete-uni-patterns
 - -Wpartial-fields
 - -Wincomplete-record-updates
 - -Widentities
+
+when:
+- condition: flag(fast-ioe)
+  cpp-options:
+  - -DFAST_IOE
 
 default-extensions:
 - AllowAmbiguousTypes
@@ -47,6 +56,7 @@ default-extensions:
 - ConstraintKinds
 - DataKinds
 - DerivingVia
+- EmptyCase
 - FlexibleContexts
 - FlexibleInstances
 - GADTs
@@ -54,7 +64,6 @@ default-extensions:
 - KindSignatures
 - LambdaCase
 - MagicHash
-- MonoLocalBinds
 - MultiParamTypeClasses
 - PolyKinds
 - QuantifiedConstraints

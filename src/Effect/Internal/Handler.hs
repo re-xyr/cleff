@@ -1,8 +1,21 @@
 module Effect.Internal.Handler where
 
-import           Data.Reflection       (Given (given), give)
+import           Data.Reflection       (Given (given))
 import           Effect.Internal.Monad
-import           System.IO.Unsafe      (unsafePerformIO)
+
+raise :: forall e es a. Eff es a -> Eff (e ': es) a
+raise = raiseN @'[e]
+{-# INLINE raise #-}
+
+raiseN :: forall es' es a. Eff es a -> Eff (es' ++ es) a
+raiseN m = PrimEff (primRunEff m . contractEnv @es')
+
+subsume :: forall e es a. e :> es => Eff (e ': es) a -> Eff es a
+subsume = subsumeN @'[e]
+{-# INLINE subsume #-}
+
+subsumeN :: forall es' es a. es' :>> es => Eff (es' ++ es) a -> Eff es a
+subsumeN m = PrimEff (primRunEff m . expandEnv @es')
 
 interpret :: forall e es a. Legit e => Handler es e -> Eff (e ': es) a -> Eff es a
 interpret = reinterpretN @'[]
@@ -46,9 +59,6 @@ imposeN handle m = PrimEff \handlers ->
   let handler = InternalHandler \eff -> primRunEff (handle eff) handlers
   in primRunEff m $ contractEnv @'[e] $ insertHandler handler $ contractEnv @es' handlers
 
-runPure :: Eff '[] a -> a
-runPure m = unsafePerformIO $ primRunEff m emptyEnv
-
 unliftIO :: Given (Env es) => Eff es a -> IO a
 unliftIO m = primRunEff m given
 {-# INLINE unliftIO #-}
@@ -56,10 +66,3 @@ unliftIO m = primRunEff m given
 unlift :: forall es' es a. Given (Env es') => Eff es' a -> Eff es a
 unlift m = PrimEff \es -> primRunEff m (unionEnv es given :: Env es')
 {-# INLINE unlift #-}
-
-withLiftMap :: Given (Env es') => (((Eff es a -> Eff es a) -> (Eff es' a -> Eff es' a)) -> Eff es a) -> Eff es a
-withLiftMap f = withLift \lift -> f \f' m -> lift $ f' $ unlift m
-
-withLift :: ((forall es' x. Eff es x -> Eff es' x) -> Eff es a) -> Eff es a
-withLift f = PrimEff \es -> give es $ unliftIO $ f unlift
-{-# INLINE withLift #-}

@@ -1,15 +1,14 @@
 module Effect.State where
 
-import           Control.Concurrent.MVar     (MVar)
-import           Control.Concurrent.STM.TVar
+import           Control.Concurrent.STM.TVar (stateTVar)
+import           Control.Monad               (void)
 import           Data.Tuple                  (swap)
 import           Data.Typeable               (Typeable)
 import           Effect
-import           Effect.IO
-import           Effect.Primitive.IORef
-import           Effect.Primitive.MVar
-import           Effect.Primitive.STM
+import           Effect.Internal.Base        (thisIsPureTrustMe)
 import           UnliftIO.IORef
+import           UnliftIO.MVar
+import           UnliftIO.STM
 
 data State s :: Effect where
   Get :: State s m s
@@ -37,57 +36,57 @@ modify f = state (((), ) . f)
 {-# INLINE modify #-}
 
 runLocalState :: forall s es a. Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
-runLocalState s m = do
-  rs <- primNewIORef s
-  x <- interpret (h rs) m
-  s' <- primReadIORef rs
+runLocalState s m = thisIsPureTrustMe do
+  rs <- newIORef s
+  x <- reinterpret (h rs) m
+  s' <- readIORef rs
   pure (x, s')
   where
-    h :: IORef s -> Handler es (State s)
+    h :: IORef s -> Handler (IOE ': es) (State s)
     h rs = \case
-      Get -> primReadIORef rs
-      Put s' -> primWriteIORef rs s'
+      Get -> readIORef rs
+      Put s' -> writeIORef rs s'
       State f -> do
-        s' <- primReadIORef rs
+        s' <- readIORef rs
         let (a, s'') = f s'
-        primWriteIORef rs s''
+        writeIORef rs s''
         pure a
 
 runAtomicLocalState :: forall s es a. Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
-runAtomicLocalState s m = do
-  rs <- primNewIORef s
-  x <- interpret (h rs) m
-  s' <- primReadIORef rs
+runAtomicLocalState s m = thisIsPureTrustMe do
+  rs <- newIORef s
+  x <- reinterpret (h rs) m
+  s' <- readIORef rs
   pure (x, s')
   where
-    h :: IORef s -> Handler es (State s)
+    h :: IORef s -> Handler (IOE ': es) (State s)
     h rs = \case
-      Get     -> primReadIORef rs
-      Put s'  -> primWriteIORef rs s'
-      State f -> primAtomicModifyIORef' rs (swap . f)
+      Get     -> readIORef rs
+      Put s'  -> writeIORef rs s'
+      State f -> atomicModifyIORef' rs (swap . f)
 
 runSharedState :: forall s es a. Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
-runSharedState s m = do
-  rs <- primNewMVar s
-  x <- interpret (h rs) m
-  s' <- primReadMVar rs
+runSharedState s m = thisIsPureTrustMe do
+  rs <- newMVar s
+  x <- reinterpret (h rs) m
+  s' <- readMVar rs
   pure (x, s')
   where
-    h :: MVar s -> Handler es (State s)
+    h :: MVar s -> Handler (IOE ': es) (State s)
     h rs = \case
-      Get     -> primReadMVar rs
-      Put s'  -> primWriteMVar rs s'
-      State f -> primModifyMVar' rs (pure . swap . f)
+      Get     -> readMVar rs
+      Put s'  -> void $ swapMVar rs $! s'
+      State f -> modifyMVar rs \s' -> let (s'', a) = f s' in s `seq` pure (a, s'')
 
 runAtomicSharedState :: forall s es a. IOE :> es => Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
 runAtomicSharedState s m = do
-  rs <- primNewTVarIO s
+  rs <- newTVarIO s
   x <- interpret (h rs) m
-  s' <- primReadTVarIO rs
+  s' <- readTVarIO rs
   pure (x, s')
   where
     h :: TVar s -> Handler es (State s)
     h rs = \case
-      Get     -> primReadTVarIO rs
-      Put s'  -> primAtomically $ writeTVar rs s'
-      State f -> primAtomically $ stateTVar rs f
+      Get     -> readTVarIO rs
+      Put s'  -> atomically $ writeTVar rs s'
+      State f -> atomically $ stateTVar rs f

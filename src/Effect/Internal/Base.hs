@@ -1,26 +1,46 @@
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
-module Effect.IO where
+module Effect.Internal.Base where
 
-import           Control.Monad.Base
-import           Control.Monad.Catch
-import           Control.Monad.IO.Class
-import           Control.Monad.Trans.Control
-import           Effect
+import           Control.Monad.Base          (MonadBase (..))
+import           Control.Monad.Catch         (ExitCase (ExitCaseException, ExitCaseSuccess),
+                                              MonadCatch (..), MonadMask (..),
+                                              MonadThrow (..))
+import           Control.Monad.Trans.Control (MonadBaseControl (..))
+import           Effect.Internal.Handler
 import           Effect.Internal.Monad
-import           Effect.Primitive.IO
+import           System.IO.Unsafe            (unsafePerformIO)
 import           UnliftIO
 
 data IOE :: Effect where
+#ifndef FAST_IOE
   Lift :: IO a -> IOE m a
   Unlift :: ((forall x. m x -> IO x) -> IO a) -> IOE m a
+#endif
+
+primLiftIO :: IO a -> Eff es a
+primLiftIO = PrimEff . const
+{-# INLINE primLiftIO #-}
+
+primUnliftIO :: ((forall x. Eff es x -> IO x) -> IO a) -> Eff es a
+primUnliftIO f = PrimEff \handlers -> f (`primRunEff` handlers)
+{-# INLINE primUnliftIO #-}
 
 -- Encouraged usage built upon @unliftio@
 instance IOE :> es => MonadIO (Eff es) where
+#ifdef FAST_IOE
+  liftIO = primLiftIO
+#else
   liftIO = send . Lift
+#endif
   {-# INLINE liftIO #-}
 
 instance IOE :> es => MonadUnliftIO (Eff es) where
+#ifdef FAST_IOE
+  withRunInIO f = primUnliftIO f
+#else
   withRunInIO f = send $ Unlift f
+#endif
   {-# INLINE withRunInIO #-}
 
 -- Compatibility with @exceptions@. This is not encouraged usage
@@ -52,15 +72,20 @@ instance IOE :> es => MonadBase IO (Eff es) where
 
 instance IOE :> es => MonadBaseControl IO (Eff es) where
   type StM (Eff es) a = a
-  liftBaseWith f = PrimEff \es -> f (`primRunEff` es)
+  liftBaseWith = withRunInIO
   {-# INLINE liftBaseWith #-}
   restoreM = pure
   {-# INLINE restoreM #-}
 
-primRunIOE :: Eff (IOE ': es) a -> Eff es a
-primRunIOE = interpret \case
+thisIsPureTrustMe :: Eff (IOE ': es) a -> Eff es a
+thisIsPureTrustMe = interpret \case
+#ifndef FAST_IOE
   Lift m   -> primLiftIO m
   Unlift f -> primUnliftIO \runInIO -> f (runInIO . unlift)
+#endif
 
 runIOE :: Eff '[IOE] a -> IO a
-runIOE = (`primRunEff` emptyEnv) . primRunIOE
+runIOE = (`primRunEff` emptyEnv) . thisIsPureTrustMe
+
+runPure :: Eff '[] a -> a
+runPure m = unsafePerformIO $ primRunEff m emptyEnv

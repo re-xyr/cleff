@@ -1,7 +1,6 @@
 module Effect.Timeout where
 
 import           Effect
-import           Effect.IO
 import qualified UnliftIO.Timeout as T
 
 data Timeout :: Effect where
