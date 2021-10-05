@@ -1,0 +1,71 @@
+name:                effect
+version:             0.1.0.0
+github:              "re-xyr/effect"
+license:             BSD3
+author:              "daylily"
+maintainer:          "xy.r@outlook.com"
+copyright:           "2021 daylily"
+
+extra-source-files: []
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/daylily/effect#readme>
+
+dependencies:
+- base
+- mtl
+- typerep-map
+- exceptions
+- unliftio
+- resourcet
+- process
+- async
+- reflection
+- primitive
+- stm
+- resourcet
+- monad-control
+- transformers-base
+
+ghc-options:
+# - -O2
+- -Wall
+- -Wincomplete-uni-patterns
+- -Wpartial-fields
+- -Wincomplete-record-updates
+- -Widentities
+
+default-extensions:
+- AllowAmbiguousTypes
+- BlockArguments
+- ConstraintKinds
+- DataKinds
+- DerivingVia
+- FlexibleContexts
+- FlexibleInstances
+- GADTs
+- GeneralizedNewtypeDeriving
+- KindSignatures
+- LambdaCase
+- MagicHash
+- MonoLocalBinds
+- MultiParamTypeClasses
+- PolyKinds
+- QuantifiedConstraints
+- RankNTypes
+- ScopedTypeVariables
+- TupleSections
+- TypeApplications
+- TypeFamilies
+- TypeOperators
+- UnboxedTuples
+- UndecidableInstances
+
+library:
+  source-dirs: src

@@ -1,0 +1,92 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           effect
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/daylily/effect#readme>
+homepage:       https://github.com/re-xyr/effect#readme
+bug-reports:    https://github.com/re-xyr/effect/issues
+author:         daylily
+maintainer:     xy.r@outlook.com
+copyright:      2021 daylily
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/re-xyr/effect
+
+library
+  exposed-modules:
+      Effect
+      Effect.Bracket
+      Effect.Error
+      Effect.Fail
+      Effect.Fresh
+      Effect.Input
+      Effect.Internal.Handler
+      Effect.Internal.Monad
+      Effect.IO
+      Effect.Prim
+      Effect.Primitive.Exception
+      Effect.Primitive.IO
+      Effect.Primitive.IORef
+      Effect.Primitive.MVar
+      Effect.Primitive.STM
+      Effect.Reader
+      Effect.Repr
+      Effect.Resource
+      Effect.State
+      Effect.Timeout
+      Effect.Trace
+      Effect.Writer
+      EffectExample
+  other-modules:
+      Paths_effect
+  hs-source-dirs:
+      src
+  default-extensions:
+      AllowAmbiguousTypes
+      BlockArguments
+      ConstraintKinds
+      DataKinds
+      DerivingVia
+      FlexibleContexts
+      FlexibleInstances
+      GADTs
+      GeneralizedNewtypeDeriving
+      KindSignatures
+      LambdaCase
+      MagicHash
+      MonoLocalBinds
+      MultiParamTypeClasses
+      PolyKinds
+      QuantifiedConstraints
+      RankNTypes
+      ScopedTypeVariables
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeOperators
+      UnboxedTuples
+      UndecidableInstances
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wpartial-fields -Wincomplete-record-updates -Widentities
+  build-depends:
+      async
+    , base
+    , exceptions
+    , monad-control
+    , mtl
+    , primitive
+    , process
+    , reflection
+    , resourcet
+    , stm
+    , transformers-base
+    , typerep-map
+    , unliftio
+  default-language: Haskell2010
