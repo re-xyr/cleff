@@ -35,7 +35,7 @@ reinterpret3 = reinterpretN @'[e', e'', e''']
 
 reinterpretN :: forall es' e es a. Legit e => Handler (es' ++ es) e -> Eff (e ': es) a -> Eff (es' ++ es) a
 reinterpretN handle m = PrimEff \handlers ->
-  let handler = InternalHandler \eff -> primRunEff (handle eff) handlers
+  let handler = InternalHandler \eff -> primRunEff (instCanThread @e $ handle eff) handlers
   in primRunEff m $ insertHandler handler $ contractEnv @es' handlers
 
 interpose :: forall e es a. e :> es => Handler es e -> Eff es a -> Eff es a
@@ -56,13 +56,21 @@ impose3 = imposeN @'[e', e'', e''']
 
 imposeN :: forall es' e es a. e :> es => Handler (es' ++ es) e -> Eff es a -> Eff (es' ++ es) a
 imposeN handle m = PrimEff \handlers ->
-  let handler = InternalHandler \eff -> primRunEff (handle eff) handlers
+  let handler = InternalHandler \eff -> primRunEff (instCanThread @e $ handle eff) handlers
   in primRunEff m $ contractEnv @'[e] $ insertHandler handler $ contractEnv @es' handlers
 
 unliftIO :: Given (Env es) => Eff es a -> IO a
 unliftIO m = primRunEff m given
 {-# INLINE unliftIO #-}
 
-unlift :: forall es' es a. Given (Env es') => Eff es' a -> Eff es a
-unlift m = PrimEff \es -> primRunEff m (unionEnv es given :: Env es')
+unlift :: forall es es' a. Given (Env es') => Eff es' a -> Eff es a
+unlift = PrimEff . const . unliftIO
 {-# INLINE unlift #-}
+
+thread :: forall e es es' a. (Legit e, Given (Env es'), CanThread e) => Eff es' a -> Eff (e ': es) a
+thread = thread' @e
+{-# INLINE thread #-}
+
+thread' :: forall e es es' a. (e :> es, Given (Env es'), CanThread e) => Eff es' a -> Eff es a
+thread' m = PrimEff \es -> primRunEff m (contractEnv @'[e] $ insertHandler (getHandler es) given)
+{-# INLINE thread' #-}

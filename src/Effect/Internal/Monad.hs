@@ -8,10 +8,20 @@ import           Data.Reflection   (Given, give)
 import           Data.TypeRepMap   (TypeRepMap)
 import qualified Data.TypeRepMap   as TMap
 import           Data.Typeable     (Typeable)
+import           Unsafe.Coerce     (unsafeCoerce)
 
 type Effect = (* -> *) -> * -> *
 
-type Handler es e = forall es' a. (Given (Env es'), e :> es') => e (Eff es') a -> Eff es a
+class CanThread e where
+  canThread :: ()
+
+newtype InstCanThread e a = InstCanThread (CanThread e => a)
+
+instCanThread :: forall e a. (CanThread e => a) -> a
+instCanThread x = unsafeCoerce (InstCanThread x :: InstCanThread e a) ()
+{-# INLINE instCanThread #-}
+
+type Handler es e = forall es' a. (Given (Env es'), e :> es', CanThread e) => e (Eff es') a -> Eff es a
 
 data InternalHandler e = Representational e => InternalHandler
   { runHandler :: forall es' a. (Given (Env es'), e :> es') => e (Eff es') a -> IO a }
@@ -80,10 +90,6 @@ contractEnv = PrimEnv . primGetEnv
 expandEnv :: es' :>> es => Env es -> Env (es' ++ es)
 expandEnv = PrimEnv . primGetEnv
 {-# INLINE expandEnv #-}
-
-unionEnv :: Env es -> Env es' -> Env es'
-unionEnv (PrimEnv es) (PrimEnv es') = PrimEnv $ TMap.union es es'
-{-# INLINE unionEnv #-}
 
 getHandler :: forall e es. e :> es => Env es -> InternalHandler e
 getHandler = fromJust . TMap.lookup . primGetEnv

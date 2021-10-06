@@ -56,3 +56,25 @@ r :: ((), Sum Integer)
 r = runPure $ runReader (100 :: Integer) $ runLocalWriter @(Sum Integer) wowwee
 
 -- >>> r
+
+inner :: Reader Integer :> es => Eff es Integer
+inner = ask
+
+data Simple :: Effect where
+  SimpleGet :: Simple m Integer
+  Noop :: m a -> Simple m a
+
+
+normal :: Eff (Simple ': es) a -> Eff (Reader Integer ': es) a
+normal = reinterpret \case
+  SimpleGet -> ask
+  Noop m    -> unlift m
+
+outer :: '[Simple, Reader Integer] :>> es => Eff es (Integer, Integer, Integer)
+outer = do
+  x <- ask
+  y <- send SimpleGet
+  z <- send $ Noop ask
+  pure (x, y, z)
+
+-- >>> runPure $ runReader (2 :: Integer) $ bogus $ runReader (1 :: Integer) outer

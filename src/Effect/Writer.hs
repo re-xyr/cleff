@@ -37,7 +37,7 @@ runLocalWriter m = thisIsPureTrustMe do
       Tell w' -> traverse_ (\rw -> modifyIORef' rw (<> w')) rws
       Listen (m' :: Eff es'' a') -> do
         rw' <- newIORef mempty
-        x <- interpret (h $ rw' : rws) $ unlift m'
+        x <- reinterpret (h $ rw' : rws) $ thread m'
         w' <- readIORef rw'
         pure (x, w')
 
@@ -53,7 +53,7 @@ runAtomicLocalWriter m = thisIsPureTrustMe do
       Tell w' -> traverse_ (\rw -> atomicModifyIORef' rw ((, ()) . (<> w'))) rws
       Listen m' -> do
         rw' <- newIORef mempty
-        x <- interpret (h $ rw' : rws) $ unlift m'
+        x <- reinterpret (h $ rw' : rws) $ thread m'
         w' <- readIORef rw'
         pure (x, w')
 
@@ -69,7 +69,7 @@ runSharedWriter m = thisIsPureTrustMe do
       Tell w' -> traverse_ (\rw -> modifyMVar_ rw \w'' -> pure $! (w'' <> w')) rws
       Listen m' -> do
         rw' <- newMVar mempty
-        x <- interpret (h $ rw' : rws) $ unlift m'
+        x <- reinterpret (h $ rw' : rws) $ thread m'
         w' <- readMVar rw'
         pure (x, w')
 
@@ -85,6 +85,6 @@ runAtomicSharedWriter m = do
       Tell w' -> atomically $ traverse_ (\rw -> modifyTVar rw (<> w')) rws
       Listen m' -> do
         rw' <- newTVarIO mempty
-        x <- interpret (h $ rw' : rws) $ unlift m'
+        x <- interpret (h $ rw' : rws) $ thread m'
         w' <- readTVarIO rw'
         pure (x, w')
