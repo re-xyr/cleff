@@ -52,8 +52,8 @@ wowwee = do
     tell (Sum n)
     local (subtract (1 :: Integer)) wowwee
 
-r :: ((), Sum Integer)
-r = runPure $ runReader (100 :: Integer) $ runLocalWriter @(Sum Integer) wowwee
+r :: IO ((), Sum Integer)
+r = runIOE $ runReader (100 :: Integer) $ runLocalWriter @(Sum Integer) $ shit wowwee
 
 -- >>> r
 
@@ -64,11 +64,10 @@ data Simple :: Effect where
   SimpleGet :: Simple m Integer
   Noop :: m a -> Simple m a
 
-
 normal :: Eff (Simple ': es) a -> Eff (Reader Integer ': es) a
-normal = reinterpret \case
+normal = reinterpretH \h -> \case
   SimpleGet -> ask
-  Noop m    -> unlift m
+  Noop m    -> reinterpret h $ unlift m
 
 outer :: '[Simple, Reader Integer] :>> es => Eff es (Integer, Integer, Integer)
 outer = do
@@ -78,3 +77,14 @@ outer = do
   pure (x, y, z)
 
 -- >>> runPure $ runReader (2 :: Integer) $ bogus $ runReader (1 :: Integer) outer
+
+shit :: '[Reader Integer, IOE] :>> es => Eff es a -> Eff es a
+shit = interposeH @(Reader Integer) \handler -> \case
+  Ask -> do
+    liftIO $ putStrLn "tada"
+    ask
+  Local f m -> do
+    local f $ interpose handler $ unlift' @(Reader Integer) m
+
+x :: IO Integer
+x = runIOE $ runReader (2 :: Integer) $ shit (ask @Integer)

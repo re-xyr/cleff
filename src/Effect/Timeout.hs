@@ -11,5 +11,5 @@ timeout n m = send $ Timeout n m
 {-# INLINE timeout #-}
 
 runTimeout :: IOE :> es => Eff (Timeout ': es) a -> Eff es a
-runTimeout = interpret \case
-  Timeout n m -> T.timeout n (unlift m)
+runTimeout = interpretH \handle -> \case
+  Timeout n m -> T.timeout n (interpret handle $ unlift m)

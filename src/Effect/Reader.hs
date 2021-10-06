@@ -22,4 +22,4 @@ local f m = send $ Local f m
 runReader :: forall r es a. Typeable r => r -> Eff (Reader r ': es) a -> Eff es a
 runReader r = interpret \case
   Ask        -> pure r
-  Local f m' -> runReader (f r) $ thread m'
+  Local f m' -> runReader (f r) $ unlift m'

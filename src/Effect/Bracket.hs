@@ -1,10 +1,13 @@
 module Effect.Bracket where
 
+import           Control.Monad.IO.Class (liftIO)
 import           Effect
-import           Effect.Internal.Base (thisIsPureTrustMe)
-import qualified UnliftIO.Exception   as UnliftIO
+import           Effect.Internal.Base   (thisIsPureTrustMe)
+import qualified UnliftIO.Exception     as Exc
 
 data Bracket :: Effect where
+  Mask :: ((forall x. m x -> m x) -> m a) -> Bracket m a
+  UninterruptibleMask :: ((forall x. m x -> m x) -> m a) -> Bracket m a
   Bracket :: m a -> (a -> m c) -> (a -> m b) -> Bracket m b
   BracketOnError :: m a -> (a -> m c) -> (a -> m b) -> Bracket m b
 
@@ -30,5 +33,7 @@ onError m mz = bracketOnError (pure ()) (const mz) (const m)
 
 runBracket :: forall es a. Eff (Bracket ': es) a -> Eff es a
 runBracket = thisIsPureTrustMe . reinterpret \case
-  Bracket ma mz m        -> UnliftIO.bracket (unlift ma) (unlift . mz) (unlift . m)
-  BracketOnError ma mz m -> UnliftIO.bracketOnError (unlift ma) (unlift . mz) (unlift . m)
+  Mask f -> liftIO $ Exc.mask \restore -> withLiftIO \lift -> f (lift . restore . unliftIO)
+  UninterruptibleMask f -> liftIO $ Exc.mask \restore -> withLiftIO \lift -> f (lift . restore . unliftIO)
+  Bracket ma mz m -> liftIO $ Exc.bracket (unliftIO ma) (unliftIO . mz) (unliftIO . m)
+  BracketOnError ma mz m -> liftIO $ Exc.bracketOnError (unliftIO ma) (unliftIO . mz) (unliftIO . m)

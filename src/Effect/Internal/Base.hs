@@ -78,10 +78,10 @@ instance IOE :> es => MonadBaseControl IO (Eff es) where
   {-# INLINE restoreM #-}
 
 thisIsPureTrustMe :: Eff (IOE ': es) a -> Eff es a
-thisIsPureTrustMe = interpret \case
+thisIsPureTrustMe = interpretH \h -> \case
 #ifndef FAST_IOE
   Lift m   -> primLiftIO m
-  Unlift f -> primUnliftIO \runInIO -> f (runInIO . unlift)
+  Unlift f -> primUnliftIO \runInIO -> f (runInIO . interpret h . unlift)
 #endif
 
 runIOE :: Eff '[IOE] a -> IO a
