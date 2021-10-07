@@ -8,7 +8,6 @@ data Trace :: Effect where
 
 trace :: Trace :> es => String -> Eff es ()
 trace s = send $ Trace s
-{-# INLINE trace #-}
 
 runTrace :: IOE :> es => Eff (Trace ': es) a -> Eff es a
 runTrace = interpret \case

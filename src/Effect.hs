@@ -1,4 +1,4 @@
-module Effect (Effect, Handler, Eff, Legit, IOE (..),
+module Effect (Effect, Handler, Eff, IOE (..),
                (:>), (:>>),
                send,
                interpret, reinterpret, reinterpret2, reinterpret3, reinterpretN,

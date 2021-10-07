@@ -28,4 +28,3 @@ runResource m = mask \restore -> do
 
 instance (Resource :> es, IOE :> es) => MonadResource (Eff es) where
   liftResourceT = send . LiftResourceT
-  {-# INLINE liftResourceT #-}

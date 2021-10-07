@@ -4,6 +4,7 @@ import           Control.Monad          (unless)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Monoid            (Sum (Sum))
 import           Effect
+import           Effect.Mask
 import           Effect.Reader
 import           Effect.State
 import           Effect.Writer
@@ -20,8 +21,8 @@ runTeletypeIO = interpret \case
   ReadTTY    -> liftIO getLine
   WriteTTY s -> liftIO $ putStrLn s
 
-runTeletypePure :: (State [String] :> es, Writer [String] :> es) => Eff (Teletype ': es) w -> Eff es w
-runTeletypePure = interpret \case
+runTeletypePure :: [String] -> Eff (Teletype ': es) w -> Eff es [String]
+runTeletypePure input = fmap snd . runLocalWriter . runLocalState input . reinterpret2 \case
   ReadTTY -> send Get >>= \case
     []     -> pure ""
     x : xs -> send (Put xs) >> pure x
@@ -39,8 +40,8 @@ echo = do
     send Dummy
     echo
 
-test :: [String] -> ((((), [String]), [String]), [String]) -- state, writer, dummy
-test xs = runPure $ runLocalState [] $ runDummy $ runLocalWriter $ runLocalState xs $ runTeletypePure echo
+test :: [String] -> ([String], [String]) -- writer, dummy
+test xs = runPure $ runLocalState [] $ runDummy $ runTeletypePure xs echo
 
 -- >>> test ["abc", "def", "ghci"]
 
@@ -86,5 +87,8 @@ shit = interposeH @(Reader Integer) \handler -> \case
   Local f m -> do
     local f $ interpose handler $ unlift' @(Reader Integer) m
 
-x :: IO Integer
-x = runIOE $ runReader (2 :: Integer) $ shit (ask @Integer)
+aha :: IO ((), Integer)
+aha = runIOE $ runMask $ runLocalState 0 $ bracket_
+  (pure ())
+  (put @Integer 2)
+  (const (pure ()))

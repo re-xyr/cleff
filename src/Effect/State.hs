@@ -17,23 +17,18 @@ data State s :: Effect where
 
 get :: State s :> es => Eff es s
 get = send Get
-{-# INLINE get #-}
 
 gets :: State s :> es => (s -> t) -> Eff es t
-gets f = f <$> get
-{-# INLINE gets #-}
+gets = (<$> get)
 
 put :: State s :> es => s -> Eff es ()
-put s = send $ Put s
-{-# INLINE put #-}
+put = send . Put
 
 state :: State s :> es => (s -> (a, s)) -> Eff es a
-state f = send $ State f
-{-# INLINE state #-}
+state = send . State
 
 modify :: State s :> es => (s -> s) -> Eff es ()
 modify f = state (((), ) . f)
-{-# INLINE modify #-}
 
 runLocalState :: forall s es a. Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
 runLocalState s m = thisIsPureTrustMe do

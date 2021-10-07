@@ -13,39 +13,30 @@ data Mask :: Effect where
 
 mask :: Mask :> es => ((forall x. Eff es x -> Eff es x) -> Eff es a) -> Eff es a
 mask f = send $ Mask f
-{-# INLINE mask #-}
 
 mask_ :: Mask :> es => Eff es a -> Eff es a
 mask_ m = mask $ const m
-{-# INLINE mask_ #-}
 
 uninterruptibleMask :: Mask :> es => ((forall x. Eff es x -> Eff es x) -> Eff es a) -> Eff es a
 uninterruptibleMask f = send $ UninterruptibleMask f
-{-# INLINE uninterruptibleMask #-}
 
 uninterruptibleMask_ :: Mask :> es => Eff es a -> Eff es a
 uninterruptibleMask_ m = uninterruptibleMask $ const m
-{-# INLINE uninterruptibleMask_ #-}
 
 bracket :: Mask :> es => Eff es a -> (a -> Eff es c) -> (a -> Eff es b) -> Eff es b
-bracket ma mz m = send $ Bracket ma mz m
-{-# INLINE bracket #-}
+bracket ma mz = send . Bracket ma mz
 
 bracket_ :: Mask :> es => Eff es a -> Eff es c -> (a -> Eff es b) -> Eff es b
-bracket_ ma mz = bracket ma (const mz)
-{-# INLINE bracket_ #-}
+bracket_ ma = bracket ma . const
 
 bracketOnError :: Mask :> es => Eff es a -> (a -> Eff es c) -> (a -> Eff es b) -> Eff es b
-bracketOnError ma mz m = send $ BracketOnError ma mz m
-{-# INLINE bracketOnError #-}
+bracketOnError ma mz = send . BracketOnError ma mz
 
 finally :: Mask :> es => Eff es a -> Eff es b -> Eff es a
 finally m mz = bracket_ (pure ()) mz (const m)
-{-# INLINE finally #-}
 
 onError :: Mask :> es => Eff es a -> Eff es b -> Eff es a
 onError m mz = bracketOnError (pure ()) (const mz) (const m)
-{-# INLINE onError #-}
 
 runMask :: forall es a. Eff (Mask ': es) a -> Eff es a
 runMask = thisIsPureTrustMe . reinterpret \case

@@ -9,7 +9,7 @@ import           Control.Monad.Catch         (ExitCase (ExitCaseException, ExitC
 import           Control.Monad.Trans.Control (MonadBaseControl (..))
 import           Effect.Internal.Handler
 import           Effect.Internal.Monad
-import           System.IO.Unsafe            (unsafePerformIO)
+import           System.IO.Unsafe            (unsafeDupablePerformIO)
 import           UnliftIO
 
 data IOE :: Effect where
@@ -37,7 +37,7 @@ instance IOE :> es => MonadIO (Eff es) where
 
 instance IOE :> es => MonadUnliftIO (Eff es) where
 #ifdef FAST_IOE
-  withRunInIO f = primUnliftIO f
+  withRunInIO = primUnliftIO
 #else
   withRunInIO f = send $ Unlift f
 #endif
@@ -46,17 +46,13 @@ instance IOE :> es => MonadUnliftIO (Eff es) where
 -- Compatibility with @exceptions@. This is not encouraged usage
 instance IOE :> es => MonadThrow (Eff es) where
   throwM = throwIO
-  {-# INLINE throwM #-}
 
 instance IOE :> es => MonadCatch (Eff es) where
   catch = UnliftIO.catch
-  {-# INLINE catch #-}
 
 instance IOE :> es => MonadMask (Eff es) where
   mask = UnliftIO.mask
-  {-# INLINE mask #-}
   uninterruptibleMask = UnliftIO.uninterruptibleMask
-  {-# INLINE uninterruptibleMask #-}
   generalBracket ma mz m = UnliftIO.mask \restore -> do
     a <- ma
     x <- restore (m a) `UnliftIO.catch` \e -> do
@@ -68,14 +64,11 @@ instance IOE :> es => MonadMask (Eff es) where
 -- Compatibility with @monad-control@. This is not encouraged usage
 instance IOE :> es => MonadBase IO (Eff es) where
   liftBase = liftIO
-  {-# INLINE liftBase #-}
 
 instance IOE :> es => MonadBaseControl IO (Eff es) where
   type StM (Eff es) a = a
   liftBaseWith = withRunInIO
-  {-# INLINE liftBaseWith #-}
   restoreM = pure
-  {-# INLINE restoreM #-}
 
 thisIsPureTrustMe :: Eff (IOE ': es) a -> Eff es a
 thisIsPureTrustMe = interpretH \h -> \case
@@ -88,4 +81,4 @@ runIOE :: Eff '[IOE] a -> IO a
 runIOE = (`primRunEff` emptyEnv) . thisIsPureTrustMe
 
 runPure :: Eff '[] a -> a
-runPure m = unsafePerformIO $ primRunEff m emptyEnv
+runPure = unsafeDupablePerformIO . (`primRunEff` emptyEnv)

@@ -14,11 +14,9 @@ data Writer w :: Effect where
 
 tell :: Writer w :> es => w -> Eff es ()
 tell w = send $ Tell w
-{-# INLINE tell #-}
 
 listen :: Writer w :> es => Eff es a -> Eff es (a, w)
 listen m = send $ Listen m
-{-# INLINE listen #-}
 
 listens :: Writer w :> es => (w -> x) -> Eff es a -> Eff es (a, x)
 listens f m = do

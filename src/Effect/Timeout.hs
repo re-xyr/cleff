@@ -8,7 +8,6 @@ data Timeout :: Effect where
 
 timeout :: Timeout :> es => Int -> Eff es a -> Eff es (Maybe a)
 timeout n m = send $ Timeout n m
-{-# INLINE timeout #-}
 
 runTimeout :: IOE :> es => Eff (Timeout ': es) a -> Eff es a
 runTimeout = interpretH \handle -> \case

@@ -8,7 +8,6 @@ data Fresh :: Effect where
 
 fresh :: Fresh :> es => Eff es Int
 fresh = send Fresh
-{-# INLINE fresh #-}
 
 runLocalFresh :: Int -> Eff (Fresh ': es) a -> Eff es (a, Int)
 runLocalFresh n = runLocalState n . reinterpret \case
