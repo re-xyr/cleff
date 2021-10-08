@@ -1,9 +1,9 @@
+{-# LANGUAGE FunctionalDependencies #-}
 module Effect.Internal.Monad where
 
 import           Control.Monad.Fix (MonadFix (mfix))
 import           Data.Kind         (Constraint)
 import           Data.Maybe        (fromJust)
-import           Data.Reflection   (Given, give)
 import           Data.TypeRepMap   (TypeRepMap)
 import qualified Data.TypeRepMap   as TMap
 import           Data.Typeable     (Typeable)
@@ -11,19 +11,19 @@ import           Unsafe.Coerce     (unsafeCoerce)
 
 type Effect = (* -> *) -> * -> *
 
-class CanThread e where
-  canThread :: ()
+class Originating es e | e -> es, es -> e where
+  originatingEnv :: Env es
 
-newtype InstCanThread e a = InstCanThread (CanThread e => a)
+newtype InstOriginating es e a = InstOriginating (Originating es e => a)
 
-instCanThread :: forall e a. (CanThread e => a) -> a
-instCanThread x = unsafeCoerce (InstCanThread x :: InstCanThread e a) ()
-{-# INLINE instCanThread #-}
+instOriginating :: forall es e a. (Originating es e => a) -> Env es -> a
+instOriginating x = unsafeCoerce (InstOriginating x :: InstOriginating es e a)
+{-# INLINE instOriginating #-}
 
-type Handler es e = forall es' a. (Given (Env es'), e :> es', CanThread e) => e (Eff es') a -> Eff es a
+type Handler es e = forall es' a. (e :> es', Originating es' e) => e (Eff es') a -> Eff es a
 
 newtype InternalHandler e = InternalHandler
-  { runHandler :: forall es' a. (Given (Env es'), e :> es') => e (Eff es') a -> IO a }
+  { runHandler :: forall es' a. (e :> es', Originating es' e) => e (Eff es') a -> IO a }
 
 newtype Env es = PrimEnv { primGetEnv :: TypeRepMap InternalHandler }
 
@@ -61,7 +61,8 @@ type family xs ++ ys where
   (x ': xs) ++ ys = x ': (xs ++ ys)
 
 send :: forall e es a. e :> es => e (Eff es) a -> Eff es a
-send eff = PrimEff \handlers -> give handlers $ runHandler (getHandler @e handlers) eff
+send eff = PrimEff \handlers -> instOriginating (runHandler (getHandler handlers) eff) handlers
+{-# INLINE send #-}
 
 emptyEnv :: Env '[]
 emptyEnv = PrimEnv TMap.empty

@@ -40,7 +40,8 @@ onError m mz = bracketOnError (pure ()) (const mz) (const m)
 
 runMask :: forall es a. Eff (Mask ': es) a -> Eff es a
 runMask = thisIsPureTrustMe . reinterpret \case
-  Mask f -> liftIO $ Exc.mask \restore -> withLiftIO \lift -> f (lift . restore . unliftIO)
-  UninterruptibleMask f -> liftIO $ Exc.mask \restore -> withLiftIO \lift -> f (lift . restore . unliftIO)
-  Bracket ma mz m -> liftIO $ Exc.bracket (unliftIO ma) (unliftIO . mz) (unliftIO . m)
-  BracketOnError ma mz m -> liftIO $ Exc.bracketOnError (unliftIO ma) (unliftIO . mz) (unliftIO . m)
+  Mask f -> liftIO $ withLiftIO \lift -> Exc.mask \restore -> runInIO $ f (lift . restore . runInIO)
+  UninterruptibleMask f -> liftIO $ withLiftIO \lift -> Exc.uninterruptibleMask \restore -> runInIO $ f (lift . restore . runInIO)
+  Bracket ma mz m -> liftIO $ Exc.bracket (runInIO ma) (runInIO . mz) (runInIO . m)
+  BracketOnError ma mz m -> liftIO $ Exc.bracketOnError (runInIO ma) (runInIO . mz) (runInIO . m)
+{-# INLINE runMask #-}

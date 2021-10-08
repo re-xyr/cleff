@@ -1,6 +1,5 @@
 module Effect.Internal.Handler where
 
-import           Data.Reflection       (Given (given))
 import           Data.Typeable         (Typeable)
 import           Effect.Internal.Monad
 
@@ -60,7 +59,7 @@ reinterpretN handle = reinterpretNH @es' \_ -> handle
 
 reinterpretNH :: forall es' e es a. Typeable e => Recursive (Handler (es' ++ es) e) -> Eff (e ': es) a -> Eff (es' ++ es) a
 reinterpretNH handleRec m = PrimEff \handlers ->
-  let handler = InternalHandler \eff -> primRunEff (instCanThread @e $ handle eff) handlers
+  let handler = InternalHandler \eff -> primRunEff (handle eff) handlers
   in primRunEff m $ insertHandler handler $ contractEnv @es' handlers
   where
     handle :: Handler (es' ++ es) e
@@ -107,14 +106,17 @@ imposeNH :: forall es' e es a. e :> es => Recursive (Handler (es' ++ es) e) -> E
 imposeNH handleRec m = reinterpretNH @es' handleRec (raise m)
 {-# INLINE imposeNH #-}
 
-unliftIO :: Given (Env es) => Eff es a -> IO a
-unliftIO m = primRunEff m given
+runInIO :: Originating es e => Eff es a -> IO a
+runInIO m = primRunEff m originatingEnv
 
-withLiftIO :: forall es a. Given (Env es) => ((forall x. IO x -> Eff es x) -> Eff es a) -> IO a
-withLiftIO f = unliftIO $ f (PrimEff . const)
+withLiftIO :: forall es a e. Originating es e => ((forall x. IO x -> Eff es x) -> IO a) -> IO a
+withLiftIO f = f (PrimEff . const)
 
-unlift :: forall e es es' a. (Typeable e, Given (Env es'), CanThread e) => Eff es' a -> Eff (e ': es) a
-unlift = unlift' @e
+withUnrun :: forall es es' a e. Originating es' e => ((forall x. Eff es x -> Eff es' x) -> Eff es a) -> Eff es a
+withUnrun f = PrimEff \handlers -> primRunEff (f \m -> PrimEff \_ -> primRunEff m handlers) handlers
 
-unlift' :: forall e es es' a. (e :> es, Given (Env es'), CanThread e) => Eff es' a -> Eff es a
-unlift' m = PrimEff \es -> primRunEff m (contractEnv @'[e] $ insertHandler (getHandler es) given)
+runThere :: forall es es' a e. Originating es' e => Eff es' a -> Eff es a
+runThere m = PrimEff $ const $ primRunEff m originatingEnv
+
+runHere :: forall e es es' a. (e :> es, Originating es' e) => Eff es' a -> Eff es a
+runHere m = PrimEff \es -> primRunEff m (contractEnv @'[e] $ insertHandler (getHandler es) originatingEnv)

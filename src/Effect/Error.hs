@@ -1,10 +1,10 @@
 module Effect.Error where
 
-import           Data.Bool            (bool)
+import           Control.Monad.IO.Class (liftIO)
+import           Data.Bool              (bool)
 import           Effect
-import           Effect.Internal.Base (thisIsPureTrustMe)
-import           UnliftIO             (liftIO)
-import qualified UnliftIO.Exception   as Exc
+import           Effect.Internal.Base   (thisIsPureTrustMe)
+import qualified UnliftIO.Exception     as Exc
 
 data Error e :: Effect where
   ThrowError :: e -> Error e m a
@@ -40,4 +40,5 @@ tryErrorJust f m = (Right <$> m) `catchError` \e -> maybe (throwError e) (pure .
 runError :: forall e es a. (Exc.Exception e) => Eff (Error e ': es) a -> Eff es (Either e a)
 runError = thisIsPureTrustMe . Exc.try . reinterpret \case
   ThrowError e     -> Exc.throwIO e
-  CatchError m' h' -> liftIO $ Exc.catch (unliftIO m') (unliftIO . h')
+  CatchError m' h' -> liftIO $ Exc.catch (runInIO m') (runInIO . h')
+{-# INLINE runError #-}

@@ -13,6 +13,9 @@ import           UnliftIO.Exception
 data Resource :: Effect where
   LiftResourceT :: ResourceT IO a -> Resource m a
 
+instance (Resource :> es, IOE :> es) => MonadResource (Eff es) where
+  liftResourceT = send . LiftResourceT
+
 runResource :: forall es a. IOE :> es => Eff (Resource ': es) a -> Eff es a
 runResource m = mask \restore -> do
   istate <- createInternalState
@@ -25,6 +28,4 @@ runResource m = mask \restore -> do
     h :: InternalState -> Effect.Handler es Resource
     h istate = \case
       LiftResourceT (ResourceT m') -> liftIO $ m' istate
-
-instance (Resource :> es, IOE :> es) => MonadResource (Eff es) where
-  liftResourceT = send . LiftResourceT
+{-# INLINE runResource #-}

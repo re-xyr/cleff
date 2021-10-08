@@ -68,7 +68,7 @@ data Simple :: Effect where
 normal :: Eff (Simple ': es) a -> Eff (Reader Integer ': es) a
 normal = reinterpretH \h -> \case
   SimpleGet -> ask
-  Noop m    -> reinterpret h $ unlift m
+  Noop m    -> reinterpret h $ runHere m
 
 outer :: '[Simple, Reader Integer] :>> es => Eff es (Integer, Integer, Integer)
 outer = do
@@ -85,7 +85,7 @@ shit = interposeH @(Reader Integer) \handler -> \case
     liftIO $ putStrLn "tada"
     ask
   Local f m -> do
-    local f $ interpose handler $ unlift' @(Reader Integer) m
+    local f $ interpose handler $ runHere m
 
 aha :: IO ((), Integer)
 aha = runIOE $ runMask $ runLocalState 0 $ bracket_

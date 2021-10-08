@@ -17,3 +17,4 @@ instance Prim :> es => PrimMonad (Eff es) where
 runPrim :: IOE :> es => Eff (Prim ': es) a -> Eff es a
 runPrim = interpret \case
   Primitive m -> liftIO (IO m)
+{-# INLINE runPrim #-}

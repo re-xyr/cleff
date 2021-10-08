@@ -12,3 +12,4 @@ trace s = send $ Trace s
 runTrace :: IOE :> es => Eff (Trace ': es) a -> Eff es a
 runTrace = interpret \case
   Trace s -> liftIO $ putStrLn s
+{-# INLINE runTrace #-}

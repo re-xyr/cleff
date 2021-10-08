@@ -30,18 +30,18 @@ primUnliftIO f = PrimEff \handlers -> f (`primRunEff` handlers)
 instance IOE :> es => MonadIO (Eff es) where
 #ifdef FAST_IOE
   liftIO = primLiftIO
+  {-# INLINE liftIO #-}
 #else
   liftIO = send . Lift
 #endif
-  {-# INLINE liftIO #-}
 
 instance IOE :> es => MonadUnliftIO (Eff es) where
 #ifdef FAST_IOE
   withRunInIO = primUnliftIO
+  {-# INLINE withRunInIO #-}
 #else
   withRunInIO f = send $ Unlift f
 #endif
-  {-# INLINE withRunInIO #-}
 
 -- Compatibility with @exceptions@. This is not encouraged usage
 instance IOE :> es => MonadThrow (Eff es) where
@@ -71,14 +71,17 @@ instance IOE :> es => MonadBaseControl IO (Eff es) where
   restoreM = pure
 
 thisIsPureTrustMe :: Eff (IOE ': es) a -> Eff es a
-thisIsPureTrustMe = interpretH \h -> \case
+thisIsPureTrustMe = interpret \case
 #ifndef FAST_IOE
   Lift m   -> primLiftIO m
-  Unlift f -> primUnliftIO \runInIO -> f (runInIO . interpret h . unlift)
+  Unlift f -> primLiftIO $ f runInIO
 #endif
+{-# INLINE thisIsPureTrustMe #-}
 
 runIOE :: Eff '[IOE] a -> IO a
 runIOE = (`primRunEff` emptyEnv) . thisIsPureTrustMe
+{-# INLINE runIOE #-}
 
 runPure :: Eff '[] a -> a
 runPure = unsafeDupablePerformIO . (`primRunEff` emptyEnv)
+{-# NOINLINE runPure #-}

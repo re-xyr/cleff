@@ -5,7 +5,7 @@ module Effect (Effect, Handler, Eff, IOE (..),
                interpretH, reinterpretH, reinterpret2H, reinterpret3H, reinterpretNH,
                interpose, impose, impose2, impose3, imposeN,
                interposeH, imposeH, impose2H, impose3H, imposeNH,
-               unliftIO, withLiftIO, unlift, unlift',
+               runInIO, withLiftIO, withUnrun, runHere, runThere,
                raise, raiseN, subsume, subsumeN,
                runPure, runIOE) where
 
