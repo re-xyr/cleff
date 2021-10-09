@@ -1,4 +1,3 @@
-{-# LANGUAGE FunctionalDependencies #-}
 module Effect.Internal.Monad where
 
 import           Control.Monad.Fix (MonadFix (mfix))
@@ -11,22 +10,24 @@ import           Unsafe.Coerce     (unsafeCoerce)
 
 type Effect = (* -> *) -> * -> *
 
-class Originating es e | e -> es, es -> e where
+class Originating es where
   originatingEnv :: Env es
 
-newtype InstOriginating es e a = InstOriginating (Originating es e => a)
+newtype InstOriginating es e a = InstOriginating (Originating es => a)
 
-instOriginating :: forall es e a. (Originating es e => a) -> Env es -> a
+instOriginating :: forall es a. (Originating es => a) -> Env es -> a
 instOriginating x = unsafeCoerce (InstOriginating x :: InstOriginating es e a)
-{-# INLINE instOriginating #-}
+-- {-# INLINE instOriginating #-}
 
-type Handler es e = forall es' a. (e :> es', Originating es' e) => e (Eff es') a -> Eff es a
+type Handler es e = forall es' a. (e :> es', Originating es') => e (Eff es') a -> Eff es a
 
 newtype InternalHandler e = InternalHandler
-  { runHandler :: forall es' a. (e :> es', Originating es' e) => e (Eff es') a -> IO a }
+  { runHandler :: forall es' a. (e :> es', Originating es') => e (Eff es') a -> IO a }
 
+type role Env nominal
 newtype Env es = PrimEnv { primGetEnv :: TypeRepMap InternalHandler }
 
+type role Eff nominal nominal
 newtype Eff (es :: [Effect]) a = PrimEff { primRunEff :: Env es -> IO a }
   deriving (Semigroup, Monoid)
 

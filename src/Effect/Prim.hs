@@ -1,3 +1,4 @@
+{-# LANGUAGE UnboxedTuples #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Effect.Prim where
 

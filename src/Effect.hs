@@ -1,12 +1,9 @@
 module Effect (Effect, Handler, Eff, IOE (..),
                (:>), (:>>),
                send,
-               interpret, reinterpret, reinterpret2, reinterpret3, reinterpretN,
-               interpretH, reinterpretH, reinterpret2H, reinterpret3H, reinterpretNH,
-               interpose, impose, impose2, impose3, imposeN,
-               interposeH, imposeH, impose2H, impose3H, imposeNH,
-               runInIO, withLiftIO, withUnrun, runHere, runThere,
                raise, raiseN, subsume, subsumeN,
+               interpret, reinterpret, reinterpret2, reinterpret3, reinterpretN, interpose,
+               withLiftIO, withLiftEff, runInIO, runHere, runHere', runThere,
                runPure, runIOE) where
 
 import           Effect.Internal.Base

@@ -44,51 +44,32 @@ test :: [String] -> ([String], [String]) -- writer, dummy
 test xs = runPure $ runLocalState [] $ runDummy $ runTeletypePure xs echo
 
 -- >>> test ["abc", "def", "ghci"]
+-- (["abc","def","ghci"],[])
 
-wowwee :: (Reader Integer :> es, Writer (Sum Integer) :> es) => Eff es ()
-wowwee = do
+summation :: (Reader Integer :> es, Writer (Sum Integer) :> es) => Eff es ()
+summation = do
   n <- ask
   if n == (0 :: Integer) then pure ()
   else do
     tell (Sum n)
-    local (subtract (1 :: Integer)) wowwee
+    local (subtract (1 :: Integer)) summation
 
 r :: IO ((), Sum Integer)
-r = runIOE $ runReader (100 :: Integer) $ runLocalWriter @(Sum Integer) $ shit wowwee
+r = runIOE $ runReader (100 :: Integer) $ runLocalWriter @(Sum Integer) $ annoy summation
 
 -- >>> r
+-- ((),Sum {getSum = 5050})
 
-inner :: Reader Integer :> es => Eff es Integer
-inner = ask
-
-data Simple :: Effect where
-  SimpleGet :: Simple m Integer
-  Noop :: m a -> Simple m a
-
-normal :: Eff (Simple ': es) a -> Eff (Reader Integer ': es) a
-normal = reinterpretH \h -> \case
-  SimpleGet -> ask
-  Noop m    -> reinterpret h $ runHere m
-
-outer :: '[Simple, Reader Integer] :>> es => Eff es (Integer, Integer, Integer)
-outer = do
-  x <- ask
-  y <- send SimpleGet
-  z <- send $ Noop ask
-  pure (x, y, z)
-
--- >>> runPure $ runReader (2 :: Integer) $ bogus $ runReader (1 :: Integer) outer
-
-shit :: '[Reader Integer, IOE] :>> es => Eff es a -> Eff es a
-shit = interposeH @(Reader Integer) \handler -> \case
+annoy :: '[Reader Integer, IOE] :>> es => Eff es a -> Eff es a
+annoy = interpose @(Reader Integer) \case
   Ask -> do
     liftIO $ putStrLn "tada"
     ask
-  Local f m -> do
-    local f $ interpose handler $ runHere m
+  Local f m ->
+    local f $ annoy $ runHere' @(Reader Integer) m
 
-aha :: IO ((), Integer)
-aha = runIOE $ runMask $ runLocalState 0 $ bracket_
+properBracketing :: IO ((), Integer)
+properBracketing = runIOE $ runMask $ runLocalState 0 $ bracket_
   (pure ())
   (put @Integer 2)
   (const (pure ()))

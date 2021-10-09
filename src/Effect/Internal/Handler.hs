@@ -25,98 +25,42 @@ interpret :: forall e es a. Typeable e => Handler es e -> Eff (e ': es) a -> Eff
 interpret = reinterpretN @'[]
 {-# INLINE interpret #-}
 
-interpretH :: forall e es a. Typeable e => Recursive (Handler es e) -> Eff (e ': es) a -> Eff es a
-interpretH = reinterpretNH @'[]
-{-# INLINE interpretH #-}
-
 reinterpret :: forall e' e es a. Typeable e => Handler (e' ': es) e -> Eff (e ': es) a -> Eff (e' ': es) a
 reinterpret = reinterpretN @'[e']
 {-# INLINE reinterpret #-}
-
-reinterpretH :: forall e' e es a. Typeable e => Recursive (Handler (e' ': es) e) -> Eff (e ': es) a -> Eff (e' ': es) a
-reinterpretH = reinterpretNH @'[e']
-{-# INLINE reinterpretH #-}
 
 reinterpret2 :: forall e' e'' e es a. Typeable e => Handler (e' ': e'' ': es) e -> Eff (e ': es) a -> Eff (e' ': e'' ': es) a
 reinterpret2 = reinterpretN @'[e', e'']
 {-# INLINE reinterpret2 #-}
 
-reinterpret2H :: forall e' e'' e es a. Typeable e => Recursive (Handler (e' ': e'' ': es) e) -> Eff (e ': es) a -> Eff (e' ': e'' ': es) a
-reinterpret2H = reinterpretNH @'[e', e'']
-{-# INLINE reinterpret2H #-}
-
 reinterpret3 :: forall e' e'' e''' e es a. Typeable e => Handler (e' ': e'' ': e''' ': es) e -> Eff (e ': es) a -> Eff (e' ': e'' ': e''' ': es) a
 reinterpret3 = reinterpretN @'[e', e'', e''']
 {-# INLINE reinterpret3 #-}
 
-reinterpret3H :: forall e' e'' e''' e es a. Typeable e => Recursive (Handler (e' ': e'' ': e''' ': es) e) -> Eff (e ': es) a -> Eff (e' ': e'' ': e''' ': es) a
-reinterpret3H = reinterpretNH @'[e', e'', e''']
-{-# INLINE reinterpret3H #-}
-
 reinterpretN :: forall es' e es a. Typeable e => Handler (es' ++ es) e -> Eff (e ': es) a -> Eff (es' ++ es) a
-reinterpretN handle = reinterpretNH @es' \_ -> handle
-{-# INLINE reinterpretN #-}
-
-reinterpretNH :: forall es' e es a. Typeable e => Recursive (Handler (es' ++ es) e) -> Eff (e ': es) a -> Eff (es' ++ es) a
-reinterpretNH handleRec m = PrimEff \handlers ->
+reinterpretN handle m = PrimEff \handlers ->
   let handler = InternalHandler \eff -> primRunEff (handle eff) handlers
   in primRunEff m $ insertHandler handler $ contractEnv @es' handlers
-  where
-    handle :: Handler (es' ++ es) e
-    handle = handleRec handle
-{-# INLINE reinterpretNH #-}
+{-# INLINE reinterpretN #-}
 
 interpose :: forall e es a. e :> es => Handler es e -> Eff es a -> Eff es a
-interpose = imposeN @'[]
+interpose handle = interpret handle . raise
 {-# INLINE interpose #-}
 
-interposeH :: forall e es a. e :> es => Recursive (Handler es e) -> Eff es a -> Eff es a
-interposeH = imposeNH @'[]
-{-# INLINE interposeH #-}
-
-impose :: forall e' e es a. e :> es => Handler (e' ': es) e -> Eff es a -> Eff (e' ': es) a
-impose = imposeN @'[e']
-{-# INLINE impose #-}
-
-imposeH :: forall e' e es a. e :> es => Recursive (Handler (e' ': es) e) -> Eff es a -> Eff (e' ': es) a
-imposeH = imposeNH @'[e']
-{-# INLINE imposeH #-}
-
-impose2 :: forall e' e'' e es a. e :> es => Handler (e' ': e'' ': es) e -> Eff es a -> Eff (e' ': e'' ': es) a
-impose2 = imposeN @'[e', e'']
-{-# INLINE impose2 #-}
-
-impose2H :: forall e' e'' e es a. e :> es => Recursive (Handler (e' ': e'' ': es) e) -> Eff es a -> Eff (e' ': e'' ': es) a
-impose2H = imposeNH @'[e', e'']
-{-# INLINE impose2H #-}
-
-impose3 :: forall e' e'' e''' e es a. e :> es => Handler (e' ': e'' ': e''' ': es) e -> Eff es a -> Eff (e' ': e'' ': e''' ': es) a
-impose3 = imposeN @'[e', e'', e''']
-{-# INLINE impose3 #-}
-
-impose3H :: forall e' e'' e''' e es a. e :> es => Recursive (Handler (e' ': e'' ': e''' ': es) e) -> Eff es a -> Eff (e' ': e'' ': e''' ': es) a
-impose3H = imposeNH @'[e', e'', e''']
-{-# INLINE impose3H #-}
-
-imposeN :: forall es' e es a. e :> es => Handler (es' ++ es) e -> Eff es a -> Eff (es' ++ es) a
-imposeN handle = imposeNH @es' \_ -> handle
-{-# INLINE imposeN #-}
-
-imposeNH :: forall es' e es a. e :> es => Recursive (Handler (es' ++ es) e) -> Eff es a -> Eff (es' ++ es) a
-imposeNH handleRec m = reinterpretNH @es' handleRec (raise m)
-{-# INLINE imposeNH #-}
-
-runInIO :: Originating es e => Eff es a -> IO a
-runInIO m = primRunEff m originatingEnv
-
-withLiftIO :: forall es a e. Originating es e => ((forall x. IO x -> Eff es x) -> IO a) -> IO a
+withLiftIO :: forall es a. ((forall x. IO x -> Eff es x) -> IO a) -> IO a
 withLiftIO f = f (PrimEff . const)
 
-withUnrun :: forall es es' a e. Originating es' e => ((forall x. Eff es x -> Eff es' x) -> Eff es a) -> Eff es a
-withUnrun f = PrimEff \handlers -> primRunEff (f \m -> PrimEff \_ -> primRunEff m handlers) handlers
+withLiftEff :: forall es es' a. ((forall x. Eff es x -> Eff es' x) -> Eff es a) -> Eff es a
+withLiftEff f = PrimEff \handlers -> primRunEff (f \m -> PrimEff \_ -> primRunEff m handlers) handlers
 
-runThere :: forall es es' a e. Originating es' e => Eff es' a -> Eff es a
+runInIO :: Originating es => Eff es a -> IO a
+runInIO m = primRunEff m originatingEnv
+
+runThere :: forall es es' a. Originating es' => Eff es' a -> Eff es a
 runThere m = PrimEff $ const $ primRunEff m originatingEnv
 
-runHere :: forall e es es' a. (e :> es, Originating es' e) => Eff es' a -> Eff es a
-runHere m = PrimEff \es -> primRunEff m (contractEnv @'[e] $ insertHandler (getHandler es) originatingEnv)
+runHere :: forall e es es' a. (Originating es', Typeable e) => Eff es' a -> Eff (e ': es) a
+runHere = runHere' @e
+
+runHere' :: forall e es es' a. (Originating es', e :> es) => Eff es' a -> Eff es a
+runHere' m = PrimEff \es -> primRunEff m (contractEnv @'[e] $ insertHandler (getHandler es) originatingEnv)

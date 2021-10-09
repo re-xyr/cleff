@@ -55,7 +55,6 @@ default-extensions:
 - BlockArguments
 - ConstraintKinds
 - DataKinds
-- DerivingVia
 - EmptyCase
 - FlexibleContexts
 - FlexibleInstances
@@ -66,15 +65,32 @@ default-extensions:
 - MagicHash
 - MultiParamTypeClasses
 - PolyKinds
-- QuantifiedConstraints
 - RankNTypes
+- RoleAnnotations
 - ScopedTypeVariables
 - TupleSections
 - TypeApplications
 - TypeFamilies
 - TypeOperators
-- UnboxedTuples
 - UndecidableInstances
 
 library:
   source-dirs: src
+
+tests:
+  effect-test:
+    main:                Main.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - effect
+    - hspec
+    - lifted-base
+    - QuickCheck
+    default-extensions:
+    - DeriveAnyClass
+    - DeriveGeneric
+    - DerivingVia
