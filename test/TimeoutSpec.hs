@@ -1,7 +1,8 @@
 module TimeoutSpec where
+
+import           Cleff
+import           Cleff.Timeout
 import           Control.Monad.IO.Class (liftIO)
-import           Effect
-import           Effect.Timeout
 import           GHC.Conc               (threadDelay)
 import           Test.Hspec
 

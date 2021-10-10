@@ -1,7 +1,7 @@
-module Effect.Fresh where
+module Cleff.Fresh where
 
-import           Effect
-import           Effect.State
+import           Cleff
+import           Cleff.State
 
 data Fresh :: Effect where
   Fresh :: Fresh m Int

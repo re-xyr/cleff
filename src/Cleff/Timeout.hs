@@ -1,7 +1,7 @@
-module Effect.Timeout where
+module Cleff.Timeout where
 
+import           Cleff
 import           Control.Monad.IO.Class (liftIO)
-import           Effect
 import qualified UnliftIO.Timeout       as T
 
 data Timeout :: Effect where

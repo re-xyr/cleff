@@ -1,10 +1,10 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
-module Effect.Fail where
+module Cleff.Fail where
 
+import           Cleff
+import           Cleff.Error
 import           Control.Exception  (Exception)
 import           Control.Monad.Fail (MonadFail (..))
-import           Effect
-import           Effect.Error
 import           Prelude            hiding (MonadFail (..))
 import           UnliftIO.Exception (throwIO)
 

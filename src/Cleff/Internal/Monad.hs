@@ -1,5 +1,5 @@
 {-# OPTIONS_HADDOCK not-home #-}
-module Effect.Internal.Monad
+module Cleff.Internal.Monad
   ( -- * Core types
     Effect, Originating (..), Handler, InternalHandler (..), Env (..), Eff (..)
   , -- * Effect lookup
@@ -34,7 +34,7 @@ class Originating es where
 type Handler es e = forall es' a. (e :> es', Originating es') => e (Eff es') a -> Eff es a
 
 -- | The internal representation of effect handlers. The handle-site environment is captured via interpreting functions
--- (see "Effect.Internal.Handle") and thus unwraps the @'Eff' es a@ in the 'Handler' type into an 'IO'.
+-- (see "Cleff.Internal.Handle") and thus unwraps the @'Eff' es a@ in the 'Handler' type into an 'IO'.
 newtype InternalHandler e = InternalHandler
   { runHandler :: forall es' a. (e :> es', Originating es') => e (Eff es') a -> IO a }
 

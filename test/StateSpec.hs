@@ -1,9 +1,9 @@
 module StateSpec where
 
+import           Cleff
+import           Cleff.State
 import qualified Control.Exception.Lifted as LE
 import qualified Control.Monad.Catch      as E
-import           Effect
-import           Effect.State
 import           Test.Hspec
 import           UnliftIO.Exception
 import qualified UnliftIO.Exception       as UE

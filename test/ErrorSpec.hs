@@ -1,8 +1,8 @@
 module ErrorSpec where
 
-import           Effect
-import           Effect.Error
-import           Effect.Mask
+import           Cleff
+import           Cleff.Error
+import           Cleff.Mask
 import           Test.Hspec
 import qualified UnliftIO.Exception as Exc
 

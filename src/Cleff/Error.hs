@@ -1,9 +1,9 @@
-module Effect.Error where
+module Cleff.Error where
 
+import           Cleff
+import           Cleff.Internal.Base    (thisIsPureTrustMe)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Bool              (bool)
-import           Effect
-import           Effect.Internal.Base   (thisIsPureTrustMe)
 import qualified UnliftIO.Exception     as Exc
 
 data Error e :: Effect where

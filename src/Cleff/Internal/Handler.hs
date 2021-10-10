@@ -1,5 +1,5 @@
 {-# OPTIONS_HADDOCK not-home #-}
-module Effect.Internal.Handler
+module Cleff.Internal.Handler
   ( -- * Trivial handling
     raise, raiseN, subsume, subsumeN
   , -- * Interpreting effects
@@ -9,7 +9,7 @@ module Effect.Internal.Handler
   ) where
 
 import           Data.Typeable         (Typeable)
-import           Effect.Internal.Monad
+import           Cleff.Internal.Monad
 
 -- | Raise an action into a bigger effect environment. For a more general version see 'raiseN'.
 raise :: forall e es a. Eff es a -> Eff (e ': es) a
@@ -64,7 +64,7 @@ interpose :: forall e es a. e :> es => Handler es e -> Eff es a -> Eff es a
 interpose handle = interpret handle . raise
 {-# INLINE interpose #-}
 
--- | Run a send-site action in the 'IO' monad. This is useful when interpreting an effect in terms of 'Effect.IOE'.
+-- | Run a send-site action in the 'IO' monad. This is useful when interpreting an effect in terms of 'Cleff.IOE'.
 runInIO :: Originating es => Eff es a -> IO a
 runInIO m = primRunEff m originatingEnv
 
@@ -85,7 +85,7 @@ runHere' m = PrimEff \es -> primRunEff m (contractEnv @'[e] $ insertHandler (get
 
 -- | Temporarily gain the ability to lift arbitrary 'IO' actions into 'Eff' as long as an 'IO' action is finally
 -- returned. This is useful for dealing with effect operations with the monad type in the negative position within
--- 'Effect.IOE'.
+-- 'Cleff.IOE'.
 withLiftIO :: forall es a. ((forall x. IO x -> Eff es x) -> IO a) -> IO a
 withLiftIO f = f (PrimEff . const)
 

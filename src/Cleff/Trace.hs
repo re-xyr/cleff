@@ -1,7 +1,7 @@
-module Effect.Trace where
+module Cleff.Trace where
 
+import           Cleff
 import           Control.Monad.IO.Class (liftIO)
-import           Effect
 
 data Trace :: Effect where
   Trace :: String -> Trace m ()

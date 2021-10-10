@@ -1,4 +1,4 @@
-module Effect
+module Cleff
   ( -- * The @Eff@ monad
     Effect, Eff, (:>), (:>>)
   , -- * The @IOE@ effect
@@ -17,7 +17,7 @@ module Effect
     makeEffect, makeEffect_
   ) where
 
-import           Effect.Internal.Base
-import           Effect.Internal.Handler
-import           Effect.Internal.Monad
-import           Effect.Internal.TH
+import           Cleff.Internal.Base
+import           Cleff.Internal.Handler
+import           Cleff.Internal.Monad
+import           Cleff.Internal.TH

@@ -1,7 +1,7 @@
-module Effect.Reader where
+module Cleff.Reader where
 
+import           Cleff
 import           Data.Typeable (Typeable)
-import           Effect
 
 data Reader r :: Effect where
   Ask :: Reader r m r

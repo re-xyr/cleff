@@ -1,9 +1,9 @@
-module Effect.Writer where
+module Cleff.Writer where
 
-import           Data.Foldable        (traverse_)
-import           Data.Typeable        (Typeable)
-import           Effect
-import           Effect.Internal.Base (thisIsPureTrustMe)
+import           Cleff
+import           Cleff.Internal.Base (thisIsPureTrustMe)
+import           Data.Foldable       (traverse_)
+import           Data.Typeable       (Typeable)
 import           UnliftIO.IORef
 import           UnliftIO.MVar
 import           UnliftIO.STM

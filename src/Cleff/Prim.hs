@@ -1,10 +1,10 @@
 {-# LANGUAGE UnboxedTuples #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
-module Effect.Prim where
+module Cleff.Prim where
 
+import           Cleff
 import           Control.Monad.IO.Class  (liftIO)
 import           Control.Monad.Primitive (PrimMonad (..))
-import           Effect
 import           GHC.Exts                (RealWorld, State#)
 import           GHC.IO                  (IO (IO))
 

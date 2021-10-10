@@ -1,13 +1,13 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
-module Effect.Resource where
+module Cleff.Resource where
 
+import           Cleff
 import           Control.Monad.IO.Class                (liftIO)
 import           Control.Monad.Trans.Resource          (InternalState,
                                                         MonadResource (liftResourceT),
                                                         createInternalState)
 import           Control.Monad.Trans.Resource.Internal (ResourceT (..),
                                                         stateCleanupChecked)
-import           Effect
 import           UnliftIO.Exception
 
 data Resource :: Effect where
@@ -25,7 +25,7 @@ runResource m = mask \restore -> do
   liftIO $ stateCleanupChecked Nothing istate
   pure a
   where
-    h :: InternalState -> Effect.Handler es Resource
+    h :: InternalState -> Cleff.Handler es Resource
     h istate = \case
       LiftResourceT (ResourceT m') -> liftIO $ m' istate
 {-# INLINE runResource #-}

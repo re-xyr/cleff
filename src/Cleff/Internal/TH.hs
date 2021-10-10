@@ -1,10 +1,11 @@
-module Effect.Internal.TH where
+{-# OPTIONS_HADDOCK not-home #-}
+module Cleff.Internal.TH where
 
+import           Cleff.Internal.Monad
 import           Control.Monad                (join)
 import           Data.Char                    (toLower)
 import           Data.Foldable                (foldl')
 import qualified Data.Map.Strict              as Map
-import           Effect.Internal.Monad
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Datatype
 import           Language.Haskell.TH.PprLib

@@ -1,11 +1,11 @@
-module Effect.State where
+module Cleff.State where
 
+import           Cleff
+import           Cleff.Internal.Base         (thisIsPureTrustMe)
 import           Control.Concurrent.STM.TVar (stateTVar)
 import           Control.Monad               (void)
 import           Data.Tuple                  (swap)
 import           Data.Typeable               (Typeable)
-import           Effect
-import           Effect.Internal.Base        (thisIsPureTrustMe)
 import           UnliftIO.IORef
 import           UnliftIO.MVar
 import           UnliftIO.STM
