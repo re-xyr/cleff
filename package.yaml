@@ -18,27 +18,30 @@ extra-source-files: []
 description:         Please see the README on GitHub at <https://github.com/daylily/effect#readme>
 
 dependencies:
-- base
-- typerep-map
-- exceptions
-- unliftio
-- resourcet
-- process
 - async
-- reflection
-- primitive
-- stm
-- resourcet
+- base
+- containers
+- exceptions
 - monad-control
+- primitive
+- process
+- resourcet
+- stm
+- template-haskell
+- th-abstraction
 - transformers-base
+- typerep-map
+- unliftio
 
 flags:
-  fast-ioe:
-    manual: false
+  dynamic-ioe:
+    description: |
+      Make @IOE@ a real effect. This is only for reference purposes and should not be enabled in production code.
+    manual: true
     default: false
 
 ghc-options:
-- -O2
+# - -O2
 - -Wall
 - -Wincomplete-uni-patterns
 - -Wpartial-fields
@@ -46,9 +49,9 @@ ghc-options:
 - -Widentities
 
 when:
-- condition: flag(fast-ioe)
+- condition: flag(dynamic-ioe)
   cpp-options:
-  - -DFAST_IOE
+  - -DDYNAMIC_IOE
 
 default-extensions:
 - AllowAmbiguousTypes
@@ -68,6 +71,7 @@ default-extensions:
 - RankNTypes
 - RoleAnnotations
 - ScopedTypeVariables
+- TemplateHaskell
 - TupleSections
 - TypeApplications
 - TypeFamilies

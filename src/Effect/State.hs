@@ -14,18 +14,10 @@ data State s :: Effect where
   Get :: State s m s
   Put :: s -> State s m ()
   State :: (s -> (a, s)) -> State s m a
-
-get :: State s :> es => Eff es s
-get = send Get
+makeEffect ''State
 
 gets :: State s :> es => (s -> t) -> Eff es t
 gets = (<$> get)
-
-put :: State s :> es => s -> Eff es ()
-put = send . Put
-
-state :: State s :> es => (s -> (a, s)) -> Eff es a
-state = send . State
 
 modify :: State s :> es => (s -> s) -> Eff es ()
 modify f = state (((), ) . f)

@@ -5,9 +5,7 @@ import           Effect.State
 
 data Fresh :: Effect where
   Fresh :: Fresh m Int
-
-fresh :: Fresh :> es => Eff es Int
-fresh = send Fresh
+makeEffect ''Fresh
 
 runLocalFresh :: Int -> Eff (Fresh ': es) a -> Eff es (a, Int)
 runLocalFresh n = runLocalState n . reinterpret \case

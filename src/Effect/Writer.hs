@@ -11,12 +11,7 @@ import           UnliftIO.STM
 data Writer w :: Effect where
   Tell :: w -> Writer w m ()
   Listen :: m a -> Writer w m (a, w)
-
-tell :: Writer w :> es => w -> Eff es ()
-tell w = send $ Tell w
-
-listen :: Writer w :> es => Eff es a -> Eff es (a, w)
-listen m = send $ Listen m
+makeEffect ''Writer
 
 listens :: Writer w :> es => (w -> x) -> Eff es a -> Eff es (a, x)
 listens f m = do
