@@ -69,15 +69,15 @@ instance MonadFix (Eff es) where
 -- | Internal class used to lookup if @e@ is present in the effect stack @es@. The extra @oes@ is useful for custom
 -- error reporting.
 class Lookup e es oes
-instance {-# OVERLAPPING #-} Lookup e (e ': es) oes
-instance Lookup e es oes => Lookup e (f ': es) oes
+instance Lookup e (e ': es) oes
+instance {-# OVERLAPPABLE #-} Lookup e es oes => Lookup e (f ': es) oes
 instance (Typeable e, GHC.TypeError
   ('GHC.Text "The effect '" ':<>: 'GHC.ShowType e ':<>: 'GHC.Text "' is not present in the stack"
   ':$$: 'GHC.Text "  " ':<>: 'GHC.ShowType oes
   ':$$: 'GHC.Text "In the constraint (" ':<>: 'GHC.ShowType (e :> oes) ':<>: 'GHC.Text ")")) => Lookup e '[] oes
 
 -- | Constraint that indicates an effect @e@ is present in the effect stack @es@ (thus 'send'able).
-class Typeable e => (e :: Effect) :> (es :: [Effect])
+class (Typeable e, Lookup e es es) => (e :: Effect) :> (es :: [Effect])
 instance (Typeable e, Lookup e es es) => e :> es
 
 -- | Constraint that indicates a list effect @xs@ is present in the effect stack @es@ (thus 'send'able). This is a

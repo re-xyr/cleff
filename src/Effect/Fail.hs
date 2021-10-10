@@ -2,8 +2,10 @@
 module Effect.Fail where
 
 import           Control.Exception  (Exception)
+import           Control.Monad.Fail (MonadFail (..))
 import           Effect
 import           Effect.Error
+import           Prelude            hiding (MonadFail (..))
 import           UnliftIO.Exception (throwIO)
 
 data Fail :: Effect where
