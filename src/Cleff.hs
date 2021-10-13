@@ -10,9 +10,10 @@ module Cleff
   , -- * Trivial effects handling
     raise, raiseN, subsume, subsumeN
   , -- * Interpreting effects
-    Handler, interpret, reinterpret, reinterpret2, reinterpret3, reinterpretN, interpose
+    Handler, Interpreter, interpret, reinterpret, reinterpret2, reinterpret3, reinterpretN, interpose,
+    InterpreterIO, interpretIO
   , -- * Combinators for interpreting higher order effects
-    runInIO, runHere, runHere', runThere, withLiftIO, withLiftEff
+    runInIO, runHere, runThere, withLiftIO, withLiftEff
   , -- * Template Haskell
     makeEffect, makeEffect_
   ) where

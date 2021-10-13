@@ -25,7 +25,7 @@ runLocalWriter m = thisIsPureTrustMe do
   w' <- readIORef rw
   pure (x, w')
   where
-    h :: [IORef w] -> Handler (IOE ': es) (Writer w)
+    h :: [IORef w] -> Handler '[IOE] es (Writer w)
     h rws = \case
       Tell w' -> traverse_ (\rw -> modifyIORef' rw (<> w')) rws
       Listen (m' :: Eff es'' a') -> do
@@ -42,7 +42,7 @@ runAtomicLocalWriter m = thisIsPureTrustMe do
   w' <- readIORef rw
   pure (x, w')
   where
-    h :: [IORef w] -> Handler (IOE ': es) (Writer w)
+    h :: [IORef w] -> Handler '[IOE] es (Writer w)
     h rws = \case
       Tell w' -> traverse_ (\rw -> atomicModifyIORef' rw ((, ()) . (<> w'))) rws
       Listen m' -> do
@@ -59,7 +59,7 @@ runSharedWriter m = thisIsPureTrustMe do
   w' <- readMVar rw
   pure (x, w')
   where
-    h :: [MVar w] -> Handler (IOE ': es) (Writer w)
+    h :: [MVar w] -> Handler '[IOE] es (Writer w)
     h rws = \case
       Tell w' -> traverse_ (\rw -> modifyMVar_ rw \w'' -> pure $! (w'' <> w')) rws
       Listen m' -> do
@@ -76,7 +76,7 @@ runAtomicSharedWriter m = do
   w' <- readTVarIO rw
   pure (x, w')
   where
-    h :: [TVar w] -> Handler es (Writer w)
+    h :: [TVar w] -> Interpreter es (Writer w)
     h rws = \case
       Tell w' -> atomically $ traverse_ (\rw -> modifyTVar rw (<> w')) rws
       Listen m' -> do

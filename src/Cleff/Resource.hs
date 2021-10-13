@@ -25,7 +25,7 @@ runResource m = mask \restore -> do
   liftIO $ stateCleanupChecked Nothing istate
   pure a
   where
-    h :: InternalState -> Cleff.Handler es Resource
+    h :: InternalState -> Interpreter es Resource
     h istate = \case
       LiftResourceT (ResourceT m') -> liftIO $ m' istate
 {-# INLINE runResource #-}

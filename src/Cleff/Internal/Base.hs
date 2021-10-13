@@ -7,7 +7,7 @@ module Cleff.Internal.Base
   ( -- * The @IOE@ effect
     IOE (..)
   , -- * Unwrapping actions
-    runIOE, runPure, thisIsPureTrustMe
+    InterpreterIO, interpretIO, runIOE, runPure, thisIsPureTrustMe
   , -- * Primitive IO functions
     primLiftIO, primUnliftIO
   ) where
@@ -119,3 +119,15 @@ runIOE = (`primRunEff` emptyEnv) . thisIsPureTrustMe
 runPure :: Eff '[] a -> a
 runPure = unsafeDupablePerformIO . (`primRunEff` emptyEnv)
 {-# NOINLINE runPure #-}
+
+-- | Interpreter that interprets an effect into 'IO'.
+type InterpreterIO es e = forall esSend a. (e :> esSend, Handling esSend es e) => e (Eff esSend) a -> IO a
+
+-- | Interpret an effect in terms of 'IO'.
+--
+-- @
+-- 'interpretIO' f = 'interpret' ('liftIO' '.' f)
+-- @
+interpretIO :: (IOE :> es, Typeable e) => InterpreterIO es e -> Eff (e ': es) a -> Eff es a
+interpretIO f = interpret (liftIO . f)
+{-# INLINE interpretIO #-}
