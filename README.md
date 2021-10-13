@@ -14,14 +14,14 @@
 
 [Just as `effectful` asked](https://github.com/arybczak/effectful#motivation), we have [a][`polysemy`] [bunch][`fused-effects`] [of][`effectful`] [effect][`eff`] [libraries][`freer-simple`] out there, why another?
 
-To put it simply: we need both performance and good ergonomics for effect interpretation. For the best in each:
+To put it simply: we need both performance and good ergonomics for effect interpretation. For the best in each, respectively:
 
-- [`eff`] is *very* fast because it is based on low-level GHC primitives, but the development has stalled because of (alas) [unresolved difficulties](https://www.reddit.com/r/haskell/comments/pywuqg/unresolved_challenges_of_scoped_effects_and_what/), and the primitives are not yet merged into GHC's master branch.
-- [`polysemy`] is *slow*. This may not matter that much in applications that are IO bound, but still a problem elsewhere.
+- [`eff`] is *very fast* because it is based on low-level GHC primitives, but the development has stalled because of (alas) [unresolved difficulties](https://www.reddit.com/r/haskell/comments/pywuqg/unresolved_challenges_of_scoped_effects_and_what/), and the primitives are not yet merged into GHC's master branch.
+- [`polysemy`] has best-of-class support of higher-order effect interpretation. However, the library is *slow*. This may not matter that much in applications that are IO bound, but still a problem elsewhere.
 
 If we give up continuations (thus, nondeterminism), and use a concrete monad (particularly, a `ReaderT IO`), there will be resonable performance. After all, [most effects libraries has broken nondeterminism support](https://github.com/polysemy-research/polysemy/issues/246), and you could always wrap another monad transformer with support of nondeterminism over the main `Eff` monad.
 
-[`effectful`] already does that. However, it somehow *overdid* that in order to get good performance.
+[`effectful`] already does that. However, it focused mostly on good performance instead of easy interpretation.
 
 `effectful` has a notion of *static* and *dynamic* effects, where dynamic effects are the normal extensible effects, while static ones directly call primitive operations and cannot be interpreted in different ways, as a sacrifice of effect interoperability to ensure performance. `effectful`'s underlying `ReaderT IO` is parameterized by a *mutable* variable that stores various effect handling information, which makes it not only very painful to think about threaded operations, but also largely restricts the effect interpretation interface, and operations like `listen` is not achievable without dealing with the library internals.
 
@@ -36,7 +36,6 @@ In conclusion, `cleff` is an effect library that tries to find a good balance be
 The classical `Teletype` effect:
 
 ```haskell
-import Control.Exception (Exception)
 import Cleff
 import Cleff.State
 import Cleff.Writer
@@ -81,6 +80,8 @@ import Cleff.Writer
 import Cleff.Error
 import Cleff.Mask
 
+-- Copy the above Teletype code here
+
 data CustomException = ThisException | ThatException deriving (Show, Exception)
 
 program :: '[Mask, Teletype, Error CustomException] :>> es => Eff es ()
@@ -94,23 +95,28 @@ program = catchError @CustomException work \e -> writeTTY $ "Caught " ++ show e
         _             -> writeTTY input *> writeTTY "no exceptions"
 
 main :: IO (Either CustomException ())
-main = runIOE $ runMask $ runError @CustonException $ runTeletypeIO program
+main = runIOE $ runMask $ runError @CustomException $ runTeletypeIO program
 ```
 
 ## Microbenchmarks
 
-These are the results of the [effect-zoo](https://github.com/ocharles/effect-zoo) microbenchmark, compiled by GHC 8.10.7. Keep in mind that these are *very short and synthetic programs*, and may or may not tell the correct performance characteristics of different effect libraries
+These are the results of the [effect-zoo](https://github.com/ocharles/effect-zoo) microbenchmark, compiled by GHC 8.10.7. Keep in mind that these are *very short and synthetic programs*, and may or may not tell the correct performance characteristics of different effect libraries in real use:
 
 - `big-stack`: ![big-stack benchmark result](https://raw.githubusercontent.com/re-xyr/effect/master/docs/img/effect-zoo-big-stack.png)
 - `countdown`: ![countdown benchmark result](https://raw.githubusercontent.com/re-xyr/effect/master/docs/img/effect-zoo-countdown.png)
-- `file-sizes`: ![countdown benchmark result](https://raw.githubusercontent.com/re-xyr/effect/master/docs/img/effect-zoo-file-sizes.png)
+- `file-sizes`: ![file-sizes benchmark result](https://raw.githubusercontent.com/re-xyr/effect/master/docs/img/effect-zoo-file-sizes.png)
 - `reinterpretation`: ![reinterpretation benchmark result](https://raw.githubusercontent.com/re-xyr/effect/master/docs/img/effect-zoo-reinterpretation.png)
 
 ## References
 
 These are the useful resourses that inspired this library.
 
-Libraries: [`eff`], [`effectful`],  [`freer-simple`], and [`polysemy`].
+Libraries:
+
+- [`eff`] by Alexis King and contributors.
+- [`effectful`] by Andrzej Rybczak and contributors.
+- [`freer-simple`] by Alexis King and contributors.
+- [`polysemy`] by Sandy Maguire and contributors.
 
 Talks:
 

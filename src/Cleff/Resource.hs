@@ -19,13 +19,13 @@ instance (Resource :> es, IOE :> es) => MonadResource (Eff es) where
 runResource :: forall es a. IOE :> es => Eff (Resource ': es) a -> Eff es a
 runResource m = mask \restore -> do
   istate <- createInternalState
-  a <- restore (interpret (h istate) m) `catch` \e -> do
+  a <- restore (interpretIO (h istate) m) `catch` \e -> do
     liftIO $ stateCleanupChecked (Just e) istate
     throwIO e
   liftIO $ stateCleanupChecked Nothing istate
   pure a
   where
-    h :: InternalState -> Interpreter es Resource
+    h :: InternalState -> InterpreterIO es Resource
     h istate = \case
-      LiftResourceT (ResourceT m') -> liftIO $ m' istate
+      LiftResourceT (ResourceT m') -> m' istate
 {-# INLINE runResource #-}

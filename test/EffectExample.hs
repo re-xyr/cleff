@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 module EffectExample where
 
+import           Cleff
 import           Cleff.Error
 import           Cleff.Mask
 import           Cleff.Reader
@@ -10,7 +11,6 @@ import           Control.Exception      (Exception)
 import           Control.Monad          (unless)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Monoid            (Sum (Sum))
-import           Cleff
 
 data Dummy :: Effect where
   Dummy :: Dummy m ()

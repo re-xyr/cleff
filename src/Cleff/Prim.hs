@@ -3,7 +3,6 @@
 module Cleff.Prim where
 
 import           Cleff
-import           Control.Monad.IO.Class  (liftIO)
 import           Control.Monad.Primitive (PrimMonad (..))
 import           GHC.Exts                (RealWorld, State#)
 import           GHC.IO                  (IO (IO))
@@ -16,6 +15,6 @@ instance Prim :> es => PrimMonad (Eff es) where
   primitive = send . Primitive
 
 runPrim :: IOE :> es => Eff (Prim ': es) a -> Eff es a
-runPrim = interpret \case
-  Primitive m -> liftIO (IO m)
+runPrim = interpretIO \case
+  Primitive m -> IO m
 {-# INLINE runPrim #-}
