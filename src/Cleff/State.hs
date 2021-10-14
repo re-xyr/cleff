@@ -22,8 +22,8 @@ gets = (<$> get)
 modify :: State s :> es => (s -> s) -> Eff es ()
 modify f = state (((), ) . f)
 
-runLocalState :: forall s es a. Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
-runLocalState s m = thisIsPureTrustMe do
+runState :: forall s es a. Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
+runState s m = thisIsPureTrustMe do
   rs <- newIORef s
   x <- reinterpret (\case
     Get -> readIORef rs
@@ -35,10 +35,10 @@ runLocalState s m = thisIsPureTrustMe do
       pure a) m
   s' <- readIORef rs
   pure (x, s')
-{-# INLINE runLocalState #-}
+{-# INLINE runState #-}
 
-runAtomicLocalState :: forall s es a. Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
-runAtomicLocalState s m = thisIsPureTrustMe do
+runAtomicState :: forall s es a. Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
+runAtomicState s m = thisIsPureTrustMe do
   rs <- newIORef s
   x <- reinterpret (\case
     Get     -> readIORef rs
@@ -46,10 +46,10 @@ runAtomicLocalState s m = thisIsPureTrustMe do
     State f -> atomicModifyIORef' rs (swap . f)) m
   s' <- readIORef rs
   pure (x, s')
-{-# INLINE runAtomicLocalState #-}
+{-# INLINE runAtomicState #-}
 
-runSharedState :: forall s es a. Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
-runSharedState s m = thisIsPureTrustMe do
+runMVarState :: forall s es a. Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
+runMVarState s m = thisIsPureTrustMe do
   rs <- newMVar s
   x <- reinterpret (\case
     Get     -> readMVar rs
@@ -57,10 +57,10 @@ runSharedState s m = thisIsPureTrustMe do
     State f -> modifyMVar rs \s' -> let (s'', a) = f s' in s `seq` pure (a, s'')) m
   s' <- readMVar rs
   pure (x, s')
-{-# INLINE runSharedState #-}
+{-# INLINE runMVarState #-}
 
-runAtomicSharedState :: forall s es a. IOE :> es => Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
-runAtomicSharedState s m = do
+runTVarState :: forall s es a. IOE :> es => Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
+runTVarState s m = do
   rs <- newTVarIO s
   x <- interpret (\case
     Get     -> readTVarIO rs
@@ -68,4 +68,4 @@ runAtomicSharedState s m = do
     State f -> atomically $ stateTVar rs f) m
   s' <- readTVarIO rs
   pure (x, s')
-{-# INLINE runAtomicSharedState #-}
+{-# INLINE runTVarState #-}

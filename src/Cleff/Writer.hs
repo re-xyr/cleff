@@ -18,8 +18,8 @@ listens f m = do
   (a, w) <- listen m
   pure (a, f w)
 
-runLocalWriter :: forall w es a. (Typeable w, Monoid w) => Eff (Writer w ': es) a -> Eff es (a, w)
-runLocalWriter m = thisIsPureTrustMe do
+runWriter :: forall w es a. (Typeable w, Monoid w) => Eff (Writer w ': es) a -> Eff es (a, w)
+runWriter m = thisIsPureTrustMe do
   rw <- newIORef mempty
   x <- reinterpret (h [rw]) m
   w' <- readIORef rw
@@ -33,10 +33,10 @@ runLocalWriter m = thisIsPureTrustMe do
         x <- reinterpret (h $ rw' : rws) $ runHere m'
         w' <- readIORef rw'
         pure (x, w')
-{-# INLINE runLocalWriter #-}
+{-# INLINE runWriter #-}
 
-runAtomicLocalWriter :: forall w es a. (Typeable w, Monoid w) => Eff (Writer w ': es) a -> Eff es (a, w)
-runAtomicLocalWriter m = thisIsPureTrustMe do
+runAtomicWriter :: forall w es a. (Typeable w, Monoid w) => Eff (Writer w ': es) a -> Eff es (a, w)
+runAtomicWriter m = thisIsPureTrustMe do
   rw <- newIORef mempty
   x <- reinterpret (h [rw]) m
   w' <- readIORef rw
@@ -50,10 +50,10 @@ runAtomicLocalWriter m = thisIsPureTrustMe do
         x <- reinterpret (h $ rw' : rws) $ runHere m'
         w' <- readIORef rw'
         pure (x, w')
-{-# INLINE runAtomicLocalWriter #-}
+{-# INLINE runAtomicWriter #-}
 
-runSharedWriter :: forall w es a. (Typeable w, Monoid w) => Eff (Writer w ': es) a -> Eff es (a, w)
-runSharedWriter m = thisIsPureTrustMe do
+runMVarWriter :: forall w es a. (Typeable w, Monoid w) => Eff (Writer w ': es) a -> Eff es (a, w)
+runMVarWriter m = thisIsPureTrustMe do
   rw <- newMVar mempty
   x <- reinterpret (h [rw]) m
   w' <- readMVar rw
@@ -67,10 +67,10 @@ runSharedWriter m = thisIsPureTrustMe do
         x <- reinterpret (h $ rw' : rws) $ runHere m'
         w' <- readMVar rw'
         pure (x, w')
-{-# INLINE runSharedWriter #-}
+{-# INLINE runMVarWriter #-}
 
-runAtomicSharedWriter :: forall w es a. (Typeable w, Monoid w, IOE :> es) => Eff (Writer w ': es) a -> Eff es (a, w)
-runAtomicSharedWriter m = do
+runTVarWriter :: forall w es a. (Typeable w, Monoid w, IOE :> es) => Eff (Writer w ': es) a -> Eff es (a, w)
+runTVarWriter m = do
   rw <- newTVarIO mempty
   x <- interpret (h [rw]) m
   w' <- readTVarIO rw
@@ -84,4 +84,4 @@ runAtomicSharedWriter m = do
         x <- interpret (h $ rw' : rws) $ runHere m'
         w' <- readTVarIO rw'
         pure (x, w')
-{-# INLINE runAtomicSharedWriter #-}
+{-# INLINE runTVarWriter #-}
