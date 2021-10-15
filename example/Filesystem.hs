@@ -27,7 +27,8 @@ makeEffect ''Filesystem
 
 -- | File system error.
 newtype FsError = FsError String
-  deriving (Show, Exception)
+  deriving stock (Show)
+  deriving anyclass (Exception)
 
 -- | Run the 'Filesystem' effect with actual file IO.
 runFilesystemIO :: '[IOE, Error FsError] :>> es => Eff (Filesystem ': es) a -> Eff es a

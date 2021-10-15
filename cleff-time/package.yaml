@@ -1,0 +1,57 @@
+name:                cleff-time
+version:             0.1.0.0
+github:              "re-xyr/cleff"
+license:             BSD3
+author:              "daylily"
+maintainer:          "xy.r@outlook.com"
+copyright:           "2021 daylily"
+
+extra-source-files:
+- CHANGELOG.md
+
+synopsis:            Time effects for the cleff library
+category:            Control
+
+description:         Please see the README on GitHub at <https://github.com/re-xyr/cleff#readme>
+
+dependencies:
+- base >= 4.12 && < 5
+- cleff >= 0.1 && < 0.2
+- time >= 1.8 && < 1.10
+
+ghc-options:
+- -Wall
+- -Wincomplete-uni-patterns
+- -Wpartial-fields
+- -Wincomplete-record-updates
+- -Widentities
+
+default-extensions:
+- AllowAmbiguousTypes
+- BlockArguments
+- DataKinds
+- FlexibleContexts
+- FlexibleInstances
+- GADTs
+- KindSignatures
+- LambdaCase
+- MultiParamTypeClasses
+- ScopedTypeVariables
+- TemplateHaskell
+- TypeApplications
+- TypeOperators
+
+library:
+  source-dirs: src
+
+tests:
+  cleff-time-test:
+    main:                Main.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - cleff-time
+    - hspec

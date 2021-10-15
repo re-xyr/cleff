@@ -4,9 +4,9 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           cleff-core
+name:           cleff-time
 version:        0.1.0.0
-synopsis:       Fast and concise extensible effects
+synopsis:       Time effects for the cleff library
 description:    Please see the README on GitHub at <https://github.com/re-xyr/cleff#readme>
 category:       Control
 homepage:       https://github.com/re-xyr/cleff#readme
@@ -17,9 +17,6 @@ copyright:      2021 daylily
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
-tested-with:
-    GHC == 8.6.5
-  , GHC == 8.10.7
 extra-source-files:
     CHANGELOG.md
 
@@ -27,65 +24,62 @@ source-repository head
   type: git
   location: https://github.com/re-xyr/cleff
 
-flag dynamic-ioe
-  description: Make @IOE@ a real effect. This is only for reference purposes and should not be enabled in production code.
-
-  manual: True
-  default: False
-
 library
   exposed-modules:
-      Cleff
-      Cleff.Error
-      Cleff.Fail
-      Cleff.Internal.Base
-      Cleff.Internal.Handler
-      Cleff.Internal.Monad
-      Cleff.Internal.TH
-      Cleff.Mask
-      Cleff.Reader
-      Cleff.State
-      Cleff.Writer
+      Cleff.Time
+      Cleff.Timeout
   other-modules:
-      Paths_cleff_core
+      Paths_cleff_time
   hs-source-dirs:
       src
   default-extensions:
       AllowAmbiguousTypes
       BlockArguments
-      ConstraintKinds
       DataKinds
-      EmptyCase
       FlexibleContexts
       FlexibleInstances
       GADTs
-      GeneralizedNewtypeDeriving
       KindSignatures
       LambdaCase
       MultiParamTypeClasses
-      PolyKinds
-      RankNTypes
-      RoleAnnotations
       ScopedTypeVariables
       TemplateHaskell
-      TupleSections
       TypeApplications
-      TypeFamilies
       TypeOperators
-      UndecidableInstances
   ghc-options: -Wall -Wincomplete-uni-patterns -Wpartial-fields -Wincomplete-record-updates -Widentities
   build-depends:
       base >=4.12 && <5
-    , containers ==0.6.*
-    , exceptions ==0.10.*
-    , extra >=1.6 && <1.8
-    , monad-control >=1 && <1.1
-    , stm ==2.5.*
-    , template-haskell >=2.14 && <3
-    , th-abstraction >=0.2.11 && <0.5
-    , transformers-base >=0.4.5 && <0.5
-    , typerep-map >=0.3 && <0.5
-    , unliftio >=0.2.8.1 && <0.3
-  if flag(dynamic-ioe)
-    cpp-options: -DDYNAMIC_IOE
+    , cleff ==0.1.*
+    , time >=1.8 && <1.10
+  default-language: Haskell2010
+
+test-suite cleff-time-test
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      TimeoutSpec
+      Paths_cleff_time
+  hs-source-dirs:
+      test
+  default-extensions:
+      AllowAmbiguousTypes
+      BlockArguments
+      DataKinds
+      FlexibleContexts
+      FlexibleInstances
+      GADTs
+      KindSignatures
+      LambdaCase
+      MultiParamTypeClasses
+      ScopedTypeVariables
+      TemplateHaskell
+      TypeApplications
+      TypeOperators
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wpartial-fields -Wincomplete-record-updates -Widentities -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.12 && <5
+    , cleff ==0.1.*
+    , cleff-time
+    , hspec
+    , time >=1.8 && <1.10
   default-language: Haskell2010

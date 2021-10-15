@@ -18,7 +18,9 @@ import           Control.Monad.Base          (MonadBase (..))
 import           Control.Monad.Catch         (ExitCase (ExitCaseException, ExitCaseSuccess),
                                               MonadCatch (..), MonadMask (..),
                                               MonadThrow (..))
+import           Control.Monad.Primitive     (PrimMonad (..), RealWorld)
 import           Control.Monad.Trans.Control (MonadBaseControl (..))
+import           GHC.IO                      (IO (IO))
 import           System.IO.Unsafe            (unsafeDupablePerformIO)
 import           UnliftIO
 
@@ -93,6 +95,11 @@ instance IOE :> es => MonadBaseControl IO (Eff es) where
   type StM (Eff es) a = a
   liftBaseWith = withRunInIO
   restoreM = pure
+
+-- Compatibility with @primitive@.
+instance IOE :> es => PrimMonad (Eff es) where
+  type PrimState (Eff es) = RealWorld
+  primitive = liftIO . IO
 
 -- | Eliminate an 'IOE' effect from the stack. This is mainly for implementing effects that don't really interact with
 -- the outside world (i.e. can be safely used 'unsafeDupablePerformIO' on), such as a State effect using

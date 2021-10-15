@@ -1,3 +1,5 @@
 packages:
-  cleff-core/cleff-core.cabal
-  cleff/cleff.cabal
+  cleff.cabal
+  cleff-kvstore/cleff-kvstore.cabal
+  cleff-resourcet/cleff-resourcet.cabal
+  cleff-time/cleff-time.cabal

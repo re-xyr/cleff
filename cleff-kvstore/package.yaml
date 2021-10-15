@@ -1,4 +1,4 @@
-name:                cleff-core
+name:                cleff-kvstore
 version:             0.1.0.0
 github:              "re-xyr/cleff"
 license:             BSD3
@@ -6,37 +6,21 @@ author:              "daylily"
 maintainer:          "xy.r@outlook.com"
 copyright:           "2021 daylily"
 
-tested-with:
-- GHC == 8.6.5
-- GHC == 8.10.7
-
 extra-source-files:
 - CHANGELOG.md
 
-synopsis:            Fast and concise extensible effects
+synopsis:            Key-value store effect for the cleff library
 category:            Control
 
 description:         Please see the README on GitHub at <https://github.com/re-xyr/cleff#readme>
 
 dependencies:
 - base >= 4.12 && < 5
+- cleff >= 0.1 && < 0.2
 - containers >= 0.6 && < 0.7
 - extra >= 1.6 && < 1.8
-- exceptions >= 0.10 && < 0.11
-- monad-control >= 1 && < 1.1
-- stm >= 2.5 && < 2.6
-- template-haskell >= 2.14 && < 3
-- th-abstraction >= 0.2.11 && < 0.5
-- transformers-base >= 0.4.5 && < 0.5
-- typerep-map >= 0.3 && < 0.5
-- unliftio >= 0.2.8.1 && < 0.3
-
-flags:
-  dynamic-ioe:
-    description: |
-      Make @IOE@ a real effect. This is only for reference purposes and should not be enabled in production code.
-    manual: true
-    default: false
+- hashable >= 1.2 && < 1.4
+- unordered-containers >= 0.2.9 && < 0.3
 
 ghc-options:
 - -Wall
@@ -45,34 +29,20 @@ ghc-options:
 - -Wincomplete-record-updates
 - -Widentities
 
-when:
-- condition: flag(dynamic-ioe)
-  cpp-options:
-  - -DDYNAMIC_IOE
-
 default-extensions:
 - AllowAmbiguousTypes
 - BlockArguments
-- ConstraintKinds
 - DataKinds
-- EmptyCase
 - FlexibleContexts
 - FlexibleInstances
 - GADTs
-- GeneralizedNewtypeDeriving
 - KindSignatures
 - LambdaCase
 - MultiParamTypeClasses
-- PolyKinds
-- RankNTypes
-- RoleAnnotations
 - ScopedTypeVariables
 - TemplateHaskell
-- TupleSections
 - TypeApplications
-- TypeFamilies
 - TypeOperators
-- UndecidableInstances
 
 library:
   source-dirs: src

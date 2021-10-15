@@ -1,4 +1,4 @@
-cabal-version: 1.22
+cabal-version: 1.12
 
 -- This file has been generated from package.yaml by hpack version 0.34.4.
 --
@@ -27,46 +27,49 @@ source-repository head
   type: git
   location: https://github.com/re-xyr/cleff
 
+flag dynamic-ioe
+  description: Make @IOE@ a real effect. This is only for reference purposes and should not be enabled in production code.
+
+  manual: True
+  default: False
+
 library
   exposed-modules:
+      Cleff
+      Cleff.Error
+      Cleff.Fail
       Cleff.Fresh
       Cleff.Input
-      Cleff.KVStore
+      Cleff.Internal.Base
+      Cleff.Internal.Handler
+      Cleff.Internal.Monad
+      Cleff.Internal.TH
+      Cleff.Mask
       Cleff.Output
-      Cleff.Prim
-      Cleff.Resource
-      Cleff.Timeout
+      Cleff.Reader
+      Cleff.State
       Cleff.Trace
+      Cleff.Writer
   other-modules:
       Paths_cleff
-  reexported-modules:
-      Cleff
-    , Cleff.Error
-    , Cleff.Fail
-    , Cleff.Internal.Base
-    , Cleff.Internal.Handler
-    , Cleff.Internal.Monad
-    , Cleff.Internal.TH
-    , Cleff.Mask
-    , Cleff.Reader
-    , Cleff.State
-    , Cleff.Writer
   hs-source-dirs:
       src
   default-extensions:
       AllowAmbiguousTypes
-      BangPatterns
       BlockArguments
+      ConstraintKinds
       DataKinds
+      EmptyCase
       FlexibleContexts
       FlexibleInstances
       GADTs
+      GeneralizedNewtypeDeriving
       KindSignatures
       LambdaCase
-      MagicHash
       MultiParamTypeClasses
       PolyKinds
       RankNTypes
+      RoleAnnotations
       ScopedTypeVariables
       TemplateHaskell
       TupleSections
@@ -77,17 +80,23 @@ library
   ghc-options: -Wall -Wincomplete-uni-patterns -Wpartial-fields -Wincomplete-record-updates -Widentities
   build-depends:
       base >=4.12 && <5
-    , cleff-core ==0.1.*
     , containers ==0.6.*
+    , exceptions ==0.10.*
     , extra >=1.6 && <1.8
-    , hashable >=1.2 && <1.4
+    , monad-control >=1 && <1.1
     , primitive >=0.6 && <0.8
-    , resourcet ==1.2.*
+    , stm ==2.5.*
+    , template-haskell >=2.14 && <3
+    , th-abstraction >=0.2.11 && <0.5
+    , transformers-base >=0.4.5 && <0.5
+    , typerep-map >=0.3 && <0.5
     , unliftio >=0.2.8.1 && <0.3
-    , unordered-containers >=0.2.9 && <0.3
+  if flag(dynamic-ioe)
+    cpp-options: -DDYNAMIC_IOE
   default-language: Haskell2010
 
-executable cleff-example
+test-suite cleff-example
+  type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
       Filesystem
@@ -97,18 +106,20 @@ executable cleff-example
       example
   default-extensions:
       AllowAmbiguousTypes
-      BangPatterns
       BlockArguments
+      ConstraintKinds
       DataKinds
+      EmptyCase
       FlexibleContexts
       FlexibleInstances
       GADTs
+      GeneralizedNewtypeDeriving
       KindSignatures
       LambdaCase
-      MagicHash
       MultiParamTypeClasses
       PolyKinds
       RankNTypes
+      RoleAnnotations
       ScopedTypeVariables
       TemplateHaskell
       TupleSections
@@ -117,17 +128,24 @@ executable cleff-example
       TypeOperators
       UndecidableInstances
       DeriveAnyClass
+      DerivingVia
   ghc-options: -Wall -Wincomplete-uni-patterns -Wpartial-fields -Wincomplete-record-updates -Widentities -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.12 && <5
     , cleff
     , containers ==0.6.*
+    , exceptions ==0.10.*
     , extra >=1.6 && <1.8
-    , hashable >=1.2 && <1.4
+    , monad-control >=1 && <1.1
     , primitive >=0.6 && <0.8
-    , resourcet ==1.2.*
+    , stm ==2.5.*
+    , template-haskell >=2.14 && <3
+    , th-abstraction >=0.2.11 && <0.5
+    , transformers-base >=0.4.5 && <0.5
+    , typerep-map >=0.3 && <0.5
     , unliftio >=0.2.8.1 && <0.3
-    , unordered-containers >=0.2.9 && <0.3
+  if flag(dynamic-ioe)
+    cpp-options: -DDYNAMIC_IOE
   default-language: Haskell2010
 
 test-suite cleff-test
@@ -136,24 +154,25 @@ test-suite cleff-test
   other-modules:
       ErrorSpec
       StateSpec
-      TimeoutSpec
       Paths_cleff
   hs-source-dirs:
       test
   default-extensions:
       AllowAmbiguousTypes
-      BangPatterns
       BlockArguments
+      ConstraintKinds
       DataKinds
+      EmptyCase
       FlexibleContexts
       FlexibleInstances
       GADTs
+      GeneralizedNewtypeDeriving
       KindSignatures
       LambdaCase
-      MagicHash
       MultiParamTypeClasses
       PolyKinds
       RankNTypes
+      RoleAnnotations
       ScopedTypeVariables
       TemplateHaskell
       TupleSections
@@ -172,11 +191,16 @@ test-suite cleff-test
     , containers ==0.6.*
     , exceptions
     , extra >=1.6 && <1.8
-    , hashable >=1.2 && <1.4
     , hspec
     , lifted-base
+    , monad-control >=1 && <1.1
     , primitive >=0.6 && <0.8
-    , resourcet ==1.2.*
+    , stm ==2.5.*
+    , template-haskell >=2.14 && <3
+    , th-abstraction >=0.2.11 && <0.5
+    , transformers-base >=0.4.5 && <0.5
+    , typerep-map >=0.3 && <0.5
     , unliftio >=0.2.8.1 && <0.3
-    , unordered-containers >=0.2.9 && <0.3
+  if flag(dynamic-ioe)
+    cpp-options: -DDYNAMIC_IOE
   default-language: Haskell2010

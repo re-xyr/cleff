@@ -1,0 +1,48 @@
+name:                cleff-resourcet
+version:             0.1.0.0
+github:              "re-xyr/cleff"
+license:             BSD3
+author:              "daylily"
+maintainer:          "xy.r@outlook.com"
+copyright:           "2021 daylily"
+
+extra-source-files:
+- CHANGELOG.md
+
+synopsis:            ResourceT interop effect for the cleff library
+category:            Control
+
+description:         Please see the README on GitHub at <https://github.com/re-xyr/cleff#readme>
+
+dependencies:
+- base >= 4.12 && < 5
+- cleff >= 0.1 && < 0.2
+- resourcet >= 1.2 && < 1.3
+- unliftio >= 0.2.8.1 && < 0.3
+
+ghc-options:
+- -Wall
+- -Wincomplete-uni-patterns
+- -Wpartial-fields
+- -Wincomplete-record-updates
+- -Widentities
+
+default-extensions:
+- AllowAmbiguousTypes
+- BlockArguments
+- DataKinds
+- FlexibleContexts
+- FlexibleInstances
+- GADTs
+- KindSignatures
+- LambdaCase
+- MultiParamTypeClasses
+- RankNTypes
+- ScopedTypeVariables
+- TemplateHaskell
+- TypeApplications
+- TypeOperators
+- UndecidableInstances
+
+library:
+  source-dirs: src
