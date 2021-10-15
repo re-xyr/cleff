@@ -1,7 +1,8 @@
 resolver: lts-18.13
 
 packages:
-- .
+- ./cleff-core
+- ./cleff
 
 ghc-options:
   "$everything": -haddock

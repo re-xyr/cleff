@@ -1,0 +1,3 @@
+packages:
+  cleff-core/cleff-core.cabal
+  cleff/cleff.cabal

@@ -1,6 +1,10 @@
 cradle:
   stack:
-  - path: "./src"
+  - path: "./cleff-core/src"
+    component: "cleff-core:lib"
+  - path: "./cleff/src"
     component: "cleff:lib"
-  - path: "./test"
+  - path: "./cleff/test"
     component: "cleff:test:cleff-test"
+  - path: "./cleff/example"
+    component: "cleff:exe:cleff-example"

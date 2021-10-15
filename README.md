@@ -37,8 +37,10 @@ The classical `Teletype` effect:
 
 ```haskell
 import Cleff
+import Cleff.Input
+import Cleff.Output
 import Cleff.State
-import Cleff.Writer
+import Data.Maybe (fromMaybe)
 
 data Teletype :: Effect where
   ReadTTY :: Teletype m String
@@ -46,22 +48,23 @@ data Teletype :: Effect where
 makeEffect ''Teletype
 
 runTeletypeIO :: IOE :> es => Eff (Teletype ': es) a -> Eff es a
-runTeletypeIO = interpret \case
-  ReadTTY    -> liftIO getLine
-  WriteTTY s -> liftIO $ putStrLn s
+runTeletypeIO = interpretIO \case
+  ReadTTY    -> getLine
+  WriteTTY s -> putStrLn s
 
 runTeletypePure :: [String] -> Eff (Teletype ': es) w -> Eff es [String]
-runTeletypePure input = fmap snd . runLocalWriter . runLocalState input . reinterpret2 \case
-  ReadTTY -> get >>= \case
-    []     -> pure ""
-    x : xs -> put xs >> pure x
-  WriteTTY msg -> tell [msg]
+runTeletypePure tty = fmap (reverse . snd)
+  . runState [] . outputToListState
+  . runState tty . inputToListState
+  . reinterpret2 \case
+    ReadTTY -> fromMaybe "" <$> input
+    WriteTTY msg -> output msg
 
 echo :: Teletype :> es => Eff es ()
 echo = do
   x <- readTTY
-  unless (null x) $
-    writeTTY x >> echo
+  if null x then pure ()
+    else writeTTY x >> echo
 
 echoPure :: [String] -> [String]
 echoPure input = runPure $ runTeletypePure input echo
@@ -70,42 +73,16 @@ main :: IO ()
 main = runIOE $ runTeletypeIO echo
 ```
 
-Using the `Mask` and `Error` effect:
-
-```haskell
-import Control.Exception (Exception)
-import Cleff
-import Cleff.State
-import Cleff.Writer
-import Cleff.Error
-import Cleff.Mask
-
--- Copy the above Teletype code here
-
-data CustomException = ThisException | ThatException deriving (Show, Exception)
-
-program :: '[Mask, Teletype, Error CustomException] :>> es => Eff es ()
-program = catchError @CustomException work \e -> writeTTY $ "Caught " ++ show e
-  where
-    work = bracket readTTY (const $ writeTTY "exiting bracket") \input -> do
-      writeTTY "entering bracket"
-      case input of
-        "explode"     -> throwError ThisException
-        "weird stuff" -> writeTTY input *> throwError ThatException
-        _             -> writeTTY input *> writeTTY "no exceptions"
-
-main :: IO (Either CustomException ())
-main = runIOE $ runMask $ runError @CustomException $ runTeletypeIO program
-```
+see [`cleff/example`](https://github.com/re-xyr/cleff/tree/master/cleff/example/) for more examples.
 
 ## Microbenchmarks
 
 These are the results of the [effect-zoo](https://github.com/ocharles/effect-zoo) microbenchmark, compiled by GHC 8.10.7. Keep in mind that these are *very short and synthetic programs*, and may or may not tell the correct performance characteristics of different effect libraries in real use:
 
-- `big-stack`: ![big-stack benchmark result](https://raw.githubusercontent.com/re-xyr/effect/master/docs/img/effect-zoo-big-stack.png)
-- `countdown`: ![countdown benchmark result](https://raw.githubusercontent.com/re-xyr/effect/master/docs/img/effect-zoo-countdown.png)
-- `file-sizes`: ![file-sizes benchmark result](https://raw.githubusercontent.com/re-xyr/effect/master/docs/img/effect-zoo-file-sizes.png)
-- `reinterpretation`: ![reinterpretation benchmark result](https://raw.githubusercontent.com/re-xyr/effect/master/docs/img/effect-zoo-reinterpretation.png)
+- `big-stack`: ![big-stack benchmark result](https://raw.githubusercontent.com/re-xyr/cleff/master/docs/img/effect-zoo-big-stack.png)
+- `countdown`: ![countdown benchmark result](https://raw.githubusercontent.com/re-xyr/cleff/master/docs/img/effect-zoo-countdown.png)
+- `file-sizes`: ![file-sizes benchmark result](https://raw.githubusercontent.com/re-xyr/cleff/master/docs/img/effect-zoo-file-sizes.png)
+- `reinterpretation`: ![reinterpretation benchmark result](https://raw.githubusercontent.com/re-xyr/cleff/master/docs/img/effect-zoo-reinterpretation.png)
 
 ## References
 

@@ -1,3 +1,5 @@
+-- | This module is adapted from https://github.com/arybczak/effectful/blob/master/effectful/tests/StateTests.hs,
+-- originally BSD3 license, authors Andrzej Rybczak et al.
 module StateSpec where
 
 import           Cleff
@@ -9,7 +11,7 @@ import           UnliftIO.Exception
 import qualified UnliftIO.Exception       as UE
 
 spec :: Spec
-spec = describe "State" do
+spec = parallel $ describe "State" do
   it "should run with correct results" basic
   it "should run in a deep stack" deepStack
   it "should interact well with exceptions" exceptionInteract
@@ -18,15 +20,15 @@ spec = describe "State" do
 basic, deepStack, exceptionInteract, nested :: IO ()
 
 basic = do
-  (end, len) <- runIOE . runLocalState (0::Int) . fmap snd . runLocalState collatzStart $ collatz
+  (end, len) <- runIOE . runState (0::Int) . fmap snd . runState collatzStart $ collatz
   end `shouldBe` 1
   len `shouldBe` collatzLength
 
 deepStack = do
-  n <- runIOE . fmap fst . runLocalState () . fmap snd . runLocalState (0::Int) $ do
-    fmap fst . runLocalState () . fmap fst . runLocalState () $ do
-      fmap fst . runLocalState () $ do
-        fmap fst . runLocalState () . fmap fst . runLocalState () . fmap fst . runLocalState () $ do
+  n <- runIOE . fmap fst . runState () . fmap snd . runState (0::Int) $ do
+    fmap fst . runState () . fmap fst . runState () $ do
+      fmap fst . runState () $ do
+        fmap fst . runState () . fmap fst . runState () . fmap fst . runState () $ do
           modify @Int (+1)
         modify @Int (+2)
       modify @Int (+4)
@@ -45,16 +47,16 @@ exceptionInteract = do
       :: (forall a es. IOE :> es => Eff es a -> Eff es (Either Ex a))
       -> IO ()
     testTry tryImpl = do
-      e <- runIOE $ tryImpl $ runLocalState (0::Int) action
+      e <- runIOE $ tryImpl $ runState (0::Int) action
       e `shouldBe` Left Ex
-      s <- runIOE $ fmap snd $ runLocalState (0::Int) $ tryImpl action
+      s <- runIOE $ fmap snd $ runState (0::Int) $ tryImpl action
       s `shouldBe` 1
     testCatch
       :: (forall a es. IOE :> es => Eff es a -> (Ex -> Eff es a) -> Eff es a)
       -> IO ()
     testCatch catchImpl = do
-      s <- runIOE . fmap snd . runLocalState (0::Int) $ do
-        _ <- (fmap fst . runLocalState () $ action) `catchImpl` \Ex -> modify @Int (+4)
+      s <- runIOE . fmap snd . runState (0::Int) $ do
+        _ <- (fmap fst . runState () $ action) `catchImpl` \Ex -> modify @Int (+4)
         modify @Int (+8)
       s `shouldBe` 13
     action :: '[State Int, IOE] :>> es => Eff es ()
@@ -67,9 +69,9 @@ nested = do
   x <- runIOE do
     runHasInt 0 do
       putInt 1
-      fmap snd . runLocalState () $ do
+      fmap snd . runState () $ do
         putInt 2
-        fmap snd . runLocalState () $ do
+        fmap snd . runState () $ do
           putInt expected
       getInt
   x `shouldBe` expected
@@ -89,7 +91,7 @@ putInt = send . PutInt
 
 runHasInt :: Int -> Eff (HasInt : es) a -> Eff es a
 runHasInt n =
-  fmap fst . runLocalState () . fmap fst . runLocalState n . fmap fst . runLocalState True . reinterpret3 \case
+  fmap fst . runState () . fmap fst . runState n . fmap fst . runState True . reinterpret3 \case
     GetInt   -> get
     PutInt i -> put i
 

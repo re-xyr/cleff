@@ -1,0 +1,107 @@
+name:                cleff
+version:             0.1.0.0
+github:              "re-xyr/cleff"
+license:             BSD3
+author:              "daylily"
+maintainer:          "xy.r@outlook.com"
+copyright:           "2021 daylily"
+
+tested-with:
+- GHC == 8.6.5
+- GHC == 8.10.7
+
+extra-source-files:
+- CHANGELOG.md
+
+synopsis:            Fast and concise extensible effects
+category:            Control
+
+description:         Please see the README on GitHub at <https://github.com/re-xyr/cleff#readme>
+
+dependencies:
+- base >= 4.12 && < 5
+- containers >= 0.6 && < 0.7
+- extra >= 1.6 && < 1.8
+- hashable >= 1.2 && < 1.4
+- primitive >= 0.6 && < 0.8
+- resourcet >= 1.2 && < 1.3
+- unliftio >= 0.2.8.1 && < 0.3
+- unordered-containers >= 0.2.9 && < 0.3
+
+ghc-options:
+- -Wall
+- -Wincomplete-uni-patterns
+- -Wpartial-fields
+- -Wincomplete-record-updates
+- -Widentities
+
+default-extensions:
+- AllowAmbiguousTypes
+- BangPatterns
+- BlockArguments
+- DataKinds
+- FlexibleContexts
+- FlexibleInstances
+- GADTs
+- KindSignatures
+- LambdaCase
+- MagicHash
+- MultiParamTypeClasses
+- PolyKinds
+- RankNTypes
+- ScopedTypeVariables
+- TemplateHaskell
+- TupleSections
+- TypeApplications
+- TypeFamilies
+- TypeOperators
+- UndecidableInstances
+
+library:
+  source-dirs: src
+  dependencies:
+  - cleff-core >= 0.1 && < 0.2
+  reexported-modules:
+  - Cleff
+  - Cleff.Error
+  - Cleff.Fail
+  - Cleff.Internal.Base
+  - Cleff.Internal.Handler
+  - Cleff.Internal.Monad
+  - Cleff.Internal.TH
+  - Cleff.Mask
+  - Cleff.Reader
+  - Cleff.State
+  - Cleff.Writer
+
+tests:
+  cleff-test:
+    main:                Main.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - cleff
+    - exceptions
+    - hspec
+    - lifted-base
+    - QuickCheck
+    default-extensions:
+    - DeriveAnyClass
+    - DeriveGeneric
+    - DerivingVia
+
+executables:
+  cleff-example:
+    main:                Main.hs
+    source-dirs:         example
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - cleff
+    default-extensions:
+    - DeriveAnyClass

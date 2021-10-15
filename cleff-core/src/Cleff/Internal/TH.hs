@@ -25,7 +25,7 @@ makeEffect_ = makeSmartCons False
 makeSmartCons :: Bool -> Name -> Q [Dec]
 makeSmartCons makeSig effName = do
   info <- reifyDatatype effName
-  join <$> traverse (makeCon makeSig) (constructorName <$> datatypeCons info)
+  join <$> traverse (makeCon makeSig) (constructorName <$> reverse (datatypeCons info))
 
 -- | Generate a sending function for a particular constructor.
 makeCon :: Bool -> Name -> Q [Dec]
