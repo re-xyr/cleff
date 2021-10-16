@@ -2,9 +2,6 @@ resolver: lts-18.13
 
 packages:
 - .
-- ./cleff-kvstore
-- ./cleff-resourcet
-- ./cleff-time
 
 ghc-options:
   "$everything": -haddock

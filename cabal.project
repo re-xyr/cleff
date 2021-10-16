@@ -1,5 +1,0 @@
-packages:
-  cleff.cabal
-  cleff-kvstore/cleff-kvstore.cabal
-  cleff-resourcet/cleff-resourcet.cabal
-  cleff-time/cleff-time.cabal

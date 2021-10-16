@@ -12,6 +12,7 @@ tested-with:
 
 extra-source-files:
 - CHANGELOG.md
+- README.md
 
 synopsis:            Fast and concise extensible effects
 category:            Control
@@ -23,6 +24,7 @@ dependencies:
 - containers >= 0.6 && < 0.7
 - extra >= 1.6 && < 1.8
 - exceptions >= 0.10 && < 0.11
+- hashable >= 1.2 && < 1.4
 - monad-control >= 1 && < 1.1
 - primitive >= 0.6 && < 0.8
 - stm >= 2.5 && < 2.6
@@ -31,6 +33,7 @@ dependencies:
 - transformers-base >= 0.4.5 && < 0.5
 - typerep-map >= 0.3 && < 0.5
 - unliftio >= 0.2.8.1 && < 0.3
+- unordered-containers >= 0.2.9 && < 0.3
 
 flags:
   dynamic-ioe:
