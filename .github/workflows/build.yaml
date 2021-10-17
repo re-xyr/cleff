@@ -1,0 +1,40 @@
+name: build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        ghc:
+          - 8.6.5
+          - 8.8.4
+          - 8.10.7
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Copy stack.yaml
+        run: |
+          rm stack.yaml
+          cp .github/stack-${{ matrix.ghc }}.yaml stack.yaml
+      - uses: actions/cache@v2
+        name: Cache ~/.stack/
+        with:
+          path: ~/.stack
+          key: ${{ matrix.ghc }}-stack-root
+      - uses: actions/cache@v2
+        name: Cache .stack-work/
+        with:
+          path: .stack-work
+          key: ${{ matrix.ghc }}-stack-work
+      - name: Build
+        run: stack build
+      - name: Run tests
+        run: stack test
