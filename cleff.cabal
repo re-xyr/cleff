@@ -11,9 +11,9 @@ description:    Please see the README on GitHub at <https://github.com/re-xyr/cl
 category:       Control
 homepage:       https://github.com/re-xyr/cleff#readme
 bug-reports:    https://github.com/re-xyr/cleff/issues
-author:         daylily
+author:         Xy Ren
 maintainer:     xy.r@outlook.com
-copyright:      2021 daylily
+copyright:      2021 Xy Ren
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -162,7 +162,11 @@ test-suite cleff-test
   main-is: Main.hs
   other-modules:
       ErrorSpec
+      HigherOrderSpec
+      InterposeSpec
+      MaskSpec
       StateSpec
+      ThSpec
       Paths_cleff
   hs-source-dirs:
       test

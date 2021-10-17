@@ -2,9 +2,9 @@ name:                cleff
 version:             0.1.0.0
 github:              "re-xyr/cleff"
 license:             BSD3
-author:              "daylily"
+author:              "Xy Ren"
 maintainer:          "xy.r@outlook.com"
-copyright:           "2021 daylily"
+copyright:           "2021 Xy Ren"
 
 tested-with:
 - GHC == 8.6.5

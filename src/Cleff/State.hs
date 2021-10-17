@@ -10,18 +10,31 @@ import           UnliftIO.IORef
 import           UnliftIO.MVar
 import           UnliftIO.STM
 
+-- * Effect
+
+-- | An effect capable of providing a mutable state @s@ that can be read and written. This roughly corresponds to the
+-- @MonadState@ typeclass and @StateT@ monad transformer in the @mtl@ approach.
 data State s :: Effect where
   Get :: State s m s
   Put :: s -> State s m ()
   State :: (s -> (a, s)) -> State s m a
+
+-- * Operations
+
 makeEffect ''State
 
+-- | Apply a function to the result of 'get'.
 gets :: State s :> es => (s -> t) -> Eff es t
 gets = (<$> get)
 
+-- | Modify the value of the state via a function.
 modify :: State s :> es => (s -> s) -> Eff es ()
 modify f = state (((), ) . f)
 
+-- * Interpretations
+
+-- | Run a 'State' effect in terms of 'IORef'. This may not be what you want if you need to avoid deadlock in a
+-- multithreaded setting.
 runState :: forall s es a. Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
 runState s m = thisIsPureTrustMe do
   rs <- newIORef s
@@ -37,6 +50,7 @@ runState s m = thisIsPureTrustMe do
   pure (x, s')
 {-# INLINE runState #-}
 
+-- | Run a 'State' effect in terms of 'IORef', and use 'atomicModifyIORef'' for the 'state' operation.
 runAtomicState :: forall s es a. Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
 runAtomicState s m = thisIsPureTrustMe do
   rs <- newIORef s
@@ -48,6 +62,7 @@ runAtomicState s m = thisIsPureTrustMe do
   pure (x, s')
 {-# INLINE runAtomicState #-}
 
+-- | Run a 'State' effect in terms of 'MVar'.
 runMVarState :: forall s es a. Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
 runMVarState s m = thisIsPureTrustMe do
   rs <- newMVar s
@@ -59,6 +74,8 @@ runMVarState s m = thisIsPureTrustMe do
   pure (x, s')
 {-# INLINE runMVarState #-}
 
+-- | Run a 'State' effect in terms of 'TVar'. This interpretation imposes an 'IOE' effect constraint in order to avoid
+-- running atomic transactions within transactions.
 runTVarState :: forall s es a. IOE :> es => Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
 runTVarState s m = do
   rs <- newTVarIO s
