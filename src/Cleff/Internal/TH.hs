@@ -1,6 +1,7 @@
 -- | This module contains Template Haskell functions for generating definitions of functions that send effect
 -- operations. You monstly won't want to import this module directly; The "Cleff" module reexports the main
 -- functionalities of this module.
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_HADDOCK not-home #-}
 module Cleff.Internal.TH where
 
@@ -96,6 +97,12 @@ makeCon makeSig name = do
     extractPar (ArrowT `AppT` a `AppT` t) = do
       (args, ret) <- extractPar t
       pure (a : args, ret)
+#if MIN_VERSION_template_haskell(2,17,0)
+    extractPar (MulArrowT `AppT` _ `AppT` a `AppT` t) = do
+      (args, ret) <- extractPar t
+      pure (a : args, ret)
+#endif
+
     extractPar (effTy `AppT` VarT monadVar `AppT` resTy) = pure ([], (effTy, monadVar, resTy))
     extractPar ty@(_ `AppT` m `AppT` _) = fail $ show
       $ text "The effect monad argument '" <> ppr m
@@ -108,4 +115,4 @@ makeCon makeSig name = do
     makeTyp (parTy : pars) effVar effTy monadVar resTy =
       ArrowT `AppT` substMnd monadVar effVar parTy `AppT` makeTyp pars effVar effTy monadVar resTy
 
-    substMnd monadVar effVar parTy = applySubstitution (Map.singleton monadVar $ ConT ''Eff `AppT` effVar) parTy
+    substMnd monadVar effVar = applySubstitution (Map.singleton monadVar $ ConT ''Eff `AppT` effVar)

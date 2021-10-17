@@ -21,6 +21,7 @@ tested-with:
     GHC == 8.6.5
   , GHC == 8.8.4
   , GHC == 8.10.7
+  , GHC == 9.0.1
 extra-source-files:
     CHANGELOG.md
     README.md
@@ -96,7 +97,7 @@ library
     , th-abstraction >=0.2.11 && <0.5
     , transformers-base >=0.4.5 && <0.5
     , typerep-map >=0.3 && <0.5
-    , unliftio >=0.2.8.1 && <0.3
+    , unliftio >=0.2.8 && <0.3
     , unordered-containers >=0.2.9 && <0.3
   if flag(dynamic-ioe)
     cpp-options: -DDYNAMIC_IOE
@@ -152,7 +153,7 @@ test-suite cleff-example
     , th-abstraction >=0.2.11 && <0.5
     , transformers-base >=0.4.5 && <0.5
     , typerep-map >=0.3 && <0.5
-    , unliftio >=0.2.8.1 && <0.3
+    , unliftio >=0.2.8 && <0.3
     , unordered-containers >=0.2.9 && <0.3
   if flag(dynamic-ioe)
     cpp-options: -DDYNAMIC_IOE
@@ -216,7 +217,7 @@ test-suite cleff-test
     , th-abstraction >=0.2.11 && <0.5
     , transformers-base >=0.4.5 && <0.5
     , typerep-map >=0.3 && <0.5
-    , unliftio >=0.2.8.1 && <0.3
+    , unliftio >=0.2.8 && <0.3
     , unordered-containers >=0.2.9 && <0.3
   if flag(dynamic-ioe)
     cpp-options: -DDYNAMIC_IOE

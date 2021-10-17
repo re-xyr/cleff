@@ -21,11 +21,11 @@ makeEffect ''Mask
 
 -- | Variant of 'mask' that does not provide a restoring function.
 mask_ :: Mask :> es => Eff es a -> Eff es a
-mask_ m = mask $ const m
+mask_ m = mask \_ -> m
 
 -- | Variant of 'uninterruptibleMask' that does not provide a restoring function.
 uninterruptibleMask_ :: Mask :> es => Eff es a -> Eff es a
-uninterruptibleMask_ m = uninterruptibleMask $ const m
+uninterruptibleMask_ m = uninterruptibleMask \_ -> m
 
 -- | Variant of 'bracket' that does not pass the allocated resource to the cleanup action.
 bracket_ :: Mask :> es => Eff es a -> Eff es c -> (a -> Eff es b) -> Eff es b
