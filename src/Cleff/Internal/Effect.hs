@@ -3,13 +3,14 @@
 {-# OPTIONS_HADDOCK not-home #-}
 module Cleff.Internal.Effect (Effect, (:>), (:>>), type (++), type (~>)) where
 
-import           Data.Kind     (Constraint)
+import           Data.Kind     (Constraint, Type)
 import           Data.Typeable (Typeable)
 import           GHC.TypeLits  (ErrorMessage ((:<>:)))
 import qualified GHC.TypeLits  as GHC
 
--- | The type of effects. An effect @e m a@ takes an effect monad type @m :: * -> *@ and result type @a :: *@.
-type Effect = (* -> *) -> * -> *
+-- | The type of effects. An effect @e m a@ takes an effect monad type @m :: 'Type' -> 'Type'@ and result type
+-- @a :: 'Type'@.
+type Effect = (Type -> Type) -> Type -> Type
 
 -- | Constraint that indicates an effect @e@ is present in the effect stack @es@ (thus 'Cleff.send'able).
 class Typeable e => (e :: Effect) :> (es :: [Effect])

@@ -8,7 +8,7 @@ name:           cleff
 version:        0.1.0.0
 synopsis:       Fast and concise extensible effects
 description:    Please see the README on GitHub at <https://github.com/re-xyr/cleff#readme>
-category:       Control
+category:       Control, Effect, Language
 homepage:       https://github.com/re-xyr/cleff#readme
 bug-reports:    https://github.com/re-xyr/cleff/issues
 author:         Xy Ren
@@ -19,6 +19,7 @@ license-file:   LICENSE
 build-type:     Simple
 tested-with:
     GHC == 8.6.5
+  , GHC == 8.8.4
   , GHC == 8.10.7
 extra-source-files:
     CHANGELOG.md

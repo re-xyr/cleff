@@ -4,6 +4,7 @@
 module ThSpec where
 
 import           Cleff
+import           Data.Kind    (Type)
 import           GHC.TypeLits
 import           Test.Hspec
 
@@ -49,7 +50,7 @@ makeEffect ''Newtype2
 
 data Instance = ADTI | GADTI | NTI | MMI
 
-data family Family (s :: Instance) (m :: * -> *) a
+data family Family (s :: Instance) (m :: Type -> Type) a
 
 data instance Family 'ADTI m a = ADTIC1 Int | ADTIC2 String
 
