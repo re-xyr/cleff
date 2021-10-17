@@ -1,6 +1,10 @@
+-- | This module contains Template Haskell functions for generating definitions of functions that send effect
+-- operations. You monstly won't want to import this module directly; The "Cleff" module reexports the main
+-- functionalities of this module.
 {-# OPTIONS_HADDOCK not-home #-}
 module Cleff.Internal.TH where
 
+import           Cleff.Internal.Effect
 import           Cleff.Internal.Monad
 import           Control.Monad                (join)
 import           Data.Char                    (toLower)
@@ -11,23 +15,46 @@ import           Language.Haskell.TH.Datatype
 import           Language.Haskell.TH.PprLib
 import           Prelude                      hiding ((<>))
 
--- | Generate sending functions for each of the effects in the given effect type.
+-- | For a datatype @T@ representing an effect, @'makeEffect' T@ generates functions defintions for performing the
+-- operations (/i.e./ constructors) of @T@ via 'send'. The naming rule is changing the first uppercase letter in the
+-- constructor name to lowercase or removing the @:@ symbol in the case of operator constructors.
+--
+-- Because of the limitations of Template Haskell, all constructors of @T@ should be /polymorphic in the monad type/,
+-- if they are to be used by 'makeEffect'. For example, this is not OK:
+--
+-- @
+-- data Limited :: 'Effect' where
+--   Noop :: Limited ('Eff' es) ()
+-- @
+--
+-- because the monad type @'Eff' es@ is not a fully polymorphic type variable.
 makeEffect :: Name -> Q [Dec]
 makeEffect = makeSmartCons True
 
--- | Generate sending functions for each of the effects in the given effect type, but without type signatures. You can
--- add your signature /after/ placing this splice.
+-- | Like 'makeEffect', but doesn't generate type signatures. This is useful when you want to attach Haddock
+-- documentation to the function signature, /e.g./:
+--
+-- @
+-- data Identity :: 'Effect' where
+--   Noop :: Identity m ()
+-- 'makeEffect_' ''Identity
+--
+-- -- | Perform nothing at all.
+-- noop :: Identity ':>' es => 'Eff' es ()
+-- @
+--
+-- Be careful that the function signatures must be added /after/ the 'makeEffect_' call.
 makeEffect_ :: Name -> Q [Dec]
 makeEffect_ = makeSmartCons False
 
--- | Generate sending functions for each of the effects in the given type. Whether to generate type signatures is
--- decided by the first argument.
+-- | This is the function underlying 'makeEffect' and 'makeEffect_'. You can switch between the behavior of two by
+-- changing the 'Bool' parameter to 'True' (generating signatures) or 'False' (not generating signatures).
 makeSmartCons :: Bool -> Name -> Q [Dec]
 makeSmartCons makeSig effName = do
   info <- reifyDatatype effName
   join <$> traverse (makeCon makeSig) (constructorName <$> reverse (datatypeCons info))
 
--- | Generate a sending function for a particular constructor.
+-- | Make a single function definition of a certain effect operation.
 makeCon :: Bool -> Name -> Q [Dec]
 makeCon makeSig name = do
   typ <- reify name >>= \case

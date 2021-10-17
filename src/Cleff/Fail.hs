@@ -21,7 +21,7 @@ runFail = runError . reinterpret \case
   Fail msg -> throwError msg
 {-# INLINE runFail #-}
 
-runFailIO :: IOE :> es => Eff (Fail ': es) a -> Eff es a
+runFailIO :: IOE :> es => Eff (Fail ': es) ~> Eff es
 runFailIO = interpret \case
   Fail msg -> throwIO msg
 {-# INLINE runFailIO #-}

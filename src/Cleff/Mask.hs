@@ -6,8 +6,8 @@ import           Control.Monad.IO.Class (liftIO)
 import qualified UnliftIO.Exception     as Exc
 
 data Mask :: Effect where
-  Mask :: ((forall x. m x -> m x) -> m a) -> Mask m a
-  UninterruptibleMask :: ((forall x. m x -> m x) -> m a) -> Mask m a
+  Mask :: ((m ~> m) -> m a) -> Mask m a
+  UninterruptibleMask :: ((m ~> m) -> m a) -> Mask m a
   Bracket :: m a -> (a -> m c) -> (a -> m b) -> Mask m b
   BracketOnError :: m a -> (a -> m c) -> (a -> m b) -> Mask m b
 makeEffect ''Mask
@@ -27,7 +27,7 @@ finally m mz = bracket_ (pure ()) mz (const m)
 onError :: Mask :> es => Eff es a -> Eff es b -> Eff es a
 onError m mz = bracketOnError (pure ()) (const mz) (const m)
 
-runMask :: forall es a. Eff (Mask ': es) a -> Eff es a
+runMask :: Eff (Mask ': es) ~> Eff es
 runMask = thisIsPureTrustMe . reinterpret \case
   Mask f -> liftIO $ withLiftIO \lift -> Exc.mask \restore -> runInIO $ f (lift . restore . runInIO)
   UninterruptibleMask f -> liftIO $ withLiftIO \lift -> Exc.uninterruptibleMask \restore -> runInIO $ f (lift . restore . runInIO)

@@ -61,7 +61,7 @@ runError = thisIsPureTrustMe . fmap (mapLeft getExc) . Exc.try . reinterpret \ca
   CatchError m h -> liftIO $ Exc.catch (runInIO m) (runInIO . h . getExc)
 {-# INLINE runError #-}
 
-mapError :: (Exc.Exception e, Error e' :> es) => (e -> e') -> Eff (Error e ': es) a -> Eff es a
+mapError :: (Exc.Exception e, Error e' :> es) => (e -> e') -> Eff (Error e ': es) ~> Eff es
 mapError f = interpret \case
   ThrowError e   -> throwError $ f e
   CatchError m h -> runError (runHere m) >>= \case

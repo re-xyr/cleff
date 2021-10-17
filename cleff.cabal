@@ -42,7 +42,8 @@ library
       Cleff.Fresh
       Cleff.Input
       Cleff.Internal.Base
-      Cleff.Internal.Handler
+      Cleff.Internal.Effect
+      Cleff.Internal.Interpret
       Cleff.Internal.Monad
       Cleff.Internal.TH
       Cleff.KVStore
@@ -64,6 +65,7 @@ library
       EmptyCase
       FlexibleContexts
       FlexibleInstances
+      FunctionalDependencies
       GADTs
       GeneralizedNewtypeDeriving
       KindSignatures
@@ -116,6 +118,7 @@ test-suite cleff-example
       EmptyCase
       FlexibleContexts
       FlexibleInstances
+      FunctionalDependencies
       GADTs
       GeneralizedNewtypeDeriving
       KindSignatures
@@ -171,6 +174,7 @@ test-suite cleff-test
       EmptyCase
       FlexibleContexts
       FlexibleInstances
+      FunctionalDependencies
       GADTs
       GeneralizedNewtypeDeriving
       KindSignatures

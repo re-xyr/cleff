@@ -11,7 +11,7 @@ makeEffect ''Reader
 asks :: Reader r :> es => (r -> s) -> Eff es s
 asks = (<$> ask)
 
-runReader :: forall r es a. Typeable r => r -> Eff (Reader r ': es) a -> Eff es a
+runReader :: Typeable r => r -> Eff (Reader r ': es) ~> Eff es
 runReader r = interpret \case
   Ask        -> pure r
   Local f m' -> runReader (f r) $ runHere m'

@@ -4,15 +4,17 @@
 {-# OPTIONS_HADDOCK not-home #-}
 {-# OPTIONS_GHC -Wno-orphans -Wno-dodgy-exports #-}
 module Cleff.Internal.Base
-  ( -- * The @IOE@ effect
-    IOE (..)
-  , -- * Unwrapping actions
-    InterpreterIO, interpretIO, runIOE, runPure, thisIsPureTrustMe
+  ( IOE (..)
   , -- * Primitive IO functions
     primLiftIO, primUnliftIO
+  , -- * Unwrapping 'Eff'
+    runIOE, runPure, thisIsPureTrustMe
+  , -- * Interpreting effects in terms of 'IO'
+    InterpreterIO, interpretIO
   ) where
 
-import           Cleff.Internal.Handler
+import           Cleff.Internal.Effect
+import           Cleff.Internal.Interpret
 import           Cleff.Internal.Monad
 import           Control.Monad.Base          (MonadBase (..))
 import           Control.Monad.Catch         (ExitCase (ExitCaseException, ExitCaseSuccess),
@@ -24,10 +26,19 @@ import           GHC.IO                      (IO (IO))
 import           System.IO.Unsafe            (unsafeDupablePerformIO)
 import           UnliftIO
 
--- | The effect for lifting and unlifting the 'IO' monad, allowing you to use 'MonadIO' and 'MonadUnliftIO'
--- functionalities. This is the "final" effect that most effects eventually are interpreted into.
+-- | The effect for lifting and unlifting the 'IO' monad, allowing you to use 'MonadIO', 'MonadUnliftIO', 'PrimMonad',
+-- 'MonadCatch', 'MonadThrow' and 'MonadMask' functionalities. This is the "final" effect that most effects eventually
+-- are interpreted into. For example, you can do:
 --
--- However, note that this is /not/ a real effect and cannot be interpreted in any way besides 'thisIsPureTrustMe' and
+-- @
+-- log :: 'IOE' :> es => 'Eff' es ()
+-- log = 'liftIO' ('putStrLn' "Test logging")
+-- @
+--
+-- It is not recommended to use this effect in application code, as it is too liberal and allows arbitrary IO. Ideally,
+-- this is only used in interpreting more fine-grained effects.
+--
+-- Note that this is /not/ a real effect and cannot be interpreted in any way besides 'thisIsPureTrustMe' and
 -- 'runIOE'. It is similar to Polysemy's @Final@ effect which also cannot be interpreted. This is mainly for
 -- performance concern, but also that there doesn't really exist reasonable interpretations other than the current one,
 -- given the underlying implementation of the 'Eff' monad.
@@ -37,7 +48,7 @@ import           UnliftIO
 data IOE :: Effect where
 #ifdef DYNAMIC_IOE
   Lift :: IO a -> IOE m a
-  Unlift :: ((forall x. m x -> IO x) -> IO a) -> IOE m a
+  Unlift :: ((m ~> IO) -> IO a) -> IOE m a
 #endif
 
 -- | Lift an 'IO' action into 'Eff'. This function is /highly unsafe/ and should not be used directly; most of the
@@ -48,7 +59,7 @@ primLiftIO = PrimEff . const
 
 -- | Give a runner function a way to run 'Eff' actions as an 'IO' action. This function is /highly unsafe/ and should
 -- not be used directly; most of the times you should use 'runInIO' that wraps this function in a safer type.
-primUnliftIO :: ((forall x. Eff es x -> IO x) -> IO a) -> Eff es a
+primUnliftIO :: ((Eff es ~> IO) -> IO a) -> Eff es a
 primUnliftIO f = PrimEff \handlers -> f (`primRunEff` handlers)
 {-# INLINE primUnliftIO #-}
 
@@ -69,7 +80,7 @@ instance IOE :> es => MonadUnliftIO (Eff es) where
   {-# INLINE withRunInIO #-}
 #endif
 
--- Compatibility with @exceptions@. This is not encouraged usage
+-- Compatibility with @exceptions@.
 instance IOE :> es => MonadThrow (Eff es) where
   throwM = throwIO
 
@@ -107,7 +118,7 @@ instance IOE :> es => PrimMonad (Eff es) where
 --
 -- This function is /unsafe/ and you should be careful not to use it for interpreting effects that do affect the real
 -- world.
-thisIsPureTrustMe :: Eff (IOE ': es) a -> Eff es a
+thisIsPureTrustMe :: Eff (IOE ': es) ~> Eff es
 thisIsPureTrustMe = interpret \case
 #ifdef DYNAMIC_IOE
   Lift m   -> primLiftIO m
@@ -117,7 +128,7 @@ thisIsPureTrustMe = interpret \case
 
 -- | Unwrap the 'Eff' monad into an 'IO' action, given that all other effects are interpreted, and only 'IOE' remains
 -- on the effect stack.
-runIOE :: Eff '[IOE] a -> IO a
+runIOE :: Eff '[IOE] ~> IO
 runIOE = (`primRunEff` emptyEnv) . thisIsPureTrustMe
 {-# INLINE runIOE #-}
 
@@ -127,14 +138,14 @@ runPure :: Eff '[] a -> a
 runPure = unsafeDupablePerformIO . (`primRunEff` emptyEnv)
 {-# NOINLINE runPure #-}
 
--- | Interpreter that interprets an effect into 'IO'.
-type InterpreterIO es e = forall esSend a. (e :> esSend, Handling esSend es e) => e (Eff esSend) a -> IO a
+-- | An effect handler that translates effect @e@ from arbitrary effect stacks into 'IO' actions.
+type InterpreterIO es e = forall esSend. (e :> esSend, Handling esSend es e) => e (Eff esSend) ~> IO
 
 -- | Interpret an effect in terms of 'IO'.
 --
 -- @
 -- 'interpretIO' f = 'interpret' ('liftIO' '.' f)
 -- @
-interpretIO :: (IOE :> es, Typeable e) => InterpreterIO es e -> Eff (e ': es) a -> Eff es a
+interpretIO :: (IOE :> es, Typeable e) => InterpreterIO es e -> Eff (e ': es) ~> Eff es
 interpretIO f = interpret (liftIO . f)
 {-# INLINE interpretIO #-}

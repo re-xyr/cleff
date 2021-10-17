@@ -9,12 +9,12 @@ data Fresh u :: Effect where
   Fresh :: Fresh u m u
 makeEffect ''Fresh
 
-freshIntToState :: Eff (Fresh Int ': es) a -> Eff (State Int ': es) a
+freshIntToState :: Eff (Fresh Int ': es) ~> Eff (State Int ': es)
 freshIntToState = reinterpret \case
   Fresh -> state \s -> (s, s + 1)
 {-# INLINE freshIntToState #-}
 
-runFreshUnique :: IOE :> es => Eff (Fresh Unique ': es) a -> Eff es a
+runFreshUnique :: IOE :> es => Eff (Fresh Unique ': es) ~> Eff es
 runFreshUnique = interpret \case
   Fresh -> liftIO newUnique
 {-# INLINE runFreshUnique #-}

@@ -1,53 +1,47 @@
-{-# LANGUAGE FunctionalDependencies #-}
+-- | This module contains the definition of the 'Eff' monad, which is basically an @'Env' es -> 'IO' a@, as well as
+-- functions for manipulating the effect environment type 'Env'. Most of the times, you won't need to use this module
+-- directly; user-facing functionalities are all exported via the "Cleff" module.
 {-# OPTIONS_HADDOCK not-home #-}
 module Cleff.Internal.Monad
   ( -- * Core types
-    Effect, Handling (..), Handler, InternalHandler (..), Env (..), Eff (..)
-  , -- * Effect lookup
-    (:>), (:>>), type (++), Suffix
+    InternalHandler (..), Env (..), Eff (..)
   , -- * Effect environment axioms
     emptyEnv, contractEnv, expandEnv, getHandler, insertHandler
   , -- * Performing effect operations
-    InstHandling (..), instHandling, send
+    send
   ) where
 
-import           Control.Monad.Fix (MonadFix (mfix))
-import           Data.Kind         (Constraint)
-import           Data.Maybe        (fromJust)
-import           Data.TypeRepMap   (TypeRepMap)
-import qualified Data.TypeRepMap   as TMap
-import           Data.Typeable     (Typeable)
-import           GHC.TypeLits      (ErrorMessage ((:<>:)))
-import qualified GHC.TypeLits      as GHC
-import           Unsafe.Coerce     (unsafeCoerce)
+import           Cleff.Internal.Effect
+import           Control.Monad.Fix     (MonadFix (mfix))
+import           Data.Maybe            (fromJust)
+import           Data.TypeRepMap       (TypeRepMap)
+import qualified Data.TypeRepMap       as TMap
+import           Data.Typeable         (Typeable)
 
--- | The type of effects. An effect @e m a@ takes an effect monad type @m :: * -> *@ and result type @a :: *@.
-type Effect = (* -> *) -> * -> *
-
--- | The typeclass that indicates a handler scope, handling effect @e@ sent from environment @esSend@ and being handled
--- on @esBase@.
-class Handling esSend esBase e
-  | esSend -> esBase, esSend -> e, esBase -> esSend, esBase -> e, e -> esSend, e -> esBase where
-  -- | Obtain the send-site environment.
-  sendEnv :: Env esSend
-
--- | The type of effect handler. An effect handler (re)interprets an @e ': es@ effect stack into @es' '++' es@ by
--- converting effect operations from arbitrary send sites into actions in the handling side @es' '++' es@.
-type Handler es' es e = forall esSend a. (e :> esSend, Handling esSend es e) => e (Eff esSend) a -> Eff (es' ++ es) a
-
--- | The internal representation of effect handlers. The handle-site environment is captured via interpreting functions
--- (see "Cleff.Internal.Handle") and thus unwraps the @'Eff' es a@ in the 'Handler' type into an 'IO'.
+-- | The internal representation of effect handlers. This is just a natural transformation from the effect type
+-- @e ('Eff' es)@ to the effect monad @'Eff' es@ for any effect stack @es@ that has @e@ in it.
+--
+-- In interpreting functions (see "Cleff.Internal.Interpret"), the user-facing 'Cleff.Handler' type is transformed into
+-- this type.
 newtype InternalHandler e = InternalHandler
-  { runHandler :: forall esSend a. e :> esSend => Env esSend -> e (Eff esSend) a -> IO a }
+  { runHandler :: forall esSend. e :> esSend => e (Eff esSend) ~> Eff esSend }
 
--- This blocks users from liberally 'coerce'ing between different effect stacks.
-type role Env nominal
 -- | The effect environment that stores handlers of any effect present in the stack @es@.
+type role Env nominal -- This blocks users from liberally 'coerce'ing between different effect stacks.
 newtype Env es = Env { getEnv :: TypeRepMap InternalHandler }
 
--- | The effect monad, i.e. a monad with support of the effects specified by the effect stack @es@. This is basically
--- an @'Env' es -> 'IO' a@.
-newtype Eff (es :: [Effect]) a = PrimEff { primRunEff :: Env es -> IO a }
+-- | The extensible effect monad. A monad @'Eff' es@ is capable of performing any effect in the /effect stack/ @es@.
+-- Most of the times, @es@ should be a polymorphic effect stack, constrained by the '(:>)' and '(:>>)' operators that
+-- indicate what effects are present in it. For example, the type
+--
+-- @
+-- 'Cleff.Reader.Reader' 'String' ':>' es, 'Cleff.State.State' 'Bool' ':>' es => 'Eff' es 'Integer'
+-- @
+--
+-- allows you to perform operations of the @'Cleff.Reader.Reader' 'String'@ effect and the @'Cleff.State.State' 'Bool'@
+-- effect in a computation returning an 'Integer'.
+type role Eff nominal nominal
+newtype Eff es a = PrimEff { primRunEff :: Env es -> IO a }
   deriving (Semigroup, Monoid)
 
 instance Functor (Eff es) where
@@ -67,30 +61,6 @@ instance Monad (Eff es) where
 
 instance MonadFix (Eff es) where
   mfix f = PrimEff \es -> mfix $ \a -> primRunEff (f a) es
-
--- | Constraint that indicates an effect @e@ is present in the effect stack @es@ (thus 'send'able).
-class Typeable e => (e :: Effect) :> (es :: [Effect])
-instance {-# OVERLAPPING #-} Typeable e => e :> (e ': es)
-instance e :> es => e :> (e' ': es)
-instance (Typeable e, GHC.TypeError
-  ('GHC.Text "The effect '" ':<>: 'GHC.ShowType e ':<>: 'GHC.Text "' is not present in the constraint")) => e :> '[]
-
--- | Constraint that indicates a list effect @xs@ is present in the effect stack @es@ (thus 'send'able). This is a
--- convenient type alias for @(e1 ':>' es, ..., en ':>' es)@.
-type family (xs :: [Effect]) :>> (es :: [Effect]) :: Constraint where
-  '[] :>> es = ()
-  (x ': xs) :>> es = (x :> es, xs :>> es)
-
--- | @esBase@ is a suffix of @es@. In other words, @esBase = es' ++ es@. This ensures the presence of 'Cleff.IOE' is
--- the same between @esBase@ and @es@.
-class Suffix esBase es
-instance {-# INCOHERENT #-} Suffix es es
-instance Suffix esBase es => Suffix esBase (e ': es)
-
--- | Type level list concatenation.
-type family xs ++ ys where
-  '[] ++ ys = ys
-  (x ': xs) ++ ys = x ': (xs ++ ys)
 
 -- | The environment for the empty effect stack.
 emptyEnv :: Env '[]
@@ -113,17 +83,8 @@ getHandler = fromJust . TMap.lookup . getEnv
 insertHandler :: forall e es. Typeable e => InternalHandler e -> Env es -> Env (e ': es)
 insertHandler f = Env . TMap.insert f . getEnv
 
--- | Newtype wrapper for instantiating the 'Handling' typeclass locally, a la the reflection trick. We do not use
--- the @reflection@ library directly so as not to expose this piece of implementation detail to the user.
-newtype InstHandling es' esBase e a = InstHandling (Handling es' esBase e => a)
-
--- | Instantiatiate an 'Handling' typeclass, i.e. pass an implicit send-site environment in. This function shouldn't
--- be directly used anyway.
-instHandling :: forall es' esBase e a. (Handling es' esBase e => a) -> Env es' -> a
-instHandling x = unsafeCoerce (InstHandling x :: InstHandling es' esBase e a)
-{-# INLINE instHandling #-}
-
--- | Perform an effect operation, given the effect is in the effect stack.
-send :: forall e es a. e :> es => e (Eff es) a -> Eff es a
-send eff = PrimEff \handlers -> runHandler (getHandler handlers) handlers eff
+-- | Perform an effect operation, /i.e./ a value constructed by a constructor of an effect type @e@, given @e@ is in
+-- the effect stack.
+send :: e :> es => e (Eff es) ~> Eff es
+send eff = PrimEff \handlers -> primRunEff (runHandler (getHandler handlers) eff) handlers
 {-# INLINE send #-}
