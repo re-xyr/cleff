@@ -3,7 +3,6 @@ module Cleff.Output where
 import           Cleff
 import           Cleff.State
 import           Cleff.Writer
-import           Data.Typeable (Typeable)
 
 -- * Effect
 
@@ -18,25 +17,25 @@ makeEffect ''Output
 -- * Interpretations
 
 -- | Run an 'Output' effect by accumulating a list.
-outputToListState :: Typeable o => Eff (Output o ': es) ~> Eff (State [o] ': es)
+outputToListState :: Eff (Output o ': es) ~> Eff (State [o] ': es)
 outputToListState = reinterpret \case
   Output x -> modify (x :)
 {-# INLINE outputToListState #-}
 
 -- | Run an 'Output' effect by translating it into a 'Writer'.
-outputToWriter :: (Typeable o, Typeable o') => (o -> o') -> Eff (Output o ': es) ~> Eff (Writer o' ': es)
+outputToWriter :: (o -> o') -> Eff (Output o ': es) ~> Eff (Writer o' ': es)
 outputToWriter f = reinterpret \case
   Output x -> tell $ f x
 {-# INLINE outputToWriter #-}
 
 -- | Ignore outputs of an 'Output' effect altogether.
-ignoreOutput :: Typeable o => Eff (Output o ': es) ~> Eff es
+ignoreOutput :: Eff (Output o ': es) ~> Eff es
 ignoreOutput = interpret \case
   Output _ -> pure ()
 {-# INLINE ignoreOutput #-}
 
 -- | Run an 'Output' effect by performing a computation for each output.
-runOutputEff :: Typeable o => (o -> Eff es ()) -> Eff (Output o ': es) ~> Eff es
+runOutputEff :: (o -> Eff es ()) -> Eff (Output o ': es) ~> Eff es
 runOutputEff m = interpret \case
   Output x -> m x
 {-# INLINE runOutputEff #-}

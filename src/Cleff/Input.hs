@@ -2,7 +2,6 @@ module Cleff.Input where
 
 import           Cleff
 import           Cleff.State
-import           Data.Typeable (Typeable)
 
 -- * Effect
 
@@ -21,13 +20,13 @@ inputs f = f <$> input
 -- * Interpretations
 
 -- | Run an 'Input' effect by giving a constant input value.
-runInputConst :: Typeable i => i -> Eff (Input i ': es) ~> Eff es
+runInputConst :: i -> Eff (Input i ': es) ~> Eff es
 runInputConst x = interpret \case
   Input -> pure x
 {-# INLINE runInputConst #-}
 
 -- | Run an 'Input' effect by going through a list of values.
-inputToListState :: Typeable i => Eff (Input (Maybe i) ': es) ~> Eff (State [i] ': es)
+inputToListState :: Eff (Input (Maybe i) ': es) ~> Eff (State [i] ': es)
 inputToListState = reinterpret \case
   Input -> get >>= \case
     []      -> pure Nothing
@@ -35,7 +34,7 @@ inputToListState = reinterpret \case
 {-# INLINE inputToListState #-}
 
 -- | Run an 'Input' effect by performing an action for each input request.
-runInputEff :: Typeable i => Eff es i -> Eff (Input i ': es) ~> Eff es
+runInputEff :: Eff es i -> Eff (Input i ': es) ~> Eff es
 runInputEff m = interpret \case
   Input -> m
 {-# INLINE runInputEff #-}

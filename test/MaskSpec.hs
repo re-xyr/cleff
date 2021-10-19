@@ -143,24 +143,26 @@ spec = parallel $ do
 instance Exception ()
 
 runTest
-  :: Eff '[Error (), Mask, State [Char], Trace] a
+  :: Eff '[Error (), Mask, State [Char], Trace, Output String] a
   -> IO ((Either () a, [Char]), [String])
 runTest = pure
         . runPure
         . fmap (second reverse) . runState []
         . outputToListState
+        . subsume @(Output String)
         . traceToOutput
         . runState ""
         . runMask
         . runError @()
 
 runTest2
-  :: Eff '[Error (), Mask, State [Char], Trace] a
+  :: Eff '[Error (), Mask, State [Char], Trace, Output String] a
   -> IO ((Either () a, [Char]), [String])
 runTest2 = pure
          . runPure
          . runWriter
          . outputToWriter (:[])
+         . subsume @(Output String)
          . traceToOutput
          . runState ""
          . runMask
@@ -169,15 +171,13 @@ runTest2 = pure
 testBoth
     :: String
     -> (((Either () a, [Char]), [String]) -> Expectation)
-    -> Eff '[Error (), Mask, State [Char], Trace] a
+    -> Eff '[Error (), Mask, State [Char], Trace, Output String] a
     -> Spec
 testBoth name k m = do
   describe name $ do
     it "via outputToListState" $ do
       z <- runTest m
       k z
-    -- NOTE(sandy): This unsafeCoerces are safe, because we're just weakening
-    -- the end of the union
     it "via outputToWriter" $ do
       z <- runTest2 m
       k z

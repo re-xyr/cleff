@@ -12,7 +12,6 @@ import qualified Data.IntMap.Strict  as I
 import qualified Data.Map            as O
 import qualified Data.Map.Lazy       as OL
 import           Data.Maybe          (isJust)
-import           Data.Typeable       (Typeable)
 
 -- * Effect
 
@@ -61,42 +60,42 @@ alterKV f k = lookupKV k >>= updateKV k . f
 -- * Interpretations
 
 -- | Interpret a 'KVStore' effect in terms of 'O.Map' and strict operations.
-kvStoreToMapState :: (Ord k, Typeable k, Typeable v) => Eff (KVStore k v ': es) ~> Eff (State (O.Map k v) ': es)
+kvStoreToMapState :: Ord k => Eff (KVStore k v ': es) ~> Eff (State (O.Map k v) ': es)
 kvStoreToMapState = reinterpret \case
   LookupKV k   -> gets (O.lookup k)
   UpdateKV k v -> modify (O.update (const v) k)
 {-# INLINE kvStoreToMapState #-}
 
 -- | Interpret a 'KVStore' effect in terms of 'OL.Map' and lazy operations.
-kvStoreToLazyMapState :: (Ord k, Typeable k, Typeable v) => Eff (KVStore k v ': es) ~> Eff (State (OL.Map k v) ': es)
+kvStoreToLazyMapState :: Ord k => Eff (KVStore k v ': es) ~> Eff (State (OL.Map k v) ': es)
 kvStoreToLazyMapState = reinterpret \case
   LookupKV k   -> gets (OL.lookup k)
   UpdateKV k v -> modify (OL.update (const v) k)
 {-# INLINE kvStoreToLazyMapState #-}
 
 -- | Interpret a @'KVStore' 'Int' v@ effect in terms of 'I.IntMap' and strict operations.
-kvStoreToIntMapState :: (Typeable k, Typeable v) => Eff (KVStore I.Key v ': es) ~> Eff (State (I.IntMap v) ': es)
+kvStoreToIntMapState :: Eff (KVStore I.Key v ': es) ~> Eff (State (I.IntMap v) ': es)
 kvStoreToIntMapState = reinterpret \case
   LookupKV k   -> gets (I.lookup k)
   UpdateKV k v -> modify (I.update (const v) k)
 {-# INLINE kvStoreToIntMapState #-}
 
 -- | Interpret a @'KVStore' 'Int' v@ effect in terms of 'IL.IntMap' and lazy operations.
-kvStoreToLazyIntMapState :: (Typeable k, Typeable v) => Eff (KVStore IL.Key v ': es) ~> Eff (State (IL.IntMap v) ': es)
+kvStoreToLazyIntMapState :: () => Eff (KVStore IL.Key v ': es) ~> Eff (State (IL.IntMap v) ': es)
 kvStoreToLazyIntMapState = reinterpret \case
   LookupKV k   -> gets (IL.lookup k)
   UpdateKV k v -> modify (IL.update (const v) k)
 {-# INLINE kvStoreToLazyIntMapState #-}
 
 -- | Interpret a 'KVStore' effect in terms of 'H.HashMap' and strict operations.
-kvStoreToHashMapState :: (Hashable k, Eq k, Typeable k, Typeable v) => Eff (KVStore k v ': es) ~> Eff (State (H.HashMap k v) ': es)
+kvStoreToHashMapState :: (Hashable k, Eq k) => Eff (KVStore k v ': es) ~> Eff (State (H.HashMap k v) ': es)
 kvStoreToHashMapState = reinterpret \case
   LookupKV k   -> gets (H.lookup k)
   UpdateKV k v -> modify (H.update (const v) k)
 {-# INLINE kvStoreToHashMapState #-}
 
 -- | Interpret a 'KVStore' effect in terms of 'HL.HashMap' and lazy operations.
-kvStoreToLazyHashMapState :: (Hashable k, Eq k, Typeable k, Typeable v) => Eff (KVStore k v ': es) ~> Eff (State (HL.HashMap k v) ': es)
+kvStoreToLazyHashMapState :: (Hashable k, Eq k) => Eff (KVStore k v ': es) ~> Eff (State (HL.HashMap k v) ': es)
 kvStoreToLazyHashMapState = reinterpret \case
   LookupKV k   -> gets (HL.lookup k)
   UpdateKV k v -> modify (HL.update (const v) k)

@@ -14,7 +14,6 @@ module Cleff.Internal.Interpret
 
 import           Cleff.Internal.Effect
 import           Cleff.Internal.Monad
-import           Data.Typeable         (Typeable)
 import           GHC.TypeLits          (ErrorMessage ((:<>:)))
 import qualified GHC.TypeLits          as GHC
 import           Unsafe.Coerce         (unsafeCoerce)
@@ -25,7 +24,7 @@ raise = raiseN @'[e]
 {-# INLINE raise #-}
 
 -- | Raise an action into a bigger effect environment. This function requires @TypeApplications@.
-raiseN :: forall es' es. Eff es ~> Eff (es' ++ es)
+raiseN :: forall es' es. KnownList es' => Eff es ~> Eff (es' ++ es)
 raiseN m = PrimEff (primRunEff m . contractEnv @es')
 {-# INLINE raiseN #-}
 
@@ -35,7 +34,7 @@ subsume = subsumeN @'[e]
 {-# INLINE subsume #-}
 
 -- | Trivially eliminate several duplicate effects on the effect stack. This function requires @TypeApplications@.
-subsumeN :: forall es' es. es' :>> es => Eff (es' ++ es) ~> Eff es
+subsumeN :: forall es' es. ExpandEnv es' es => Eff (es' ++ es) ~> Eff es
 subsumeN m = PrimEff (primRunEff m . expandEnv @es')
 {-# INLINE subsumeN #-}
 
@@ -67,27 +66,27 @@ type Handler es' es e = forall esSend. (e :> esSend, Handling esSend es e) => e 
 type Interpreter es e = Handler '[] es e
 
 -- | Interpret an effect @e@ in terms of effects in the effect stack @es@.
-interpret :: Typeable e => Interpreter es e -> Eff (e ': es) ~> Eff es
+interpret :: Interpreter es e -> Eff (e ': es) ~> Eff es
 interpret = reinterpretN @'[]
 {-# INLINE interpret #-}
 
 -- | Like 'interpret', but adds a new effect @e'@ that can be used in the handler.
-reinterpret :: forall e' e es. Typeable e => Handler '[e'] es e -> Eff (e ': es) ~> Eff (e' ': es)
+reinterpret :: forall e' e es. Handler '[e'] es e -> Eff (e ': es) ~> Eff (e' ': es)
 reinterpret = reinterpretN @'[e']
 {-# INLINE reinterpret #-}
 
 -- | Like 'reinterpret', but adds two new effects.
-reinterpret2 :: forall e' e'' e es. Typeable e => Handler '[e', e''] es e -> Eff (e ': es) ~> Eff (e' ': e'' ': es)
+reinterpret2 :: forall e' e'' e es. Handler '[e', e''] es e -> Eff (e ': es) ~> Eff (e' ': e'' ': es)
 reinterpret2 = reinterpretN @'[e', e'']
 {-# INLINE reinterpret2 #-}
 
 -- | Like 'reinterpret', but adds three new effects.
-reinterpret3 :: forall e' e'' e''' e es. Typeable e => Handler '[e', e'', e'''] es e -> Eff (e ': es) ~> Eff (e' ': e'' ': e''' ': es)
+reinterpret3 :: forall e' e'' e''' e es. Handler '[e', e'', e'''] es e -> Eff (e ': es) ~> Eff (e' ': e'' ': e''' ': es)
 reinterpret3 = reinterpretN @'[e', e'', e''']
 {-# INLINE reinterpret3 #-}
 
 -- | Like 'reinterpret', but adds arbitrarily many new effects. This function requires @TypeApplications@.
-reinterpretN :: forall es' e es. Typeable e => Handler es' es e -> Eff (e ': es) ~> Eff (es' ++ es)
+reinterpretN :: forall es' e es. KnownList es' => Handler es' es e -> Eff (e ': es) ~> Eff (es' ++ es)
 reinterpretN handle m = PrimEff \es ->
   let handler = InternalHandler \eff -> PrimEff \esSend -> primRunEff (instHandling handle esSend eff) es
   in primRunEff m $ insertHandler handler $ contractEnv @es' es
@@ -101,7 +100,7 @@ instance {-# INCOHERENT #-} Lift es es
 instance {-# OVERLAPPING #-} Lift esBase es => Lift esBase (e ': es)
 type CannotLift esBase es = 'GHC.Text "The effect stack '" ':<>: 'GHC.ShowType esBase
   ':<>: 'GHC.Text "' cannot be lifted into '" ':<>: 'GHC.ShowType es ':<>: 'GHC.Text "'"
-instance (GHC.TypeError (CannotLift esBase es)) => Lift esBase es
+instance GHC.TypeError (CannotLift esBase es) => Lift esBase es
 
 -- | Respond to an effect while being able to leave it unhandled (i.e. you can resend the effects in the handler).
 --
@@ -109,7 +108,9 @@ instance (GHC.TypeError (CannotLift esBase es)) => Lift esBase es
 -- 'interpose' f = 'interpret' f '.' 'raise'
 -- @
 interpose :: e :> es => Interpreter es e -> Eff es ~> Eff es
-interpose handle = interpret handle . raise
+interpose handle m = PrimEff \es ->
+  let handler = InternalHandler \eff -> PrimEff \esSend -> primRunEff (instHandling handle esSend eff) es
+  in primRunEff m $ modifyHandler handler es
 {-# INLINE interpose #-}
 
 -- | Run a computation in the 'IO' monad. This is useful when interpreting an effect in terms of 'Cleff.IOE'.
@@ -144,8 +145,8 @@ runThere m = PrimEff $ const $ primRunEff m sendEnv
 --   'Cleff.Reader.Ask'       -> 'pure' r
 --   'Cleff.Reader.Local' f m -> runReader (f r) ('runHere' m)
 -- @
-runHere :: forall e es esSend esBase. (Handling esSend esBase e, Lift esBase es, e :> es) => Eff esSend ~> Eff es
-runHere m = PrimEff \es -> primRunEff m (contractEnv @'[e] $ insertHandler (getHandler es) sendEnv)
+runHere :: forall e es esSend esBase. (Handling esSend esBase e, Lift esBase es, e :> es, e :> esSend) => Eff esSend ~> Eff es
+runHere m = PrimEff \es -> primRunEff m (modifyHandler (getHandler @e es) sendEnv)
 
 -- | Temporarily gain the ability to lift arbitrary 'IO' actions into 'Eff' as long as an 'IO' action is finally
 -- returned. This is useful for dealing with effect operations with the monad type in the negative position within

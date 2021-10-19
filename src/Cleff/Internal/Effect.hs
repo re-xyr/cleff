@@ -1,24 +1,30 @@
 -- | This module contains definitions of some basic types related to effects. You won't need this module most of the
 -- times; most functionalities are reexported in the "Cleff" module.
 {-# OPTIONS_HADDOCK not-home #-}
-module Cleff.Internal.Effect (Effect, (:>), (:>>), type (++), type (~>)) where
+module Cleff.Internal.Effect (Effect, (:>) (..), (:>>), type (++), type (~>)) where
 
-import           Data.Kind     (Constraint, Type)
-import           Data.Typeable (Typeable)
-import           GHC.TypeLits  (ErrorMessage ((:<>:)))
-import qualified GHC.TypeLits  as GHC
+import           Data.Kind    (Constraint, Type)
+import           GHC.TypeLits (ErrorMessage ((:<>:)))
+import qualified GHC.TypeLits as GHC
 
 -- | The type of effects. An effect @e m a@ takes an effect monad type @m :: 'Type' -> 'Type'@ and result type
 -- @a :: 'Type'@.
 type Effect = (Type -> Type) -> Type -> Type
 
 -- | Constraint that indicates an effect @e@ is present in the effect stack @es@ (thus 'Cleff.send'able).
-class Typeable e => (e :: Effect) :> (es :: [Effect])
-instance {-# OVERLAPPING #-} Typeable e => e :> (e ': es)
-instance e :> es => e :> (e' ': es)
+class (e :: Effect) :> (es :: [Effect]) where
+  effectIx :: Int
+  effectIx = error "Reaching nonexistent effect"
+
+instance {-# OVERLAPPING #-} e :> (e ': es) where
+  effectIx = 0
+
+instance e :> es => e :> (e' ': es) where
+  effectIx = 1 + effectIx @e @es
+
 type EffectNotFound e = 'GHC.Text "The effect '" ':<>: 'GHC.ShowType e
   ':<>: 'GHC.Text "' is not present in the constraint"
-instance (Typeable e, GHC.TypeError (EffectNotFound e)) => e :> '[]
+instance GHC.TypeError (EffectNotFound e) => e :> '[]
 
 -- | Constraint that indicates a list effect @xs@ is present in the effect stack @es@ (thus 'Cleff.send'able). This is
 -- a convenient type alias for @(e1 ':>' es, ..., en ':>' es)@.

@@ -5,7 +5,6 @@ import           Cleff.Internal.Base         (thisIsPureTrustMe)
 import           Control.Concurrent.STM.TVar (stateTVar)
 import           Control.Monad               (void)
 import           Data.Tuple                  (swap)
-import           Data.Typeable               (Typeable)
 import           UnliftIO.IORef
 import           UnliftIO.MVar
 import           UnliftIO.STM
@@ -35,7 +34,7 @@ modify f = state (((), ) . f)
 
 -- | Run a 'State' effect in terms of 'IORef'. This may not be what you want if you need to avoid deadlock in a
 -- multithreaded setting.
-runState :: forall s es a. Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
+runState :: forall s es a. s -> Eff (State s ': es) a -> Eff es (a, s)
 runState s m = thisIsPureTrustMe do
   rs <- newIORef s
   x <- reinterpret (\case
@@ -51,7 +50,7 @@ runState s m = thisIsPureTrustMe do
 {-# INLINE runState #-}
 
 -- | Run a 'State' effect in terms of 'IORef', and use 'atomicModifyIORef'' for the 'state' operation.
-runAtomicState :: forall s es a. Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
+runAtomicState :: forall s es a. s -> Eff (State s ': es) a -> Eff es (a, s)
 runAtomicState s m = thisIsPureTrustMe do
   rs <- newIORef s
   x <- reinterpret (\case
@@ -63,7 +62,7 @@ runAtomicState s m = thisIsPureTrustMe do
 {-# INLINE runAtomicState #-}
 
 -- | Run a 'State' effect in terms of 'MVar'.
-runMVarState :: forall s es a. Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
+runMVarState :: forall s es a. s -> Eff (State s ': es) a -> Eff es (a, s)
 runMVarState s m = thisIsPureTrustMe do
   rs <- newMVar s
   x <- reinterpret (\case
@@ -76,7 +75,7 @@ runMVarState s m = thisIsPureTrustMe do
 
 -- | Run a 'State' effect in terms of 'TVar'. This interpretation imposes an 'IOE' effect constraint in order to avoid
 -- running atomic transactions within transactions.
-runTVarState :: forall s es a. IOE :> es => Typeable s => s -> Eff (State s ': es) a -> Eff es (a, s)
+runTVarState :: forall s es a. IOE :> es =>s -> Eff (State s ': es) a -> Eff es (a, s)
 runTVarState s m = do
   rs <- newTVarIO s
   x <- interpret (\case

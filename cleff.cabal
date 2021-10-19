@@ -96,7 +96,6 @@ library
     , template-haskell >=2.14 && <3
     , th-abstraction >=0.2.11 && <0.5
     , transformers-base >=0.4.5 && <0.5
-    , typerep-map >=0.3 && <0.5
     , unliftio >=0.2.8 && <0.3
     , unordered-containers >=0.2.9 && <0.3
   if flag(dynamic-ioe)
@@ -152,7 +151,6 @@ test-suite cleff-example
     , template-haskell >=2.14 && <3
     , th-abstraction >=0.2.11 && <0.5
     , transformers-base >=0.4.5 && <0.5
-    , typerep-map >=0.3 && <0.5
     , unliftio >=0.2.8 && <0.3
     , unordered-containers >=0.2.9 && <0.3
   if flag(dynamic-ioe)
@@ -216,7 +214,6 @@ test-suite cleff-test
     , template-haskell >=2.14 && <3
     , th-abstraction >=0.2.11 && <0.5
     , transformers-base >=0.4.5 && <0.5
-    , typerep-map >=0.3 && <0.5
     , unliftio >=0.2.8 && <0.3
     , unordered-containers >=0.2.9 && <0.3
   if flag(dynamic-ioe)

@@ -146,6 +146,6 @@ type InterpreterIO es e = forall esSend. (e :> esSend, Handling esSend es e) => 
 -- @
 -- 'interpretIO' f = 'interpret' ('liftIO' '.' f)
 -- @
-interpretIO :: (IOE :> es, Typeable e) => InterpreterIO es e -> Eff (e ': es) ~> Eff es
+interpretIO :: IOE :> es => InterpreterIO es e -> Eff (e ': es) ~> Eff es
 interpretIO f = interpret (liftIO . f)
 {-# INLINE interpretIO #-}

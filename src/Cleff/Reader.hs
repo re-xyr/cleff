@@ -1,7 +1,6 @@
 module Cleff.Reader where
 
 import           Cleff
-import           Data.Typeable (Typeable)
 
 -- * Effect
 
@@ -22,7 +21,7 @@ asks = (<$> ask)
 -- * Interpretations
 
 -- | Run a 'Reader' effect with a given environment value.
-runReader :: Typeable r => r -> Eff (Reader r ': es) ~> Eff es
+runReader :: r -> Eff (Reader r ': es) ~> Eff es
 runReader r = interpret \case
   Ask        -> pure r
   Local f m' -> runReader (f r) $ runHere m'
