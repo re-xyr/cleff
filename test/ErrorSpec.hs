@@ -4,7 +4,10 @@ module ErrorSpec where
 
 import           Cleff
 import           Cleff.Error
+import           Cleff.Fail
 import           Cleff.Mask
+import           Control.Monad.Fail (fail)
+import           Prelude            hiding (fail)
 import           Test.Hspec
 import qualified UnliftIO.Exception as Exc
 
@@ -29,3 +32,9 @@ spec = parallel $ describe "Error" do
       _ <- throwError $ MyExc "hello"
       pure ()) $ throwError (MyExc "goodbye")
     a `shouldBe` Left (MyExc "hello")
+
+  it "should not catch too prematurely" do
+    -- a <- runIOE $ runFail $ fail "Boom" >> pure ()
+    -- a `shouldBe` Left "Boom"
+    b <- runIOE $ runFail $ runError @String $ fail "Boom" >> pure ()
+    b `shouldBe` Left "Boom"

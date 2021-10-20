@@ -43,3 +43,9 @@ runFilesystemPure :: Error FsError :> es => Map FilePath String -> Eff (Filesyst
 runFilesystemPure fs = fmap fst . runState fs . reinterpret \case
   ReadFile path -> maybeM (throwError $ FsError $ "File not found: " ++ show path) pure $ gets (M.lookup path)
   WriteFile path contents -> modify $ M.insert path contents
+
+f :: Either FsError (Either FsError String)
+f = runPure $ runError @FsError $ runFilesystemPure M.empty $ runError @FsError $ Filesystem.readFile "nonexistent"
+
+-- >>> f
+-- Left (FsError "File not found: \"nonexistent\"")

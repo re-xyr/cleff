@@ -10,10 +10,12 @@ module Cleff.Error
 
 import           Cleff
 import           Cleff.Internal.Base    (thisIsPureTrustMe)
+import           Control.Exception      (Exception)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Bool              (bool)
-import           Data.Either.Extra      (mapLeft)
-import           UnliftIO               (withRunInIO)
+import           Data.Typeable          (Typeable, typeOf)
+import           Data.Unique            (Unique, newUnique)
+import           UnliftIO               (MonadUnliftIO, withRunInIO)
 import qualified UnliftIO.Exception     as Exc
 
 -- | An effect capable of breaking out of current control flow by raising an exceptional value @e@. This effect roughly
@@ -79,18 +81,31 @@ tryErrorJust :: Error e :> es => (e -> Maybe b) -> Eff es a -> Eff es (Either b 
 tryErrorJust f m = (Right <$> m) `catchError` \e -> maybe (throwError e) (pure . Left) $ f e
 
 -- | Exception wrapper used in 'runError' in order not to conflate error types with exception types.
-newtype ErrorExc e = ErrorExc { getExc :: e }
-  deriving (Show, Exc.Exception)
+data ErrorExc e = ErrorExc !Unique e
+instance Typeable e => Show (ErrorExc e) where
+  showsPrec p (ErrorExc _ e) =
+    ("Cleff.Error.ErrorEx " ++) . showsPrec p (typeOf e)
+instance Typeable e => Exception (ErrorExc e)
+
+catch' :: (Typeable e, MonadUnliftIO m) => Unique -> m a -> (e -> m a) -> m a
+catch' eid m h = m `Exc.catch` \ex@(ErrorExc eid' e) -> if eid == eid' then h e else Exc.throwIO ex
+{-# INLINE catch' #-}
+
+try' :: (Typeable e, MonadUnliftIO m) => Unique -> m a -> m (Either e a)
+try' eid m = catch' eid (Right <$> m) (pure . Left)
+{-# INLINE try' #-}
 
 -- | Run an 'Error' effect in terms of 'Exc.Exception's.
-runError :: Exc.Exception e => Eff (Error e ': es) a -> Eff es (Either e a)
-runError = thisIsPureTrustMe . fmap (mapLeft getExc) . Exc.try . reinterpret \case
-  ThrowError e   -> Exc.throwIO $ ErrorExc e
-  CatchError m h -> liftIO $ Exc.catch (runInIO m) (runInIO . h . getExc)
+runError :: forall e es a. Typeable e => Eff (Error e ': es) a -> Eff es (Either e a)
+runError m = thisIsPureTrustMe do
+  eid <- liftIO newUnique
+  try' eid $ reinterpret (\case
+    ThrowError e     -> Exc.throwIO $ ErrorExc eid e
+    CatchError m' h' -> liftIO $ catch' eid (runInIO m') (runInIO . h')) m
 {-# INLINE runError #-}
 
 -- | Transform an 'Error' into another. This is useful for aggregating multiple errors into one type.
-mapError :: (Exc.Exception e, Error e' :> es) => (e -> e') -> Eff (Error e ': es) ~> Eff es
+mapError :: (Typeable e, Error e' :> es) => (e -> e') -> Eff (Error e ': es) ~> Eff es
 mapError f = interpret \case
   ThrowError e   -> throwError $ f e
   CatchError m h -> runError (runHere m) >>= \case
