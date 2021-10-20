@@ -21,22 +21,18 @@ import           Unsafe.Coerce         (unsafeCoerce)
 -- | Raise an action into a bigger effect environment. For a more general version see 'raiseN'.
 raise :: forall e es. Eff es ~> Eff (e ': es)
 raise = raiseN @'[e]
-{-# INLINE raise #-}
 
 -- | Raise an action into a bigger effect environment. This function requires @TypeApplications@.
 raiseN :: forall es' es. KnownList es' => Eff es ~> Eff (es' ++ es)
 raiseN m = PrimEff (primRunEff m . contractEnv @es')
-{-# INLINE raiseN #-}
 
 -- | Trivially eliminate a duplicate effect on the effect stack. For a more general version see 'subsumeN'.
 subsume :: forall e es. e :> es => Eff (e ': es) ~> Eff es
 subsume = subsumeN @'[e]
-{-# INLINE subsume #-}
 
 -- | Trivially eliminate several duplicate effects on the effect stack. This function requires @TypeApplications@.
-subsumeN :: forall es' es. ExpandEnv es' es => Eff (es' ++ es) ~> Eff es
+subsumeN :: forall es' es. Elems es' es => Eff (es' ++ es) ~> Eff es
 subsumeN m = PrimEff (primRunEff m . expandEnv @es')
-{-# INLINE subsumeN #-}
 
 -- | The typeclass that indicates a handler scope: effect @e@ sent from an arbitrary effect stack @esSend@ being
 -- handled in the environment @esBase@.
@@ -68,39 +64,34 @@ type Interpreter es e = Handler '[] es e
 -- | Interpret an effect @e@ in terms of effects in the effect stack @es@.
 interpret :: Interpreter es e -> Eff (e ': es) ~> Eff es
 interpret = reinterpretN @'[]
-{-# INLINE interpret #-}
 
 -- | Like 'interpret', but adds a new effect @e'@ that can be used in the handler.
 reinterpret :: forall e' e es. Handler '[e'] es e -> Eff (e ': es) ~> Eff (e' ': es)
 reinterpret = reinterpretN @'[e']
-{-# INLINE reinterpret #-}
 
 -- | Like 'reinterpret', but adds two new effects.
 reinterpret2 :: forall e' e'' e es. Handler '[e', e''] es e -> Eff (e ': es) ~> Eff (e' ': e'' ': es)
 reinterpret2 = reinterpretN @'[e', e'']
-{-# INLINE reinterpret2 #-}
 
 -- | Like 'reinterpret', but adds three new effects.
 reinterpret3 :: forall e' e'' e''' e es. Handler '[e', e'', e'''] es e -> Eff (e ': es) ~> Eff (e' ': e'' ': e''' ': es)
 reinterpret3 = reinterpretN @'[e', e'', e''']
-{-# INLINE reinterpret3 #-}
 
 -- | Like 'reinterpret', but adds arbitrarily many new effects. This function requires @TypeApplications@.
 reinterpretN :: forall es' e es. KnownList es' => Handler es' es e -> Eff (e ': es) ~> Eff (es' ++ es)
 reinterpretN handle m = PrimEff \es ->
   let handler = InternalHandler \eff -> PrimEff \esSend -> primRunEff (instHandling handle esSend eff) es
   in primRunEff m $ insertHandler handler $ contractEnv @es' es
-{-# INLINE reinterpretN #-}
 
 -- | Typeclass that indicates @esBase@ can be lifted into @es@. In other words, @esBase = es' ++ es@.
 --
 -- This ensures the presence of 'Cleff.IOE' is the same between @esBase@ and @es@.
 class Lift esBase es
 instance {-# INCOHERENT #-} Lift es es
-instance {-# OVERLAPPING #-} Lift esBase es => Lift esBase (e ': es)
+instance Lift esBase es => Lift esBase (e ': es)
 type CannotLift esBase es = 'GHC.Text "The effect stack '" ':<>: 'GHC.ShowType esBase
   ':<>: 'GHC.Text "' cannot be lifted into '" ':<>: 'GHC.ShowType es ':<>: 'GHC.Text "'"
-instance GHC.TypeError (CannotLift esBase es) => Lift esBase es
+instance {-# OVERLAPPABLE #-} GHC.TypeError (CannotLift esBase es) => Lift esBase es
 
 -- | Respond to an effect while being able to leave it unhandled (i.e. you can resend the effects in the handler).
 --
@@ -111,7 +102,6 @@ interpose :: e :> es => Interpreter es e -> Eff es ~> Eff es
 interpose handle m = PrimEff \es ->
   let handler = InternalHandler \eff -> PrimEff \esSend -> primRunEff (instHandling handle esSend eff) es
   in primRunEff m $ modifyHandler handler es
-{-# INLINE interpose #-}
 
 -- | Run a computation in the 'IO' monad. This is useful when interpreting an effect in terms of 'Cleff.IOE'.
 runInIO :: Handling esSend esBase e => Eff esSend ~> IO

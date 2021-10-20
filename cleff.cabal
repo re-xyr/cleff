@@ -55,6 +55,7 @@ library
       Cleff.State
       Cleff.Trace
       Cleff.Writer
+      Data.Rec
   other-modules:
       Paths_cleff
   hs-source-dirs:
