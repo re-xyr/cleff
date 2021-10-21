@@ -3,11 +3,11 @@
 {-# OPTIONS_HADDOCK not-home #-}
 module Cleff.Internal.Interpret
   ( -- * Trivial handling
-    raise, raiseN, subsume, subsumeN
+    raise, raiseN, subsume, subsumeN, inject
   , -- * Handler types
     Handling, InstHandling, instHandling, Handler, Interpreter
   , -- * Interpreting effects
-    interpret, reinterpret, reinterpret2, reinterpret3, reinterpretN, interpose
+    interpret, reinterpret, reinterpret2, reinterpret3, reinterpretN, reinterpretBy, interpose
   , -- * Combinators for handling higher order effects
     Lift, runInIO, runThere, runHere, withLiftIO, withLiftEff
   ) where
@@ -18,21 +18,25 @@ import           GHC.TypeLits          (ErrorMessage ((:<>:)))
 import qualified GHC.TypeLits          as GHC
 import           Unsafe.Coerce         (unsafeCoerce)
 
--- | Raise an action into a bigger effect environment. For a more general version see 'raiseN'.
+-- | Add an effect on the effect stack. For a more general version see 'raiseN'.
 raise :: forall e es. Eff es ~> Eff (e ': es)
 raise = raiseN @'[e]
 
--- | Raise an action into a bigger effect environment. This function requires @TypeApplications@.
+-- | Add several effects on the effect stack. This function requires @TypeApplications@.
 raiseN :: forall es' es. KnownList es' => Eff es ~> Eff (es' ++ es)
 raiseN m = PrimEff (primRunEff m . contractEnv @es')
 
--- | Trivially eliminate a duplicate effect on the effect stack. For a more general version see 'subsumeN'.
+-- | Eliminate a duplicate effect from the top of the effect stack. For a more general version see 'subsumeN'.
 subsume :: forall e es. e :> es => Eff (e ': es) ~> Eff es
 subsume = subsumeN @'[e]
 
--- | Trivially eliminate several duplicate effects on the effect stack. This function requires @TypeApplications@.
-subsumeN :: forall es' es. Elems es' es => Eff (es' ++ es) ~> Eff es
+-- | Eliminate several duplicate effects from the top of the effect stack. This function requires @TypeApplications@.
+subsumeN :: forall es' es. Subset es' es => Eff (es' ++ es) ~> Eff es
 subsumeN m = PrimEff (primRunEff m . expandEnv @es')
+
+-- | Transform the effect stack into some superset of it. This function requires @TypeApplications@.
+inject :: forall es' es. Subset es' es => Eff es' ~> Eff es
+inject m = PrimEff (primRunEff m . getSubsetEnv @es')
 
 -- | The typeclass that indicates a handler scope: effect @e@ sent from an arbitrary effect stack @esSend@ being
 -- handled in the environment @esBase@.
@@ -82,6 +86,12 @@ reinterpretN :: forall es' e es. KnownList es' => Handler es' es e -> Eff (e ': 
 reinterpretN handle m = PrimEff \es ->
   let handler = InternalHandler \eff -> PrimEff \esSend -> primRunEff (instHandling handle esSend eff) es
   in primRunEff m $ insertHandler handler $ contractEnv @es' es
+
+-- | Interpret an effect in an arbitrary effect stack and then transform it back to the original stack.
+reinterpretBy :: forall esHandle e es. (Eff esHandle ~> Eff es) -> Interpreter esHandle e -> Eff (e ': es) ~> Eff es
+reinterpretBy transform handle m = PrimEff \es ->
+  let handler = InternalHandler \eff -> PrimEff \esSend -> primRunEff (transform $ instHandling handle esSend eff) es
+  in primRunEff m $ insertHandler handler es
 
 -- | Typeclass that indicates @esBase@ can be lifted into @es@. In other words, @esBase = es' ++ es@.
 --

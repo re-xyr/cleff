@@ -14,8 +14,7 @@ type Effect = (Type -> Type) -> Type -> Type
 class Elem e es => (e :: Effect) :> (es :: [Effect])
 instance Elem e es => e :> es
 
--- | Constraint that indicates a list effect @xs@ is present in the effect stack @es@ (thus 'Cleff.send'able). This is
--- a convenient type alias for @(e1 ':>' es, ..., en ':>' es)@.
+-- | A convenient type alias for @(e1 ':>' es, ..., en ':>' es)@.
 type family xs :>> es :: Constraint where
   '[] :>> es = ()
   (x ': xs) :>> es = (x :> es, xs :>> es)

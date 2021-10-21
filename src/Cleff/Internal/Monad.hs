@@ -6,7 +6,8 @@ module Cleff.Internal.Monad
   ( -- * Core types
     InternalHandler (..), Env (..), Eff (..)
   , -- * Effect environment axioms
-    emptyEnv, contractEnv, Rec.KnownList, Rec.Elems, expandEnv, getHandler, modifyHandler, insertHandler
+    Rec.KnownList, Rec.Subset,
+    emptyEnv, contractEnv, expandEnv, getHandler, getSubsetEnv, modifyHandler, insertHandler
   , -- * Performing effect operations
     send
   ) where
@@ -63,24 +64,27 @@ instance MonadFix (Eff es) where
 emptyEnv :: Env '[]
 emptyEnv = Env Rec.empty
 
--- | Contract larger environment into a smaller one; O(1).
+-- | Contract larger environment into a smaller one.
 contractEnv :: forall es' es. Rec.KnownList es' => Env (es' ++ es) -> Env es
 contractEnv = Env . Rec.drop @es' . getEnv
 
--- | Expand smaller environment into a larger one, given the added part is already present in the original stack;
--- amortized O(n).
-expandEnv :: forall es' es. Rec.Elems es' es => Env es -> Env (es' ++ es)
+-- | Expand smaller environment into a larger one, given the added part is already present in the original stack.
+expandEnv :: forall es' es. Rec.Subset es' es => Env es -> Env (es' ++ es)
 expandEnv env = Env $ Rec.concat (Rec.take @es' $ getEnv env) $ getEnv env
 
--- | Get the handler from the environment for an effect present in the effect stack; O(1).
+-- | Get the handler from the environment for an effect present in the effect stack.
 getHandler :: forall e es. e :> es => Env es -> InternalHandler e
 getHandler = Rec.index @e . getEnv
 
--- | Modify a handler that is already on the stack; O(n).
+-- | Get a subset of the handlers from an environment.
+getSubsetEnv :: forall es' es. Rec.Subset es' es => Env es -> Env es'
+getSubsetEnv = Env . Rec.take @es' . getEnv
+
+-- | Modify a handler that is already on the stack.
 modifyHandler :: forall e es. e :> es => InternalHandler e -> Env es -> Env es
 modifyHandler f = Env . Rec.modify f . getEnv
 
--- | Insert a handler into an environment to extend the stack; O(n).
+-- | Insert a handler into an environment to extend the stack.
 insertHandler :: forall e es. InternalHandler e -> Env es -> Env (e ': es)
 insertHandler f = Env . Rec.cons f . getEnv
 
