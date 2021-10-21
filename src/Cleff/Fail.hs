@@ -3,18 +3,15 @@ module Cleff.Fail where
 
 import           Cleff
 import           Cleff.Error
-import           Control.Exception  (Exception)
-import           Control.Monad.Fail (MonadFail (..))
-import           Prelude            hiding (MonadFail (..))
-import           UnliftIO.Exception (throwIO)
+import           Control.Monad.Fail     (MonadFail (..))
+import           Control.Monad.IO.Class (liftIO)
+import           Prelude                hiding (MonadFail (..), fail)
 
 -- * Effect
 
 -- | An effect that expresses failure with a message. This effect allows the use of the 'MonadFail' class.
 data Fail :: Effect where
   Fail :: String -> Fail m a
-
-instance Exception String
 
 instance Fail :> es => MonadFail (Eff es) where
   fail = send . Fail
@@ -30,5 +27,5 @@ runFail = runError . reinterpret \case
 -- | Run a 'Fail' effect in terms of throwing exceptions in 'IO'.
 runFailIO :: IOE :> es => Eff (Fail ': es) ~> Eff es
 runFailIO = interpret \case
-  Fail msg -> throwIO msg
+  Fail msg -> liftIO $ fail msg
 {-# INLINE runFailIO #-}

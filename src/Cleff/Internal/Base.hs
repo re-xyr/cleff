@@ -17,9 +17,8 @@ import           Cleff.Internal.Effect
 import           Cleff.Internal.Interpret
 import           Cleff.Internal.Monad
 import           Control.Monad.Base          (MonadBase (..))
-import           Control.Monad.Catch         (ExitCase (ExitCaseException, ExitCaseSuccess),
-                                              MonadCatch (..), MonadMask (..),
-                                              MonadThrow (..))
+import           Control.Monad.Catch         (ExitCase (ExitCaseException, ExitCaseSuccess), MonadCatch (..),
+                                              MonadMask (..), MonadThrow (..))
 import           Control.Monad.Primitive     (PrimMonad (..), RealWorld)
 import           Control.Monad.Trans.Control (MonadBaseControl (..))
 import           GHC.IO                      (IO (IO))

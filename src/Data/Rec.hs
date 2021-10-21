@@ -17,17 +17,18 @@ module Data.Rec
     invariant
   ) where
 
-import           Control.Monad.Primitive
+import           Control.Monad.Primitive   (PrimMonad (PrimState))
+import           Data.Kind                 (Type)
 import           Data.Primitive.SmallArray
 import           GHC.Exts                  (Any)
-import           GHC.TypeLits
+import           GHC.TypeLits              (ErrorMessage (ShowType, Text, (:<>:)), TypeError)
 import           Prelude                   hiding (concat, drop, length, take)
 import           Unsafe.Coerce             (unsafeCoerce)
 
 -- | Extensible record type supporting efficient O(1) reads. The underlying implementation is 'SmallArray' slices,
 -- therefore suits small numbers of entries (/i.e./ less than 128).
 type role Rec representational nominal
-data Rec (f :: k -> *) (es :: [k]) = Rec
+data Rec (f :: k -> Type) (es :: [k]) = Rec
   {-# UNPACK #-} !Int -- ^ The offset.
   {-# UNPACK #-} !Int -- ^ The length.
   {-# UNPACK #-} !(SmallArray Any) -- ^ The array content.
