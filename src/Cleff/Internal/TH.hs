@@ -1,5 +1,5 @@
 -- | This module contains Template Haskell functions for generating definitions of functions that send effect
--- operations. You monstly won't want to import this module directly; The "Cleff" module reexports the main
+-- operations. You mostly won't want to import this module directly; The "Cleff" module reexports the main
 -- functionalities of this module.
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_HADDOCK not-home #-}
@@ -11,6 +11,7 @@ import           Control.Monad                (join)
 import           Data.Char                    (toLower)
 import           Data.Foldable                (foldl')
 import qualified Data.Map.Strict              as Map
+import           Data.Maybe                   (maybeToList)
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Datatype
 import           Language.Haskell.TH.PprLib
@@ -18,7 +19,8 @@ import           Prelude                      hiding ((<>))
 
 -- | For a datatype @T@ representing an effect, @'makeEffect' T@ generates functions defintions for performing the
 -- operations (/i.e./ constructors) of @T@ via 'send'. The naming rule is changing the first uppercase letter in the
--- constructor name to lowercase or removing the @:@ symbol in the case of operator constructors.
+-- constructor name to lowercase or removing the @:@ symbol in the case of operator constructors. Also, this function
+-- will preserve any fixity declarations defined on the constructors.
 --
 -- Because of the limitations of Template Haskell, all constructors of @T@ should be /polymorphic in the monad type/,
 -- if they are to be used by 'makeEffect'. For example, this is not OK:
@@ -61,6 +63,7 @@ makeSmartCons makeSig effName = do
 -- | Make a single function definition of a certain effect operation.
 makeCon :: Bool -> Name -> Q [Dec]
 makeCon makeSig name = do
+  fixity <- reifyFixity name
   typ <- reify name >>= \case
     DataConI _ typ _ -> pure typ
     _ -> fail $ show
@@ -80,6 +83,7 @@ makeCon makeSig name = do
       (makeTyp actionPar effVar effTy monadVar resTy)
 
   pure $
+    maybeToList ((`InfixD` name) <$> fixity) ++
     [ SigD fnName fnSig | makeSig ] ++
     [ FunD fnName [Clause (VarP <$> fnArgs) (NormalB fnBody) []] ]
 

@@ -2,16 +2,8 @@
 -- safe functionalities are re-exported in the "Cleff" module.
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_HADDOCK not-home #-}
-{-# OPTIONS_GHC -Wno-orphans -Wno-dodgy-exports #-}
-module Cleff.Internal.Base
-  ( IOE (..)
-  , -- * Primitive IO functions
-    primLiftIO, primUnliftIO
-  , -- * Unwrapping 'Eff'
-    runIOE, runPure, thisIsPureTrustMe
-  , -- * Interpreting effects in terms of 'IO'
-    InterpreterIO, interpretIO
-  ) where
+{-# OPTIONS_GHC -Wno-orphans #-}
+module Cleff.Internal.Base where
 
 import           Cleff.Internal.Effect
 import           Cleff.Internal.Interpret
@@ -24,6 +16,8 @@ import           Control.Monad.Trans.Control (MonadBaseControl (..))
 import           GHC.IO                      (IO (IO))
 import           System.IO.Unsafe            (unsafeDupablePerformIO)
 import           UnliftIO
+
+-- * The 'IOE' effect
 
 -- | The effect for lifting and unlifting the 'IO' monad, allowing you to use 'MonadIO', 'MonadUnliftIO', 'PrimMonad',
 -- 'MonadCatch', 'MonadThrow' and 'MonadMask' functionalities. This is the "final" effect that most effects eventually
@@ -49,6 +43,8 @@ data IOE :: Effect where
   Lift :: IO a -> IOE m a
   Unlift :: ((m ~> IO) -> IO a) -> IOE m a
 #endif
+
+-- * Primitive IO functions
 
 -- | Lift an 'IO' action into 'Eff'. This function is /highly unsafe/ and should not be used directly; most of the
 -- times you should use 'liftIO' that wraps this function in a safer type.
@@ -111,6 +107,8 @@ instance IOE :> es => PrimMonad (Eff es) where
   type PrimState (Eff es) = RealWorld
   primitive = liftIO . IO
 
+-- * Unwrapping 'Eff'
+
 -- | Eliminate an 'IOE' effect from the stack. This is mainly for implementing effects that don't really interact with
 -- the outside world (i.e. can be safely used 'unsafeDupablePerformIO' on), such as a State effect using
 -- 'Data.IORef.IORef'.
@@ -136,6 +134,8 @@ runIOE = (`primRunEff` emptyEnv) . thisIsPureTrustMe
 runPure :: Eff '[] a -> a
 runPure = unsafeDupablePerformIO . (`primRunEff` emptyEnv)
 {-# NOINLINE runPure #-}
+
+-- * Effect interpretation
 
 -- | An effect handler that translates effect @e@ from arbitrary effect stacks into 'IO' actions.
 type InterpreterIO es e = forall esSend. (e :> esSend, Handling esSend es e) => e (Eff esSend) ~> IO

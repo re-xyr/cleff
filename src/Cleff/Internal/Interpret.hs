@@ -1,22 +1,15 @@
 -- | This module contains functions for interpreting effects. Most of the times you won't need to import this directly;
 -- the module "Cleff" reexports most of the functionalities.
 {-# OPTIONS_HADDOCK not-home #-}
-module Cleff.Internal.Interpret
-  ( -- * Trivial handling
-    raise, raiseN, subsume, subsumeN, inject
-  , -- * Handler types
-    Handling, InstHandling, instHandling, Handler, Interpreter
-  , -- * Interpreting effects
-    interpret, reinterpret, reinterpret2, reinterpret3, reinterpretN, reinterpretBy, interpose
-  , -- * Combinators for handling higher order effects
-    Lift, runInIO, runThere, runHere, withLiftIO, withLiftEff
-  ) where
+module Cleff.Internal.Interpret where
 
 import           Cleff.Internal.Effect
 import           Cleff.Internal.Monad
 import           GHC.TypeLits          (ErrorMessage ((:<>:)))
 import qualified GHC.TypeLits          as GHC
 import           Unsafe.Coerce         (unsafeCoerce)
+
+-- * Trivial handling
 
 -- | Add an effect on the effect stack. For a more general version see 'raiseN'.
 raise :: forall e es. Eff es ~> Eff (e ': es)
@@ -38,6 +31,8 @@ subsumeN m = PrimEff (primRunEff m . expandEnv @es')
 inject :: forall es' es. Subset es' es => Eff es' ~> Eff es
 inject m = PrimEff (primRunEff m . getSubsetEnv @es')
 
+-- * Handler types
+
 -- | The typeclass that indicates a handler scope: effect @e@ sent from an arbitrary effect stack @esSend@ being
 -- handled in the environment @esBase@.
 --
@@ -52,7 +47,7 @@ class Handling esSend esBase e
 -- the @reflection@ library directly so as not to expose this piece of implementation detail to the user.
 newtype InstHandling es' esBase e a = InstHandling (Handling es' esBase e => a)
 
--- | Instantiatiate an 'Handling' typeclass, i.e. pass an implicit send-site environment in. This function shouldn't
+-- | Instantiate an 'Handling' typeclass, i.e. pass an implicit send-site environment in. This function shouldn't
 -- be directly used anyway.
 instHandling :: forall es' esBase e a. (Handling es' esBase e => a) -> Env es' -> a
 instHandling x = unsafeCoerce (InstHandling x :: InstHandling es' esBase e a)
@@ -64,6 +59,8 @@ type Handler es' es e = forall esSend. (e :> esSend, Handling esSend es e) => e 
 
 -- | An effect handler being passed to 'interpret'.
 type Interpreter es e = Handler '[] es e
+
+-- * Interpreting effects
 
 -- | Interpret an effect @e@ in terms of effects in the effect stack @es@.
 interpret :: Interpreter es e -> Eff (e ': es) ~> Eff es
@@ -93,16 +90,6 @@ reinterpretBy transform handle m = PrimEff \es ->
   let handler = InternalHandler \eff -> PrimEff \esSend -> primRunEff (transform $ instHandling handle esSend eff) es
   in primRunEff m $ insertHandler handler es
 
--- | Typeclass that indicates @esBase@ can be lifted into @es@. In other words, @esBase = es' ++ es@.
---
--- This ensures the presence of 'Cleff.IOE' is the same between @esBase@ and @es@.
-class Lift esBase es
-instance {-# INCOHERENT #-} Lift es es
-instance Lift esBase es => Lift esBase (e ': es)
-type CannotLift esBase es = 'GHC.Text "The effect stack '" ':<>: 'GHC.ShowType esBase
-  ':<>: 'GHC.Text "' cannot be lifted into '" ':<>: 'GHC.ShowType es ':<>: 'GHC.Text "'"
-instance {-# OVERLAPPABLE #-} GHC.TypeError (CannotLift esBase es) => Lift esBase es
-
 -- | Respond to an effect while being able to leave it unhandled (i.e. you can resend the effects in the handler).
 --
 -- @
@@ -112,6 +99,18 @@ interpose :: e :> es => Interpreter es e -> Eff es ~> Eff es
 interpose handle m = PrimEff \es ->
   let handler = InternalHandler \eff -> PrimEff \esSend -> primRunEff (instHandling handle esSend eff) es
   in primRunEff m $ modifyHandler handler es
+
+-- * Combinators for interpreting higher effects
+
+-- | Typeclass that indicates @esBase@ can be lifted into @es@. In other words, @esBase = es' ++ es@.
+--
+-- This ensures the presence of 'Cleff.IOE' is the same between @esBase@ and @es@.
+class Lift esBase es
+instance {-# INCOHERENT #-} Lift es es
+instance Lift esBase es => Lift esBase (e ': es)
+type CannotLift esBase es = 'GHC.Text "The effect stack '" ':<>: 'GHC.ShowType esBase
+  ':<>: 'GHC.Text "' cannot be lifted into '" ':<>: 'GHC.ShowType es ':<>: 'GHC.Text "'"
+instance {-# OVERLAPPABLE #-} GHC.TypeError (CannotLift esBase es) => Lift esBase es
 
 -- | Run a computation in the 'IO' monad. This is useful when interpreting an effect in terms of 'Cleff.IOE'.
 runInIO :: Handling esSend esBase e => Eff esSend ~> IO

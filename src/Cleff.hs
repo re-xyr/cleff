@@ -119,7 +119,7 @@ import           Cleff.Internal.TH
 --   WriteFile path contents -> 'Cleff.State.modify' ('Data.Map.insert' path contents)
 -- @
 --
--- These interpreters can then be applied to computations with the @Filesystem@ effect to giue different semantics
+-- These interpreters can then be applied to computations with the @Filesystem@ effect to give different semantics
 -- to the effect.
 
 -- $higherOrderEffects
