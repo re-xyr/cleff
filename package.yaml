@@ -69,6 +69,7 @@ default-extensions:
 - KindSignatures
 - LambdaCase
 - MultiParamTypeClasses
+- NoStarIsType
 - PolyKinds
 - RankNTypes
 - RoleAnnotations

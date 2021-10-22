@@ -64,6 +64,7 @@ cons x (Rec off len arr) = Rec 0 (len + 1) $ runSmallArray do
 type family xs ++ ys where
   '[] ++ ys = ys
   (x ': xs) ++ ys = x ': (xs ++ ys)
+infixr 5 ++
 
 -- | Concatenate two records. O(m+n).
 concat :: Rec f es -> Rec f es' -> Rec f (es ++ es')
@@ -77,66 +78,62 @@ concat (Rec off len arr) (Rec off' len' arr') = Rec 0 (len + len') $ runSmallArr
 uncons :: Rec f (e ': es) -> Rec f es
 uncons (Rec off len arr) = Rec (off + 1) (len - 1) arr
 
--- | Typeclass that shows a list has a known structure (/i.e./ known length).
+-- | Typeclass that shows a list has a known structure (/i.e./ known length).  Practically, this means you know the
+-- contents of the list.
 class KnownList (es :: [k]) where
   -- | Get the length of the list.
-  reflectLen :: Int
-  reflectLen = error "unimplemented Data.Rec.reflectLen"
+  reifyLen :: Int
+  reifyLen = error "unimplemented Data.Rec.reifyLen"
 
 instance KnownList '[] where
-  reflectLen = 0
+  reifyLen = 0
 
 instance KnownList es => KnownList (e ': es) where
-  reflectLen = 1 + reflectLen @_ @es
-
-type UnknownList es = 'Text "Cannot find a concrete structure for '" ':<>: 'ShowType es ':<>: 'Text "'"
-
-instance {-# OVERLAPPABLE #-} TypeError (UnknownList es) => KnownList es where
-  reflectLen = error "trying to inspect an abstract list"
+  reifyLen = 1 + reifyLen @_ @es
 
 -- | Slice off several entries from the top of the record. O(1).
 drop :: forall es f es'. KnownList es => Rec f (es ++ es') -> Rec f es'
 drop (Rec off len arr) = Rec (off + len') (len - len') arr
-  where len' = reflectLen @_ @es
+  where len' = reifyLen @_ @es
 
 -- | Witnesses the presence of an element in a type level list.
 class Elem (e :: k) (es :: [k]) where
   -- | Get the index of the element.
-  reflectIndex :: Int
-  reflectIndex = error "unimplemented Data.Rec.reflectIndex"
+  reifyIndex :: Int
+  reifyIndex = error "unimplemented Data.Rec.reifyIndex"
 
 instance {-# OVERLAPPING #-} Elem e (e ': es) where
-  reflectIndex = 0
+  reifyIndex = 0
 
 instance Elem e es => Elem e (e' ': es) where
-  reflectIndex = 1 + reflectIndex @_ @e @es
+  reifyIndex = 1 + reifyIndex @_ @e @es
 
 type ElemNotFound e = 'Text "The element '" ':<>: 'ShowType e ':<>: 'Text "' is not present in the constraint"
 
-instance {-# OVERLAPPABLE #-} TypeError (ElemNotFound e) => Elem e es where
-  reflectIndex = error "trying to refer to a nonexistent member"
+instance TypeError (ElemNotFound e) => Elem e '[] where
+  reifyIndex = error "trying to refer to a nonexistent member"
 
 -- | Get an element in the record. Amortized O(1).
 index :: forall e es f. Elem e es => Rec f es -> f e
-index (Rec off _ arr) = fromAny $ indexSmallArray arr (off + reflectIndex @_ @e @es)
+index (Rec off _ arr) = fromAny $ indexSmallArray arr (off + reifyIndex @_ @e @es)
 
 -- | Typeclass that witnesses @es@ being a subset of @es'@.
 class KnownList es => Subset (es :: [k]) (es' :: [k]) where
   -- | Get a list of indices of the elements.
-  reflectIndices :: [Int]
-  reflectIndices = error "unimplemented Data.Rec.reflectIndices"
+  reifyIndices :: [Int]
+  reifyIndices = error "unimplemented Data.Rec.reifyIndices"
 
 instance Subset '[] es where
-  reflectIndices = []
+  reifyIndices = []
 
 instance (Subset es es', Elem e es') => Subset (e ': es) es' where
-  reflectIndices = reflectIndex @_ @e @es' : reflectIndices @_ @es @es'
+  reifyIndices = reifyIndex @_ @e @es' : reifyIndices @_ @es @es'
 
 -- | Get a subset of the record. Amortized O(m).
 take :: forall es es' f. Subset es es' => Rec f es' -> Rec f es
-take (Rec off _ arr) = Rec 0 (reflectLen @_ @es) $ runSmallArray do
-  marr <- newArr (reflectLen @_ @es)
-  go marr (0 :: Int) (reflectIndices @_ @es @es')
+take (Rec off _ arr) = Rec 0 (reifyLen @_ @es) $ runSmallArray do
+  marr <- newArr (reifyLen @_ @es)
+  go marr (0 :: Int) (reifyIndices @_ @es @es')
   pure marr
   where
     go :: PrimMonad m => SmallMutableArray (PrimState m) Any -> Int -> [Int] -> m ()
@@ -150,7 +147,7 @@ modify :: forall e es f. Elem e es => f e -> Rec f es -> Rec f es
 modify x (Rec off len arr) = Rec 0 len $ runSmallArray do
   marr <- newArr len
   copySmallArray marr 0 arr off len
-  writeSmallArray marr (reflectIndex @_ @e @es) (toAny x)
+  writeSmallArray marr (reifyIndex @_ @e @es) (toAny x)
   pure marr
 
 -- | Merge a subset into the original record, updating several entries at once. Amortized O(m+n).
@@ -158,7 +155,7 @@ batch :: forall es es' f. Subset es es' => Rec f es -> Rec f es' -> Rec f es'
 batch (Rec off _ arr) (Rec off' len' arr') = Rec 0 len' $ runSmallArray do
   marr <- newArr len'
   copySmallArray marr 0 arr' off' len'
-  go marr (0 :: Int) (reflectIndices @_ @es @es')
+  go marr (0 :: Int) (reifyIndices @_ @es @es')
   pure marr
   where
     go :: PrimMonad m => SmallMutableArray (PrimState m) Any -> Int -> [Int] -> m ()
@@ -169,6 +166,7 @@ batch (Rec off _ arr) (Rec off' len' arr') = Rec 0 len' $ runSmallArray do
 
 -- | The type of natural transformations from functor @f@ to @g@.
 type f ~> g = forall a. f a -> g a
+infixr 0 ~>
 
 -- | Apply a natural transformation to the record. O(n).
 natural :: (f ~> g) -> Rec f es -> Rec g es

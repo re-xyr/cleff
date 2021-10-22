@@ -24,11 +24,12 @@ module Cleff
   , -- * Interpreting effects
     -- $interpretingEffects
     Handler, Interpreter,
-    interpret, reinterpret, reinterpret2, reinterpret3, reinterpretN, reinterpretBy, interpose,
+    interpret, reinterpret, reinterpret2, reinterpret3, reinterpretN,
+    interpose, impose, imposeN,
     InterpreterIO, interpretIO
   , -- * Combinators for interpreting higher order effects
     -- $higherOrderEffects
-    Handling, Lift, runInIO, runThere, runHere, withLiftIO, withLiftEff
+    Handling, runInIO, runThere, runThereN, runHere, runHere', runHereN, withLiftIO, withLiftEff, withLiftEffN
   , -- * Miscellaneous
     type (~>), type (++),
   ) where

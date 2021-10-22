@@ -74,6 +74,7 @@ library
       KindSignatures
       LambdaCase
       MultiParamTypeClasses
+      NoStarIsType
       PolyKinds
       RankNTypes
       RoleAnnotations
@@ -126,6 +127,7 @@ test-suite cleff-example
       KindSignatures
       LambdaCase
       MultiParamTypeClasses
+      NoStarIsType
       PolyKinds
       RankNTypes
       RoleAnnotations
@@ -185,6 +187,7 @@ test-suite cleff-test
       KindSignatures
       LambdaCase
       MultiParamTypeClasses
+      NoStarIsType
       PolyKinds
       RankNTypes
       RoleAnnotations

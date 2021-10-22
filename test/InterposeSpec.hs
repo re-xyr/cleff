@@ -13,7 +13,7 @@ annoy = interpose @(Reader Int) \case
     x <- ask
     trace $ show x
     pure x
-  Local f m -> local f (annoy $ runHere m)
+  Local f m -> local f (annoy $ runHere' m)
 
 countdown :: Reader Int :> es => Eff es ()
 countdown = do

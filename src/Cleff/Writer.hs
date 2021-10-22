@@ -99,7 +99,7 @@ runMVarWriter m = thisIsPureTrustMe do
     h :: [MVar w] -> Handler '[IOE] es (Writer w)
     h rws = \case
       Tell w' -> traverse_ (\rw -> modifyMVar_ rw \w'' -> pure $! (w'' <> w')) rws
-      Listen m' -> do
+      Listen (m' :: Eff esSend a') -> do
         rw' <- newMVar mempty
         x <- reinterpret (h $ rw' : rws) $ runHere m'
         w' <- readMVar rw'
