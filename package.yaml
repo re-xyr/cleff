@@ -71,6 +71,7 @@ default-extensions:
 - MultiParamTypeClasses
 - NoStarIsType
 - PolyKinds
+- QuantifiedConstraints
 - RankNTypes
 - RoleAnnotations
 - ScopedTypeVariables

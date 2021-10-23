@@ -76,6 +76,7 @@ library
       MultiParamTypeClasses
       NoStarIsType
       PolyKinds
+      QuantifiedConstraints
       RankNTypes
       RoleAnnotations
       ScopedTypeVariables
@@ -129,6 +130,7 @@ test-suite cleff-example
       MultiParamTypeClasses
       NoStarIsType
       PolyKinds
+      QuantifiedConstraints
       RankNTypes
       RoleAnnotations
       ScopedTypeVariables
@@ -168,6 +170,7 @@ test-suite cleff-test
       HigherOrderSpec
       InterposeSpec
       MaskSpec
+      RecSpec
       StateSpec
       ThSpec
       Paths_cleff
@@ -189,6 +192,7 @@ test-suite cleff-test
       MultiParamTypeClasses
       NoStarIsType
       PolyKinds
+      QuantifiedConstraints
       RankNTypes
       RoleAnnotations
       ScopedTypeVariables

@@ -6,7 +6,7 @@ module Cleff.Internal.Monad
   ( -- * Core types
     InternalHandler (..), Env (..), Eff (..)
   , -- * Effect environment axioms
-    Rec.KnownList, Rec.Subset,
+    KnownList, Subset,
     emptyEnv, contractEnv, expandEnv, getHandler, getSubsetEnv, modifyHandler, insertHandler
   , -- * Performing effect operations
     send
@@ -14,7 +14,10 @@ module Cleff.Internal.Monad
 
 import           Cleff.Internal.Effect
 import           Control.Monad.Fix     (MonadFix (mfix))
+import           Data.Proxy            (Proxy (Proxy))
+import           Data.Rec              (KnownList, Rec, Subset, (~!~), (~+~), (~:~))
 import qualified Data.Rec              as Rec
+import           Data.Typeable         (Typeable, typeRep)
 
 -- | The internal representation of effect handlers. This is just a natural transformation from the effect type
 -- @e ('Eff' es)@ to the effect monad @'Eff' es@ for any effect stack @es@ that has @e@ in it.
@@ -24,9 +27,11 @@ import qualified Data.Rec              as Rec
 newtype InternalHandler e = InternalHandler
   { runHandler :: forall esSend. e :> esSend => e (Eff esSend) ~> Eff esSend }
 
+instance Typeable e => Show (InternalHandler e) where
+  showsPrec p _ = ("Handler " ++) . showsPrec p (typeRep (Proxy :: Proxy e))
+
 -- | The effect environment that stores handlers of any effect present in the stack @es@.
-newtype Env (es :: [Effect]) = Env
-  { getEnv :: Rec.Rec InternalHandler es }
+newtype Env (es :: [Effect]) = Env { getEnv :: Rec InternalHandler es }
 
 -- | The extensible effect monad. A monad @'Eff' es@ is capable of performing any effect in the /effect stack/ @es@.
 -- Most of the times, @es@ should be a polymorphic effect stack, constrained by the '(:>)' and '(:>>)' operators that
@@ -65,28 +70,28 @@ emptyEnv :: Env '[]
 emptyEnv = Env Rec.empty
 
 -- | Contract larger environment into a smaller one.
-contractEnv :: forall es' es. Rec.KnownList es' => Env (es' ++ es) -> Env es
+contractEnv :: forall es' es. KnownList es' => Env (es' ++ es) -> Env es
 contractEnv = Env . Rec.drop @es' . getEnv
 
 -- | Expand smaller environment into a larger one, given the added part is already present in the original stack.
-expandEnv :: forall es' es. Rec.Subset es' es => Env es -> Env (es' ++ es)
-expandEnv env = Env $ Rec.concat (Rec.take @es' $ getEnv env) $ getEnv env
+expandEnv :: forall es' es. Subset es' es => Env es -> Env (es' ++ es)
+expandEnv env = Env $ Rec.pick @es' (getEnv env) ~+~ getEnv env
 
 -- | Get the handler from the environment for an effect present in the effect stack.
 getHandler :: forall e es. e :> es => Env es -> InternalHandler e
 getHandler = Rec.index @e . getEnv
 
 -- | Get a subset of the handlers from an environment.
-getSubsetEnv :: forall es' es. Rec.Subset es' es => Env es -> Env es'
-getSubsetEnv = Env . Rec.take @es' . getEnv
+getSubsetEnv :: forall es' es. Subset es' es => Env es -> Env es'
+getSubsetEnv = Env . Rec.pick @es' . getEnv
 
 -- | Modify a handler that is already on the stack.
 modifyHandler :: forall e es. e :> es => InternalHandler e -> Env es -> Env es
-modifyHandler f = Env . Rec.modify f . getEnv
+modifyHandler f = Env . (f ~!~) . getEnv
 
 -- | Insert a handler into an environment to extend the stack.
 insertHandler :: forall e es. InternalHandler e -> Env es -> Env (e ': es)
-insertHandler f = Env . Rec.cons f . getEnv
+insertHandler f = Env . (f ~:~) . getEnv
 
 -- | Perform an effect operation, /i.e./ a value constructed by a constructor of an effect type @e@, given @e@ is in
 -- the effect stack.
