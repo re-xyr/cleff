@@ -5,6 +5,8 @@ module Cleff.Internal.Interpret where
 
 import           Cleff.Internal.Effect
 import           Cleff.Internal.Monad
+import           Data.Rec              ((~!~), (~+~), (~:~))
+import qualified Data.Rec              as Env
 import           Unsafe.Coerce         (unsafeCoerce)
 
 -- * Trivial handling
@@ -16,7 +18,7 @@ raise = raiseN @'[e]
 -- | Lift an action into a bigger effect stack with arbitrarily more effects. This function requires
 -- @TypeApplications@.
 raiseN :: forall es' es. KnownList es' => Eff es ~> Eff (es' ++ es)
-raiseN m = PrimEff (primRunEff m . contractEnv @es')
+raiseN m = PrimEff (primRunEff m . Env.drop @es')
 
 -- | Eliminate a duplicate effect from the top of the effect stack. For a more general version see 'subsumeN'.
 subsume :: forall e es. e :> es => Eff (e ': es) ~> Eff es
@@ -24,11 +26,11 @@ subsume = subsumeN @'[e]
 
 -- | Eliminate several duplicate effects from the top of the effect stack. This function requires @TypeApplications@.
 subsumeN :: forall es' es. Subset es' es => Eff (es' ++ es) ~> Eff es
-subsumeN m = PrimEff (primRunEff m . expandEnv @es')
+subsumeN m = PrimEff \es -> primRunEff m $ Env.pick @es' es ~+~ es
 
 -- | Lift an action with a known effect stack into some superset of the stack.
 inject :: forall es' es. Subset es' es => Eff es' ~> Eff es
-inject m = PrimEff (primRunEff m . getSubsetEnv @es')
+inject m = PrimEff (primRunEff m . Env.pick @es')
 
 -- * Handler types
 
@@ -81,7 +83,7 @@ reinterpret3 = reinterpretN @'[e', e'', e''']
 reinterpretN :: forall es' e es. KnownList es' => Handler es' es e -> Eff (e ': es) ~> Eff (es' ++ es)
 reinterpretN handle m = PrimEff \es ->
   let handler = InternalHandler \eff -> PrimEff \esSend -> primRunEff (instHandling handle esSend eff) es
-  in primRunEff m $ insertHandler handler $ contractEnv @es' es
+  in primRunEff m $ handler ~:~ Env.drop @es' es
 
 -- | Respond to an effect while being able to leave it unhandled (i.e. you can resend the effects in the handler).
 interpose :: e :> es => Interpreter es e -> Eff es ~> Eff es
@@ -95,7 +97,7 @@ impose = imposeN @'[e']
 imposeN :: forall es' e es. (KnownList es', e :> es) => Handler es' es e -> Eff es ~> Eff (es' ++ es)
 imposeN handle m = PrimEff \es ->
   let handler = InternalHandler \eff -> PrimEff \esSend -> primRunEff (instHandling handle esSend eff) es
-  in primRunEff m $ modifyHandler handler $ contractEnv @es' es
+  in primRunEff m $ handler ~!~ Env.drop @es' es
 
 -- * Combinators for interpreting higher effects
 
@@ -145,7 +147,7 @@ runHere' = runHereN @'[] @e
 -- | Like 'runHere', but allows arbitrarily many effects to be added on top of the stack. This function requires
 -- @TypeApplications@.
 runHereN :: forall es' e es esSend. (Handling esSend es e, e :> es' ++ es, e :> esSend) => Eff esSend ~> Eff (es' ++ es)
-runHereN m = PrimEff \es -> primRunEff m (modifyHandler (getHandler @e es) sendEnv)
+runHereN m = PrimEff \es -> primRunEff m (Env.index @e es ~!~ sendEnv)
 
 -- | Temporarily gain the ability to lift arbitrary 'IO' actions into 'Eff' as long as an 'IO' action is finally
 -- returned. This is useful for dealing with effect operations with the monad type in the negative position within

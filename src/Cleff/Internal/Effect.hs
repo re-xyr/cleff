@@ -11,8 +11,7 @@ import           Data.Rec  (Elem, type (++), type (~>))
 type Effect = (Type -> Type) -> Type -> Type
 
 -- | Constraint that indicates an effect @e@ is present in the effect stack @es@ (thus 'Cleff.send'able).
-class Elem e es => (e :: Effect) :> (es :: [Effect])
-instance Elem e es => e :> es
+type (:>) = Elem
 infix 0 :>
 
 -- | A convenient type alias for @(e1 ':>' es, ..., en ':>' es)@.

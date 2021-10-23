@@ -6,7 +6,6 @@ import           Cleff
 import           Cleff.Error
 import           Cleff.State
 import           Control.Monad.Extra    (maybeM)
-import           Control.Monad.IO.Class (liftIO)
 import           Data.Map.Strict        (Map)
 import qualified Data.Map.Strict        as M
 import qualified System.IO              as IO

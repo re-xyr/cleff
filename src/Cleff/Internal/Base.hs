@@ -13,6 +13,7 @@ import           Control.Monad.Catch         (ExitCase (ExitCaseException, ExitC
                                               MonadMask (..), MonadThrow (..))
 import           Control.Monad.Primitive     (PrimMonad (..), RealWorld)
 import           Control.Monad.Trans.Control (MonadBaseControl (..))
+import qualified Data.Rec                    as Env
 import           GHC.IO                      (IO (IO))
 import           System.IO.Unsafe            (unsafeDupablePerformIO)
 import           UnliftIO
@@ -126,13 +127,13 @@ thisIsPureTrustMe = interpret \case
 -- | Unwrap the 'Eff' monad into an 'IO' action, given that all other effects are interpreted, and only 'IOE' remains
 -- on the effect stack.
 runIOE :: Eff '[IOE] ~> IO
-runIOE = (`primRunEff` emptyEnv) . thisIsPureTrustMe
+runIOE = (`primRunEff` Env.empty) . thisIsPureTrustMe
 {-# INLINE runIOE #-}
 
 -- | Unwrap the 'Eff' monad into a pure value, given that all effects are interpreted and no 'IOE' stays on the effect
 -- stack.
 runPure :: Eff '[] a -> a
-runPure = unsafeDupablePerformIO . (`primRunEff` emptyEnv)
+runPure = unsafeDupablePerformIO . (`primRunEff` Env.empty)
 {-# NOINLINE runPure #-}
 
 -- * Effect interpretation
