@@ -27,10 +27,14 @@ import           Data.Typeable         (Typeable, typeRep)
 newtype InternalHandler e = InternalHandler
   { runHandler :: forall esSend. e :> esSend => e (Eff esSend) ~> Eff esSend }
 
+-- | @
+-- 'show' (handler :: 'InternalHandler' E) == "Handler E"
+-- @
 instance Typeable e => Show (InternalHandler e) where
   showsPrec p _ = ("Handler " ++) . showsPrec p (typeRep (Proxy :: Proxy e))
 
--- | The effect environment that stores handlers of any effect present in the stack @es@.
+-- | The effect environment that stores handlers of any effect present in the stack @es@. Uses the 'Rec' type for fast
+-- reads.
 newtype Env (es :: [Effect]) = Env { getEnv :: Rec InternalHandler es }
 
 -- | The extensible effect monad. A monad @'Eff' es@ is capable of performing any effect in the /effect stack/ @es@.
@@ -69,11 +73,11 @@ instance MonadFix (Eff es) where
 emptyEnv :: Env '[]
 emptyEnv = Env Rec.empty
 
--- | Contract larger environment into a smaller one.
+-- | Contract a large environment into a smaller one.
 contractEnv :: forall es' es. KnownList es' => Env (es' ++ es) -> Env es
 contractEnv = Env . Rec.drop @es' . getEnv
 
--- | Expand smaller environment into a larger one, given the added part is already present in the original stack.
+-- | Expand a small environment into a larger one, given the added part is already present in the original stack.
 expandEnv :: forall es' es. Subset es' es => Env es -> Env (es' ++ es)
 expandEnv env = Env $ Rec.pick @es' (getEnv env) ~+~ getEnv env
 
@@ -93,7 +97,7 @@ modifyHandler f = Env . (f ~!~) . getEnv
 insertHandler :: forall e es. InternalHandler e -> Env es -> Env (e ': es)
 insertHandler f = Env . (f ~:~) . getEnv
 
--- | Perform an effect operation, /i.e./ a value constructed by a constructor of an effect type @e@, given @e@ is in
--- the effect stack.
+-- | Perform an effect operation, /i.e./ a value constructed by a constructor of an effect type @e :: 'Effect'@, given
+-- @e@ is in the effect stack.
 send :: e :> es => e (Eff es) ~> Eff es
 send eff = PrimEff \handlers -> primRunEff (runHandler (getHandler handlers) eff) handlers

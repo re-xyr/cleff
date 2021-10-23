@@ -31,7 +31,7 @@ module Cleff
     -- $higherOrderEffects
     Handling, runInIO, runThere, runThereN, runHere, runHere', runHereN, withLiftIO, withLiftEff, withLiftEffN
   , -- * Miscellaneous
-    type (~>), type (++),
+    type (~>), type (++), MonadIO (..), MonadUnliftIO (..)
   ) where
 
 import           Cleff.Internal.Base
@@ -39,6 +39,7 @@ import           Cleff.Internal.Effect
 import           Cleff.Internal.Interpret
 import           Cleff.Internal.Monad
 import           Cleff.Internal.TH
+import           UnliftIO                 (MonadIO (..), MonadUnliftIO (..))
 
 -- $definingEffects
 -- An effect should be defined as a GADT and have the kind 'Effect'. Each operation in the effect is a constructor of

@@ -1,9 +1,8 @@
 module Cleff.Mask where
 
 import           Cleff
-import           Cleff.Internal.Base    (thisIsPureTrustMe)
-import           Control.Monad.IO.Class (liftIO)
-import qualified UnliftIO.Exception     as Exc
+import           Cleff.Internal.Base (thisIsPureTrustMe)
+import qualified UnliftIO.Exception  as Exc
 
 -- * Effect
 

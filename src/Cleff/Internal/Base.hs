@@ -129,7 +129,7 @@ runIOE :: Eff '[IOE] ~> IO
 runIOE = (`primRunEff` emptyEnv) . thisIsPureTrustMe
 {-# INLINE runIOE #-}
 
--- | Unwrap the 'Eff' monad to a pure action, given that all effects are interpreted and no 'IOE' stays on the effect
+-- | Unwrap the 'Eff' monad into a pure value, given that all effects are interpreted and no 'IOE' stays on the effect
 -- stack.
 runPure :: Eff '[] a -> a
 runPure = unsafeDupablePerformIO . (`primRunEff` emptyEnv)

@@ -2,7 +2,6 @@ module Cleff.Fresh where
 
 import           Cleff
 import           Cleff.State
-import           Control.Monad.IO.Class (liftIO)
 import           Data.Unique
 
 -- * Effect

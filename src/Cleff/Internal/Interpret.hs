@@ -9,11 +9,12 @@ import           Unsafe.Coerce         (unsafeCoerce)
 
 -- * Trivial handling
 
--- | Add an effect on the effect stack. For a more general version see 'raiseN'.
+-- | Lift an action into a bigger effect stack with one more effect. For a more general version see 'raiseN'.
 raise :: forall e es. Eff es ~> Eff (e ': es)
 raise = raiseN @'[e]
 
--- | Add several effects on the effect stack. This function requires @TypeApplications@.
+-- | Lift an action into a bigger effect stack with arbitrarily more effects. This function requires
+-- @TypeApplications@.
 raiseN :: forall es' es. KnownList es' => Eff es ~> Eff (es' ++ es)
 raiseN m = PrimEff (primRunEff m . contractEnv @es')
 
@@ -25,7 +26,7 @@ subsume = subsumeN @'[e]
 subsumeN :: forall es' es. Subset es' es => Eff (es' ++ es) ~> Eff es
 subsumeN m = PrimEff (primRunEff m . expandEnv @es')
 
--- | Transform the effect stack into some superset of it.
+-- | Lift an action with a known effect stack into some superset of the stack.
 inject :: forall es' es. Subset es' es => Eff es' ~> Eff es
 inject m = PrimEff (primRunEff m . getSubsetEnv @es')
 
@@ -55,7 +56,7 @@ instHandling x = unsafeCoerce (InstHandling x :: InstHandling es' es e a)
 -- the effect stack @es@, with additional effects @es'@ added on the top.
 type Handler es' es e = forall esSend. (e :> esSend, Handling esSend es e) => e (Eff esSend) ~> Eff (es' ++ es)
 
--- | An effect handler being passed to 'interpret'.
+-- | An effect handler that does not add new effects. This is used with 'interpret' and 'interpose'.
 type Interpreter es e = Handler '[] es e
 
 -- * Interpreting effects

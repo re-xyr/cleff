@@ -9,14 +9,12 @@ module Cleff.Error
   ) where
 
 import           Cleff
-import           Cleff.Internal.Base    (thisIsPureTrustMe)
-import           Control.Exception      (Exception)
-import           Control.Monad.IO.Class (liftIO)
-import           Data.Bool              (bool)
-import           Data.Typeable          (Typeable, typeOf)
-import           Data.Unique            (Unique, newUnique)
-import           UnliftIO               (MonadUnliftIO, withRunInIO)
-import qualified UnliftIO.Exception     as Exc
+import           Cleff.Internal.Base (thisIsPureTrustMe)
+import           Control.Exception   (Exception)
+import           Data.Bool           (bool)
+import           Data.Typeable       (Typeable, typeOf)
+import           Data.Unique         (Unique, newUnique)
+import qualified UnliftIO.Exception  as Exc
 
 -- | An effect capable of breaking out of current control flow by raising an exceptional value @e@. This effect roughly
 -- corresponds to the @MonadError@ typeclass and @ExceptT@ monad transformer in @mtl@.

@@ -1,3 +1,10 @@
+-- | This module defines an immutable extensible record type, similar to @vinyl@ and @data-diverse@. However this
+-- implementation focuses on fast reads, hence has very different performance characteristics from other libraries:
+--
+-- * Lookup: Amortized \( O(1) \).
+-- * Update: \( O(n) \).
+-- * Shrink: \( O(1) \).
+-- * Append: \( O(n) \).
 {-# OPTIONS_HADDOCK not-home #-}
 module Data.Rec
   ( Rec, length
@@ -27,7 +34,7 @@ import           GHC.TypeLits              (ErrorMessage (ShowType, Text, (:<>:)
 import           Prelude                   hiding (all, any, concat, drop, head, length, tail, take, zipWith)
 import           Unsafe.Coerce             (unsafeCoerce)
 
--- | Extensible record type supporting efficient O(1) reads. The underlying implementation is 'SmallArray' slices,
+-- | Extensible record type supporting efficient \( O(1) \) reads. The underlying implementation is 'SmallArray' slices,
 -- therefore suits small numbers of entries (/i.e./ less than 128).
 type role Rec representational nominal
 data Rec (f :: k -> Type) (es :: [k]) = Rec
@@ -44,12 +51,23 @@ instance (Eq (Rec f xs), Eq (f x)) => Eq (Rec f (x ': xs)) where
 instance {-# OVERLAPPABLE #-} (forall x. Eq (f x)) => Eq (Rec f xs) where
   xs == ys = all (== Const True) $ zipWith (\x y -> Const $ x == y) xs ys
 
+-- | @
+-- 'show' 'empty' == "empty"
+-- @
 instance Show (Rec f '[]) where
   show _ = "empty"
 
+-- | @
+-- 'show' (Identity 'True' '~:~' Identity "Hi" '~:~' 'empty')
+-- == "Identity True ~:~ Identity \"Hi\" ~:~ empty"
+-- @
 instance (Show (f x), Show (Rec f xs)) => Show (Rec f (x ': xs)) where
   showsPrec p xs = showsPrec p (head xs) . (" ~:~ " ++) . showsPrec p (tail xs)
 
+-- | @
+-- 'show' (Const 'False' 'True' '~:~' Const 'False' "Hi" '~:~' 'empty')
+-- == "Const False ~:~ Const False ~:~ empty"
+-- @
 instance {-# OVERLAPPABLE #-} (forall x. Show (f x)) => Show (Rec f xs) where
   showsPrec p xs = foldr (.) id $ intersperse (" ~:~ " ++) $ extract (showsPrec p) xs
 
@@ -76,18 +94,18 @@ length (Rec _ len _) = len
 newArr :: PrimMonad m => Int -> m (SmallMutableArray (PrimState m) a)
 newArr len = newSmallArray len $ error "reading nonexistent data"
 
--- | Create an empty record. O(1).
+-- | Create an empty record. \( O(1) \).
 empty :: Rec f '[]
 empty = Rec 0 0 $ runSmallArray $ newArr 0
 
--- | Create a record with one entry. O(1).
+-- | Create a record with one entry. \( O(1) \).
 singleton :: f e -> Rec f '[e]
 singleton x = Rec 0 1 $ runSmallArray do
   marr <- newArr 1
   writeSmallArray marr 0 (toAny x)
   pure marr
 
--- | Append one entry to the record. O(n).
+-- | Append one entry to the record. \( O(n) \).
 cons :: f e -> Rec f es -> Rec f (e ': es)
 cons x (Rec off len arr) = Rec 0 (len + 1) $ runSmallArray do
   marr <- newArr (len + 1)
@@ -106,7 +124,7 @@ type family xs ++ ys where
   (x ': xs) ++ ys = x ': (xs ++ ys)
 infixr 5 ++
 
--- | Concatenate two records. O(m+n).
+-- | Concatenate two records. \( O(m+n) \).
 concat :: Rec f es -> Rec f es' -> Rec f (es ++ es')
 concat (Rec off len arr) (Rec off' len' arr') = Rec 0 (len + len') $ runSmallArray do
   marr <- newArr (len + len')
@@ -119,7 +137,7 @@ concat (Rec off len arr) (Rec off' len' arr') = Rec 0 (len + len') $ runSmallArr
 (~+~) = concat
 infixr 5 ~+~
 
--- | Slice off one entry from the top of the record. O(1).
+-- | Slice off one entry from the top of the record. \( O(1) \).
 tail :: Rec f (e ': es) -> Rec f es
 tail (Rec off len arr) = Rec (off + 1) (len - 1) arr
 
@@ -136,16 +154,16 @@ instance KnownList '[] where
 instance KnownList es => KnownList (e ': es) where
   reifyLen = 1 + reifyLen @_ @es
 
--- | Slice off several entries from the top of the record. O(1).
+-- | Slice off several entries from the top of the record. \( O(1) \).
 drop :: forall es f es'. KnownList es => Rec f (es ++ es') -> Rec f es'
 drop (Rec off len arr) = Rec (off + len') (len - len') arr
   where len' = reifyLen @_ @es
 
--- | Get the head of the record. O(1).
+-- | Get the head of the record. \( O(1) \).
 head :: Rec f (e ': es) -> f e
 head (Rec off _ arr) = fromAny $ indexSmallArray arr off
 
--- | Take elements from the top of the record. O(m).
+-- | Take elements from the top of the record. \( O(m) \).
 take :: forall es f es'. KnownList es => Rec f (es ++ es') -> Rec f es
 take (Rec off _ arr) = Rec 0 len $ runSmallArray do
   marr <- newArr len
@@ -170,7 +188,7 @@ type ElemNotFound e = 'Text "The element '" ':<>: 'ShowType e ':<>: 'Text "' is 
 instance TypeError (ElemNotFound e) => Elem e '[] where
   reifyIndex = error "trying to refer to a nonexistent member"
 
--- | Get an element in the record. Amortized O(1).
+-- | Get an element in the record. Amortized \( O(1) \).
 index :: forall e es f. Elem e es => Rec f es -> f e
 index (Rec off _ arr) = fromAny $ indexSmallArray arr (off + reifyIndex @_ @e @es)
 
@@ -186,7 +204,7 @@ instance Subset '[] es where
 instance (Subset es es', Elem e es') => Subset (e ': es) es' where
   reifyIndices = reifyIndex @_ @e @es' : reifyIndices @_ @es @es'
 
--- | Get a subset of the record. Amortized O(m).
+-- | Get a subset of the record. Amortized \( O(m) \).
 pick :: forall es es' f. Subset es es' => Rec f es' -> Rec f es
 pick (Rec off _ arr) = Rec 0 (reifyLen @_ @es) $ runSmallArray do
   marr <- newArr (reifyLen @_ @es)
@@ -199,7 +217,7 @@ pick (Rec off _ arr) = Rec 0 (reifyLen @_ @es) $ runSmallArray do
       writeSmallArray marr newIx (indexSmallArray arr (off + ix))
       go marr (newIx + 1) ixs
 
--- | Modify an entry in the record. Amortized O(n).
+-- | Modify an entry in the record. \( O(n) \).
 modify :: forall e es f. Elem e es => f e -> Rec f es -> Rec f es
 modify x (Rec off len arr) = Rec 0 len $ runSmallArray do
   marr <- newArr len
@@ -212,7 +230,7 @@ modify x (Rec off len arr) = Rec 0 len $ runSmallArray do
 (~!~) = modify
 infixl 9 ~!~
 
--- | Merge a subset into the original record, updating several entries at once. Amortized O(m+n).
+-- | Merge a subset into the original record, updating several entries at once. \( O(m+n) \).
 batch :: forall es es' f. Subset es es' => Rec f es -> Rec f es' -> Rec f es'
 batch (Rec off _ arr) (Rec off' len' arr') = Rec 0 len' $ runSmallArray do
   marr <- newArr len'
@@ -235,7 +253,7 @@ infixl 9 ~/~
 type f ~> g = forall a. f a -> g a
 infixr 0 ~>
 
--- | Apply a natural transformation to the record. O(n).
+-- | Apply a natural transformation to the record. \( O(n) \).
 natural :: (f ~> g) -> Rec f es -> Rec g es
 natural f (Rec off len arr) = Rec 0 len $ runSmallArray do
   marr <- newArr len
@@ -252,7 +270,7 @@ natural f (Rec off len arr) = Rec 0 len $ runSmallArray do
 (~$~) = natural
 infixl 4 ~$~
 
--- | Zip two records with a natural transformation. O(n).
+-- | Zip two records with a natural transformation. \( O(n) \).
 zipWith :: (forall x. f x -> g x -> h x) -> Rec f es -> Rec g es -> Rec h es
 zipWith f (Rec off len arr) (Rec off' _ arr') = Rec 0 len $ runSmallArray do
   marr <- newArr len
@@ -265,7 +283,7 @@ zipWith f (Rec off len arr) (Rec off' _ arr') = Rec 0 len $ runSmallArray do
       | otherwise = writeSmallArray marr n
         (toAny $ f (fromAny $ indexSmallArray arr (off + n)) (fromAny $ indexSmallArray arr' (off' + n)))
 
--- | Check if a predicate is true on all elements. O(n).
+-- | Check if a predicate is true on all elements. \( O(n) \).
 all :: (forall x. f x -> Bool) -> Rec f es -> Bool
 all f (Rec off len arr) = go 0
   where
@@ -273,7 +291,7 @@ all f (Rec off len arr) = go 0
       | n == len = True
       | otherwise = f (fromAny $ indexSmallArray arr (off + n)) && go (n + 1)
 
--- | Check if a predicate is true on at least one element. O(n).
+-- | Check if a predicate is true on at least one element. \( O(n) \).
 any :: (forall x. f x -> Bool) -> Rec f es -> Bool
 any f (Rec off len arr) = go 0
   where
@@ -281,7 +299,7 @@ any f (Rec off len arr) = go 0
       | n == len = False
       | otherwise = f (fromAny $ indexSmallArray arr (off + n)) || go (n + 1)
 
--- | Convert a record that effectively contains a fixed type into a list of the fixed type. O(n).
+-- | Convert a record that effectively contains a fixed type into a list of the fixed type. \( O(n) \).
 degenerate :: Rec (Const a) es -> [a]
 degenerate (Rec off len arr) = go 0
   where
@@ -289,7 +307,7 @@ degenerate (Rec off len arr) = go 0
       | n == len = []
       | otherwise = getConst (fromAny $ indexSmallArray arr (off + n)) : go (n + 1)
 
--- | Map each element to a fixed type. O(n).
+-- | Map each element to a fixed type. \( O(n) \).
 extract :: (forall x. f x -> a) -> Rec f es -> [a]
 extract f xs = degenerate $ natural (Const . f) xs
 

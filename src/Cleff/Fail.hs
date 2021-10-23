@@ -3,9 +3,8 @@ module Cleff.Fail where
 
 import           Cleff
 import           Cleff.Error
-import           Control.Monad.Fail     (MonadFail (..))
-import           Control.Monad.IO.Class (liftIO)
-import           Prelude                hiding (MonadFail (..), fail)
+import           Control.Monad.Fail (MonadFail (..))
+import           Prelude            hiding (MonadFail (..), fail)
 
 -- * Effect
 
