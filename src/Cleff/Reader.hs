@@ -1,6 +1,7 @@
 module Cleff.Reader where
 
 import           Cleff
+import           Lens.Micro (Lens', (%~), (&), (^.))
 
 -- * Effect
 
@@ -26,3 +27,10 @@ runReader r = interpret \case
   Ask        -> pure r
   Local f m' -> runReader (f r) $ runHere m'
 {-# INLINE runReader #-}
+
+-- | Run a 'Reader' effect in terms of a larger 'Reader' via a 'Lens''.
+magnify :: Reader t :> es => Lens' t r -> Eff (Reader r ': es) ~> Eff es
+magnify field = interpret \case
+  Ask        -> asks (^. field)
+  Local f m' -> local (& field %~ f) $ magnify field $ runHere m'
+{-# INLINE magnify #-}

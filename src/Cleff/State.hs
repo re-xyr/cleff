@@ -5,6 +5,7 @@ import           Cleff.Internal.Base         (thisIsPureTrustMe)
 import           Control.Concurrent.STM.TVar (stateTVar)
 import           Control.Monad               (void)
 import           Data.Tuple                  (swap)
+import           Lens.Micro                  (Lens', (&), (.~), (^.))
 import           UnliftIO.IORef
 import           UnliftIO.MVar
 import           UnliftIO.STM
@@ -85,3 +86,11 @@ runTVarState s m = do
   s' <- readTVarIO rs
   pure (x, s')
 {-# INLINE runTVarState #-}
+
+-- | Run a 'State' effect in terms of a larger 'State' via a 'Lens''.
+zoom :: State t :> es => Lens' t s -> Eff (State s ': es) ~> Eff es
+zoom field = interpret \case
+  Get     -> gets (^. field)
+  Put s   -> modify (& field .~ s)
+  State f -> state \t -> let (a, s) = f (t ^. field) in s `seq` (a, t & field .~ s)
+{-# INLINE zoom #-}

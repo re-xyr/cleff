@@ -27,6 +27,7 @@ dependencies:
 - extra >= 1.6 && < 1.8
 - exceptions >= 0.10 && < 0.11
 - hashable >= 1.2 && < 1.4
+- microlens >= 0.4.9 && < 0.5
 - monad-control >= 1 && < 1.1
 - primitive >= 0.6 && < 0.8
 - stm >= 2.5 && < 2.6

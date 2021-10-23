@@ -93,6 +93,7 @@ library
     , exceptions ==0.10.*
     , extra >=1.6 && <1.8
     , hashable >=1.2 && <1.4
+    , microlens >=0.4.9 && <0.5
     , monad-control >=1 && <1.1
     , primitive >=0.6 && <0.8
     , stm ==2.5.*
@@ -150,6 +151,7 @@ test-suite cleff-example
     , exceptions ==0.10.*
     , extra >=1.6 && <1.8
     , hashable >=1.2 && <1.4
+    , microlens >=0.4.9 && <0.5
     , monad-control >=1 && <1.1
     , primitive >=0.6 && <0.8
     , stm ==2.5.*
@@ -216,6 +218,7 @@ test-suite cleff-test
     , hashable >=1.2 && <1.4
     , hspec
     , lifted-base
+    , microlens >=0.4.9 && <0.5
     , monad-control >=1 && <1.1
     , primitive >=0.6 && <0.8
     , stm ==2.5.*
