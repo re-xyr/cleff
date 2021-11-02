@@ -24,6 +24,7 @@ jobs:
       - name: Copy stack.yaml
         run: |
           rm stack.yaml
+          rm stack.yaml.lock
           cp .github/stack-${{ matrix.ghc }}.yaml stack.yaml
       - uses: actions/cache@v2
         name: Cache ~/.stack/
