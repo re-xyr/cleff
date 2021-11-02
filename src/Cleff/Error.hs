@@ -12,8 +12,8 @@ import           Cleff
 import           Cleff.Internal.Base (thisIsPureTrustMe)
 import           Control.Exception   (Exception)
 import           Data.Bool           (bool)
-import           Data.Typeable       (Typeable, typeOf)
 import           Data.Unique         (Unique, newUnique)
+import           Type.Reflection     (Typeable, typeOf)
 import qualified UnliftIO.Exception  as Exc
 
 -- | An effect capable of breaking out of current control flow by raising an exceptional value @e@. This effect roughly

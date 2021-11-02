@@ -37,7 +37,7 @@ runWriter m = thisIsPureTrustMe do
   w' <- readIORef rw
   pure (x, w')
   where
-    h :: [IORef w] -> Handler '[IOE] es (Writer w)
+    h :: [IORef w] -> Handler (Writer w) '[IOE] es
     h rws = \case
       Tell w' -> traverse_ (\rw -> modifyIORef' rw (<> w')) rws
       Listen (m' :: Eff es'' a') -> do
@@ -78,7 +78,7 @@ runAtomicWriter m = thisIsPureTrustMe do
   w' <- readIORef rw
   pure (x, w')
   where
-    h :: [IORef w] -> Handler '[IOE] es (Writer w)
+    h :: [IORef w] -> Handler (Writer w) '[IOE] es
     h rws = \case
       Tell w' -> traverse_ (\rw -> atomicModifyIORef' rw ((, ()) . (<> w'))) rws
       Listen m' -> do
@@ -96,10 +96,10 @@ runMVarWriter m = thisIsPureTrustMe do
   w' <- readMVar rw
   pure (x, w')
   where
-    h :: [MVar w] -> Handler '[IOE] es (Writer w)
+    h :: [MVar w] -> Handler (Writer w) '[IOE] es
     h rws = \case
       Tell w' -> traverse_ (\rw -> modifyMVar_ rw \w'' -> pure $! (w'' <> w')) rws
-      Listen (m' :: Eff esSend a') -> do
+      Listen m' -> do
         rw' <- newMVar mempty
         x <- reinterpret (h $ rw' : rws) $ runHere m'
         w' <- readMVar rw'
@@ -115,7 +115,7 @@ runTVarWriter m = do
   w' <- readTVarIO rw
   pure (x, w')
   where
-    h :: [TVar w] -> Interpreter es (Writer w)
+    h :: [TVar w] -> Interpreter (Writer w) es
     h rws = \case
       Tell w' -> atomically $ traverse_ (\rw -> modifyTVar rw (<> w')) rws
       Listen m' -> do

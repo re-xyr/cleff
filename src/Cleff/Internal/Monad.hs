@@ -11,10 +11,9 @@ module Cleff.Internal.Monad
 
 import           Cleff.Internal.Effect
 import           Control.Monad.Fix     (MonadFix (mfix))
-import           Data.Proxy            (Proxy (Proxy))
 import           Data.Rec              (KnownList, Rec, Subset)
 import qualified Data.Rec              as Rec
-import           Data.Typeable         (Typeable, typeRep)
+import           Type.Reflection       (Typeable, typeRep)
 
 -- | The internal representation of effect handlers. This is just a natural transformation from the effect type
 -- @e ('Eff' es)@ to the effect monad @'Eff' es@ for any effect stack @es@ that has @e@ in it.
@@ -22,13 +21,13 @@ import           Data.Typeable         (Typeable, typeRep)
 -- In interpreting functions (see "Cleff.Internal.Interpret"), the user-facing 'Cleff.Handler' type is transformed into
 -- this type.
 newtype InternalHandler e = InternalHandler
-  { runHandler :: forall esSend. e :> esSend => e (Eff esSend) ~> Eff esSend }
+  { runHandler :: forall es. e :> es => e (Eff es) ~> Eff es }
 
 -- | @
 -- 'show' (handler :: 'InternalHandler' E) == "Handler E"
 -- @
 instance Typeable e => Show (InternalHandler e) where
-  showsPrec p _ = ("Handler " ++) . showsPrec p (typeRep (Proxy :: Proxy e))
+  showsPrec p _ = ("Handler " ++) . showsPrec p (typeRep @e)
 
 -- | The effect environment that stores handlers of any effect present in the stack @es@. Uses the 'Rec' type for fast
 -- reads.
@@ -44,7 +43,7 @@ type Env = Rec InternalHandler
 --
 -- allows you to perform operations of the @'Cleff.Reader.Reader' 'String'@ effect and the @'Cleff.State.State' 'Bool'@
 -- effect in a computation returning an 'Integer'.
-type role Eff nominal nominal
+type role Eff nominal representational
 newtype Eff es a = PrimEff { primRunEff :: Env es -> IO a }
   deriving (Semigroup, Monoid)
 

@@ -139,13 +139,13 @@ runPure = unsafeDupablePerformIO . (`primRunEff` Env.empty)
 -- * Effect interpretation
 
 -- | An effect handler that translates effect @e@ from arbitrary effect stacks into 'IO' actions.
-type InterpreterIO es e = forall esSend. (e :> esSend, Handling esSend es e) => e (Eff esSend) ~> IO
+type InterpreterIO e es = forall esSend. (e :> esSend, Handling e es esSend) => e (Eff esSend) ~> IO
 
 -- | Interpret an effect in terms of 'IO'.
 --
 -- @
 -- 'interpretIO' f = 'interpret' ('liftIO' '.' f)
 -- @
-interpretIO :: IOE :> es => InterpreterIO es e -> Eff (e ': es) ~> Eff es
+interpretIO :: IOE :> es => InterpreterIO e es -> Eff (e ': es) ~> Eff es
 interpretIO f = interpret (liftIO . f)
 {-# INLINE interpretIO #-}

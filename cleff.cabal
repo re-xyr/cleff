@@ -75,6 +75,7 @@ library
       LambdaCase
       MultiParamTypeClasses
       NoStarIsType
+      PatternSynonyms
       PolyKinds
       QuantifiedConstraints
       RankNTypes
@@ -86,6 +87,7 @@ library
       TypeFamilies
       TypeOperators
       UndecidableInstances
+      ViewPatterns
   ghc-options: -Wall -Wincomplete-uni-patterns -Wpartial-fields -Wincomplete-record-updates -Widentities
   build-depends:
       base >=4.12 && <5
@@ -130,6 +132,7 @@ test-suite cleff-example
       LambdaCase
       MultiParamTypeClasses
       NoStarIsType
+      PatternSynonyms
       PolyKinds
       QuantifiedConstraints
       RankNTypes
@@ -141,6 +144,7 @@ test-suite cleff-example
       TypeFamilies
       TypeOperators
       UndecidableInstances
+      ViewPatterns
       DeriveAnyClass
       DerivingVia
   ghc-options: -Wall -Wincomplete-uni-patterns -Wpartial-fields -Wincomplete-record-updates -Widentities -threaded -rtsopts -with-rtsopts=-N
@@ -193,6 +197,7 @@ test-suite cleff-test
       LambdaCase
       MultiParamTypeClasses
       NoStarIsType
+      PatternSynonyms
       PolyKinds
       QuantifiedConstraints
       RankNTypes
@@ -204,6 +209,7 @@ test-suite cleff-test
       TypeFamilies
       TypeOperators
       UndecidableInstances
+      ViewPatterns
       DeriveAnyClass
       DeriveGeneric
       DerivingVia

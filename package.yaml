@@ -71,6 +71,7 @@ default-extensions:
 - LambdaCase
 - MultiParamTypeClasses
 - NoStarIsType
+- PatternSynonyms
 - PolyKinds
 - QuantifiedConstraints
 - RankNTypes
@@ -82,6 +83,7 @@ default-extensions:
 - TypeFamilies
 - TypeOperators
 - UndecidableInstances
+- ViewPatterns
 
 library:
   source-dirs: src
