@@ -21,7 +21,7 @@ module Data.Rec
   , -- * Mapping
     type (~>), natural, (<#>), zipWith, all, any, degenerate, extract
   , -- * Debugging
-    invariant
+    invariant, sizeInvariant, allAccessible
   ) where
 
 import           Control.Monad.Primitive   (PrimMonad (PrimState))
@@ -33,6 +33,9 @@ import           Data.Tuple.Extra          ((&&&))
 import           GHC.Exts                  (Any)
 import           GHC.TypeLits              (ErrorMessage (ShowType, Text, (:<>:)), TypeError)
 import           Prelude                   hiding (all, any, concat, drop, head, length, tail, take, zipWith)
+import           Text.Read                 (readPrec)
+import qualified Text.Read                 as R
+import qualified Text.Read.Lex             as R
 import           Unsafe.Coerce             (unsafeCoerce)
 
 -- | Extensible record type supporting efficient \( O(1) \) reads. The underlying implementation is 'SmallArray'
@@ -59,31 +62,62 @@ instance Show (Rec f '[]) where
   show _ = "empty"
 
 -- | @
--- 'show' ('Data.Functor.Identity' 'True' ':~:' 'Data.Functor.Identity' \"Hi\" ':~:' 'empty')
+-- 'read' \"empty\" == 'empty'
+-- @
+instance Read (Rec f '[]) where
+  readPrec = R.parens $ R.prec appPrec $
+    empty <$ R.lift (R.expect (R.Ident "empty"))
+    where appPrec = 10
+
+-- | @
+-- 'show' ('Data.Functor.Identity.Identity' 'True' ':~:' 'Data.Functor.Identity.Identity' \"Hi\" ':~:' 'empty')
 -- == "Identity True :~: Identity \\"Hi\\" :~: empty"
 -- @
 instance (Show (f x), Show (Rec f xs)) => Show (Rec f (x ': xs)) where
-  showsPrec p (x :~: xs) = showsPrec p x . (" :~: " ++) . showsPrec p xs
+  showsPrec p (x :~: xs) = showParen (p > consPrec) $
+    showsPrec (consPrec + 1) x . showString " :~: " . showsPrec consPrec xs
+
+-- | @
+-- 'read' "Identity True :~: Identity \\"Hi\\" :~: empty"
+-- == 'Data.Functor.Identity.Identity' 'True' ':~:' 'Data.Functor.Identity.Identity' \"Hi\" ':~:' 'empty'
+-- @
+instance (Read (f x), Read (Rec f xs)) => Read (Rec f (x ': xs)) where
+  readPrec = R.parens $ R.prec consPrec $
+    cons <$> R.step (readPrec @(f x)) <* R.lift (R.expect (R.Symbol ":~:")) <*> readPrec @(Rec f xs)
 
 -- | @
 -- 'show' ('Const' 'False' ':~:' 'Const' 'True' ':~:' 'empty')
 -- == "Const False :~: Const True :~: empty"
 -- @
 instance {-# OVERLAPPABLE #-} (forall x. Show (f x)) => Show (Rec f xs) where
-  showsPrec p xs = foldr (.) id $ intersperse (" :~: " ++) $ extract (showsPrec p) xs
+  showsPrec p xs = showParen (p > consPrec) $
+    foldr (.) id $ intersperse (showString " :~: ") $ extract (showsPrec (consPrec + 1)) xs
 
 instance Semigroup (Rec f '[]) where
   xs <> _ = xs
 
+-- | One-by-one semigroup operation instead of concatenation.
+--
+-- @
+-- (x ':~:' xs) '<>' (y ':~:' ys) == x '<>' y ':~:' xs '<>' ys
+-- @
 instance (Semigroup (f x), Semigroup (Rec f xs)) => Semigroup (Rec f (x ': xs)) where
   (x :~: xs) <> (y :~: ys) = x <> y :~: xs <> ys
 
 instance {-# OVERLAPPABLE #-} (forall x. Semigroup (f x)) => Semigroup (Rec f xs) where
   xs <> ys = zipWith (<>) xs ys
 
+-- | @
+-- 'mempty' == 'empty'
+-- @
 instance Monoid (Rec f '[]) where
   mempty = empty
 
+-- | The unit of a record type are the units of its element types:
+--
+-- @
+-- 'mempty' == 'mempty' ':~:' 'mempty'
+-- @
 instance (Monoid (f x), Monoid (Rec f xs)) => Monoid (Rec f (x ': xs)) where
   mempty = mempty :~: mempty
 
@@ -106,7 +140,7 @@ singleton x = Rec 0 1 $ runSmallArray do
   writeSmallArray marr 0 (toAny x)
   pure marr
 
--- | Append one entry to the record. \( O(n) \).
+-- | Prepend one entry to the record. \( O(n) \).
 cons :: f e -> Rec f es -> Rec f (e ': es)
 cons x (Rec off len arr) = Rec 0 (len + 1) $ runSmallArray do
   marr <- newArr (len + 1)
@@ -120,6 +154,10 @@ pattern x :~: xs <- (head &&& tail -> (x, xs))
   where (:~:) = cons
 infixr 5 :~:
 {-# COMPLETE (:~:) #-}
+
+-- | @infixr 5 :~:@
+consPrec :: Int
+consPrec = 5
 
 -- | Type level list concatenation.
 type family xs ++ ys where
@@ -329,10 +367,22 @@ fromAny = unsafeCoerce
 {-# INLINE fromAny #-}
 
 -- | Test the size invariant of 'Rec'.
-invariant :: Rec f es -> Rec f es
-invariant xs@(Rec off len arr)
+sizeInvariant :: Rec f es -> Rec f es
+sizeInvariant xs@(Rec off len arr)
   | tracked == actual = xs
   | otherwise = error $ "Rec invariant violated: tracked size " <> show tracked <> ", actual size " <> show actual
   where
     tracked = len + off
     actual = sizeofSmallArray arr
+
+-- | Test whether all fields of 'Rec' are really set.
+allAccessible :: Rec f es -> Rec f es
+allAccessible xs@(Rec off len arr) = go 0
+  where
+    go n
+      | n == len = xs
+      | otherwise = indexSmallArray arr (off + n) `seq` go (n + 1)
+
+-- | Test all invariants.
+invariant :: Rec f es -> Rec f es
+invariant = allAccessible . sizeInvariant

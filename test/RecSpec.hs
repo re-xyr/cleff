@@ -20,17 +20,23 @@ spec = parallel do
     y `shouldBe` Nothing
     z `shouldBe` Just x
 
-  it "is Show" do
+  it "is Read & Show" do
     let
       s = "Identity 5 :~: Identity False :~: Identity 'X' :~: Identity (Just 'O') :~: empty"
-      x = i (5 :: Int) :~: i False :~: i 'X' :~: i (Just 'O') :~: Rec.empty
+      s' = "Identity 5 :~: Identity False :~: Identity 'X' :~: (Identity (Just 'O') :~: (empty))"
+      x = invariant $ read s :: Rec Identity '[Int, Bool, Char, Maybe Char]
+      x' = invariant $ read s' :: Rec Identity '[Int, Bool, Char, Maybe Char]
     show x `shouldBe` s
+    show x' `shouldBe` s
 
   it "is Eq" do
     let
       x = i (5 :: Int) :~: i False :~: i 'X' :~: i (Just 'O') :~: Rec.empty
       y = invariant $ id <#> x
+      z = invariant $ read "Identity 5 :~: Identity False :~: Identity 'X' :~: Identity (Just 'O') :~: empty"
+        :: Rec Identity '[Int, Bool, Char, Maybe Char]
     x `shouldBe` y
+    y `shouldBe` z
 
   it "can be constructed with 'empty', 'singleton', 'cons', 'concat'" do
     let
