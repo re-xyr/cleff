@@ -16,7 +16,7 @@ newtype MyExc = MyExc String
   deriving anyclass (Exc.Exception)
 
 spec :: Spec
-spec = parallel $ describe "Error" do
+spec = parallel do
   it "should catch exceptions" do
     a <- runIOE $ runError $ fromException @MyExc do
       _ <- Exc.throwIO $ MyExc "hello"
@@ -33,7 +33,7 @@ spec = parallel $ describe "Error" do
       pure ()) $ throwError (MyExc "goodbye")
     a `shouldBe` Left (MyExc "hello")
 
-  it "should not catch too prematurely" do
+  it "should not catch prematurely" do
     -- a <- runIOE $ runFail $ fail "Boom" >> pure ()
     -- a `shouldBe` Left "Boom"
     b <- runIOE $ runFail $ runError @String $ fail "Boom" >> pure ()

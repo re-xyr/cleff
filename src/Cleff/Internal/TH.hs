@@ -33,7 +33,7 @@ import           Prelude                      hiding ((<>))
 -- because the monad type @'Eff' es@ is not a fully polymorphic type variable.
 --
 -- This function is also "weaker" than @polysemy@'s @makeSem@, because this function cannot properly handle some
--- cases involving complex higher order effects. Those care are rare, though. See the tests for more details.
+-- cases involving complex higher order effects. Those cases are rare, though. See the tests for more details.
 makeEffect :: Name -> Q [Dec]
 makeEffect = makeSmartCons True
 

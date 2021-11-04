@@ -11,7 +11,7 @@ i :: a -> Identity a
 i = Identity
 
 spec :: Spec
-spec = describe "Rec" do
+spec = parallel do
   it "is Typeable" do
     let
       x = i (5 :: Int) :~: i False :~: Rec.empty

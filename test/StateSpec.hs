@@ -11,7 +11,7 @@ import           UnliftIO.Exception
 import qualified UnliftIO.Exception       as UE
 
 spec :: Spec
-spec = parallel $ describe "State" do
+spec = parallel do
   it "should run with correct results" basic
   it "should run in a deep stack" deepStack
   it "should interact well with exceptions" exceptionInteract

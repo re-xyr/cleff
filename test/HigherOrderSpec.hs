@@ -7,7 +7,7 @@ import           Cleff.Reader
 import           Test.Hspec
 
 spec :: Spec
-spec = parallel $ describe "Reader local" $ do
+spec = describe "Reader local" $ do
   it "should nest with itself" $ do
     let foo = runPure . runReader "hello" $ do
                 local (++ " world") $ do

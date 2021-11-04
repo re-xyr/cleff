@@ -21,7 +21,7 @@ countdown = do
   if x then pure () else local (subtract (1 :: Int)) countdown
 
 spec :: Spec
-spec = describe "interpose" do
+spec = do
   it "should thread in effect environment correctly" do
     let (_, msgs) = runPure $ runState [] $ outputToListState $ traceToOutput $ runReader (100 :: Int) $ annoy countdown
     msgs `shouldBe` map show [0..100 :: Int]

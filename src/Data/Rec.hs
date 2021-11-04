@@ -35,8 +35,8 @@ import           GHC.TypeLits              (ErrorMessage (ShowType, Text, (:<>:)
 import           Prelude                   hiding (all, any, concat, drop, head, length, tail, take, zipWith)
 import           Unsafe.Coerce             (unsafeCoerce)
 
--- | Extensible record type supporting efficient \( O(1) \) reads. The underlying implementation is 'SmallArray' slices,
--- therefore suits small numbers of entries (/i.e./ less than 128).
+-- | Extensible record type supporting efficient \( O(1) \) reads. The underlying implementation is 'SmallArray'
+-- slices, therefore suits small numbers of entries (/i.e./ less than 128).
 type role Rec representational nominal
 data Rec (f :: k -> Type) (es :: [k]) = Rec
   {-# UNPACK #-} !Int -- ^ The offset.
@@ -59,15 +59,15 @@ instance Show (Rec f '[]) where
   show _ = "empty"
 
 -- | @
--- 'show' (Identity 'True' ':~:' Identity "Hi" ':~:' 'empty')
--- == "Identity True :~: Identity \"Hi\" :~: empty"
+-- 'show' ('Data.Functor.Identity' 'True' ':~:' 'Data.Functor.Identity' \"Hi\" ':~:' 'empty')
+-- == "Identity True :~: Identity \\"Hi\\" :~: empty"
 -- @
 instance (Show (f x), Show (Rec f xs)) => Show (Rec f (x ': xs)) where
   showsPrec p (x :~: xs) = showsPrec p x . (" :~: " ++) . showsPrec p xs
 
 -- | @
--- 'show' (Const 'False' 'True' ':~:' Const 'False' "Hi" ':~:' 'empty')
--- == "Const False :~: Const False :~: empty"
+-- 'show' ('Const' 'False' ':~:' 'Const' 'True' ':~:' 'empty')
+-- == "Const False :~: Const True :~: empty"
 -- @
 instance {-# OVERLAPPABLE #-} (forall x. Show (f x)) => Show (Rec f xs) where
   showsPrec p xs = foldr (.) id $ intersperse (" :~: " ++) $ extract (showsPrec p) xs

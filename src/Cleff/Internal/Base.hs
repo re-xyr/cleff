@@ -76,7 +76,6 @@ instance IOE :> es => MonadUnliftIO (Eff es) where
   {-# INLINE withRunInIO #-}
 #endif
 
--- Compatibility with @exceptions@.
 instance IOE :> es => MonadThrow (Eff es) where
   throwM = throwIO
 
@@ -94,16 +93,16 @@ instance IOE :> es => MonadMask (Eff es) where
     z <- mz a (ExitCaseSuccess x)
     pure (x, z)
 
--- Compatibility with @monad-control@. This is not encouraged usage
+-- | Compatibility instance. This is not encouraged usage; use 'MonadIO' if possible.
 instance IOE :> es => MonadBase IO (Eff es) where
   liftBase = liftIO
 
+-- | Compatibility instance. This is not encouraged usage; use 'MonadUnliftIO' if possible.
 instance IOE :> es => MonadBaseControl IO (Eff es) where
   type StM (Eff es) a = a
   liftBaseWith = withRunInIO
   restoreM = pure
 
--- Compatibility with @primitive@.
 instance IOE :> es => PrimMonad (Eff es) where
   type PrimState (Eff es) = RealWorld
   primitive = liftIO . IO
