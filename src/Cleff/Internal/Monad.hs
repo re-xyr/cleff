@@ -58,7 +58,6 @@ instance Applicative (Eff es) where
   PrimEff ma <*  PrimEff mb = PrimEff \es -> ma es <*  mb es
 
 instance Monad (Eff es) where
-  return = pure
   PrimEff m >>= f = PrimEff \es -> m es >>= \a -> primRunEff (f a) es
   PrimEff ma >> PrimEff mb = PrimEff \es -> ma es >> mb es
 

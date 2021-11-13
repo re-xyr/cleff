@@ -34,7 +34,5 @@ spec = parallel do
     a `shouldBe` Left (MyExc "hello")
 
   it "should not catch prematurely" do
-    -- a <- runIOE $ runFail $ fail "Boom" >> pure ()
-    -- a `shouldBe` Left "Boom"
     b <- runIOE $ runFail $ runError @String $ fail "Boom" >> pure ()
     b `shouldBe` Left "Boom"

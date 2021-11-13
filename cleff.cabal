@@ -62,6 +62,7 @@ library
       src
   default-extensions:
       AllowAmbiguousTypes
+      BangPatterns
       BlockArguments
       ConstraintKinds
       DataKinds
@@ -112,6 +113,8 @@ test-suite cleff-example
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Broker
+      Context
       Filesystem
       Teletype
       Paths_cleff
@@ -119,6 +122,7 @@ test-suite cleff-example
       example
   default-extensions:
       AllowAmbiguousTypes
+      BangPatterns
       BlockArguments
       ConstraintKinds
       DataKinds
@@ -184,6 +188,7 @@ test-suite cleff-test
       test
   default-extensions:
       AllowAmbiguousTypes
+      BangPatterns
       BlockArguments
       ConstraintKinds
       DataKinds

@@ -117,7 +117,7 @@ runTVarWriter m = do
   where
     h :: [TVar w] -> Interpreter (Writer w) es
     h rws = \case
-      Tell w' -> atomically $ traverse_ (\rw -> modifyTVar rw (<> w')) rws
+      Tell w' -> atomically $ traverse_ (\rw -> modifyTVar' rw (<> w')) rws
       Listen m' -> do
         rw' <- newTVarIO mempty
         x <- interpret (h $ rw' : rws) $ runHere m'

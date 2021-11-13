@@ -43,7 +43,7 @@ runState s m = thisIsPureTrustMe do
     Put s' -> writeIORef rs s'
     State f -> do
       s' <- readIORef rs
-      let (a, s'') = f s'
+      let (a, !s'') = f s'
       writeIORef rs s''
       pure a) m
   s' <- readIORef rs
@@ -68,15 +68,15 @@ runMVarState s m = thisIsPureTrustMe do
   rs <- newMVar s
   x <- reinterpret (\case
     Get     -> readMVar rs
-    Put s'  -> void $ swapMVar rs $! s'
-    State f -> modifyMVar rs \s' -> let (s'', a) = f s' in s `seq` pure (a, s'')) m
+    Put s'  -> void $ swapMVar rs s'
+    State f -> modifyMVar rs \s' -> let (!s'', a) = f s' in pure (a, s'')) m
   s' <- readMVar rs
   pure (x, s')
 {-# INLINE runMVarState #-}
 
 -- | Run a 'State' effect in terms of 'TVar'. This interpretation imposes an 'IOE' effect constraint in order to avoid
 -- running atomic transactions within transactions.
-runTVarState :: forall s es a. IOE :> es =>s -> Eff (State s ': es) a -> Eff es (a, s)
+runTVarState :: forall s es a. IOE :> es => s -> Eff (State s ': es) a -> Eff es (a, s)
 runTVarState s m = do
   rs <- newTVarIO s
   x <- interpret (\case
@@ -92,5 +92,5 @@ zoom :: State t :> es => Lens' t s -> Eff (State s ': es) ~> Eff es
 zoom field = interpret \case
   Get     -> gets (^. field)
   Put s   -> modify (& field .~ s)
-  State f -> state \t -> let (a, s) = f (t ^. field) in s `seq` (a, t & field .~ s)
+  State f -> state \t -> let (a, !s) = f (t ^. field) in (a, t & field .~ s)
 {-# INLINE zoom #-}
