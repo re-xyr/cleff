@@ -8,12 +8,15 @@ import           Cleff.Trace
 import           Test.Hspec
 
 annoy :: forall es. '[Reader Int, Trace] :>> es => Eff es ~> Eff es
-annoy = interpose @(Reader Int) \case
-  Ask -> do
-    x <- ask
-    trace $ show x
-    pure x
-  Local f m -> local f (annoy $ runHere' m)
+annoy = interpose @(Reader Int) h
+  where
+    h :: Handler (Reader Int) es
+    h = \case
+      Ask -> do
+        x <- ask
+        trace $ show x
+        pure x
+      Local f m -> local f (runThere m)
 
 countdown :: Reader Int :> es => Eff es ()
 countdown = do

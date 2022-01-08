@@ -93,20 +93,37 @@ try' :: (Typeable e, MonadUnliftIO m) => Unique -> m a -> m (Either e a)
 try' eid m = catch' eid (Right <$> m) (pure . Left)
 {-# INLINE try' #-}
 
--- | Run an 'Error' effect in terms of 'Exc.Exception's.
+errorHandler :: Typeable e => Unique -> Handler (Error e) (IOE ': es)
+errorHandler eid = \case
+  ThrowError e     -> Exc.throwIO $ ErrorExc eid e
+  CatchError m' h' -> withUnliftIO \unlift -> liftIO $ catch' eid (unlift m') (unlift . h')
+{-# INLINE errorHandler #-}
+
+-- | Run an 'Error' effect.
+--
+-- __Caveat__: 'runError' is implemented with 'Exc.Exception's therefore inherits some of its unexpected behavoirs.
+-- Errors thrown in forked threads will /not/ be directly caught by 'catchError's in the parent thread. Instead it will
+-- incur an exception, and we won't be quite able to display the detailsof that exception properly at that point.
+-- Therefore please properly handle the errors in the forked threads separately.
+--
+-- However if you use @async@ and @wait@ for the action in the same effect scope (i.e. they get to be interpreted by
+-- the same 'runError' handler), the error /will/ be caught in the parent thread even if you don't deal with it in the
+-- forked thread. But if you passed the @Async@ value out of the effect scope and @wait@ed for it elsewhere, the error
+-- will again not be caught. The best choice is /not to pass @Async@ values around randomly/.
 runError :: forall e es a. Typeable e => Eff (Error e ': es) a -> Eff es (Either e a)
 runError m = thisIsPureTrustMe do
   eid <- liftIO newUnique
-  try' eid $ reinterpret (\case
-    ThrowError e     -> Exc.throwIO $ ErrorExc eid e
-    CatchError m' h' -> liftIO $ catch' eid (runInIO m') (runInIO . h')) m
+  try' eid $ reinterpret (errorHandler eid) m
 {-# INLINE runError #-}
 
 -- | Transform an 'Error' into another. This is useful for aggregating multiple errors into one type.
-mapError :: (Typeable e, Error e' :> es) => (e -> e') -> Eff (Error e ': es) ~> Eff es
-mapError f = interpret \case
+mapError :: forall e e' es. (Typeable e, Error e' :> es) => (e -> e') -> Eff (Error e ': es) ~> Eff es
+mapError f = thisIsPureTrustMe . reinterpret \case
   ThrowError e   -> throwError $ f e
-  CatchError m h -> runError (runHere m) >>= \case
-    Left e  -> runThere $ h e
-    Right a -> pure a
+  CatchError m h -> do
+    eid <- liftIO newUnique
+    res <- try' @e eid $ runHere (errorHandler eid) m
+    case res of
+      Left e  -> runThere (h e)
+      Right a -> pure a
 {-# INLINE mapError #-}

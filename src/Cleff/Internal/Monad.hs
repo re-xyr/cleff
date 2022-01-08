@@ -6,14 +6,16 @@ module Cleff.Internal.Monad
   ( -- * Core types
     InternalHandler (..), Env, Eff (..)
   , -- * Performing effect operations
-    KnownList, Subset, send
+    KnownList, Subset, send,
   ) where
 
 import           Cleff.Internal.Effect
-import           Control.Monad.Fix     (MonadFix (mfix))
-import           Data.Rec              (KnownList, Rec, Subset)
-import qualified Data.Rec              as Rec
-import           Type.Reflection       (Typeable, typeRep)
+import           Control.Monad.Fix          (MonadFix)
+import           Control.Monad.Trans.Reader (ReaderT (ReaderT))
+import           Data.Mem                   (Mem)
+import qualified Data.Mem                   as Mem
+import           Data.Rec                   (KnownList, Subset)
+import           Type.Reflection            (Typeable, typeRep)
 
 -- | The internal representation of effect handlers. This is just a natural transformation from the effect type
 -- @e ('Eff' es)@ to the effect monad @'Eff' es@ for any effect stack @es@ that has @e@ in it.
@@ -29,9 +31,8 @@ newtype InternalHandler e = InternalHandler
 instance Typeable e => Show (InternalHandler e) where
   showsPrec p _ = ("Handler " ++) . showsPrec p (typeRep @e)
 
--- | The effect environment that stores handlers of any effect present in the stack @es@. Uses the 'Rec' type for fast
--- reads.
-type Env = Rec InternalHandler
+-- | The effect memironment that stores handlers of any effect present in the stack @es@.
+type Env = Mem InternalHandler
 
 -- | The extensible effect monad. A monad @'Eff' es@ is capable of performing any effect in the /effect stack/ @es@.
 -- Most of the times, @es@ should be a polymorphic effect stack, constrained by the '(:>)' and '(:>>)' operators that
@@ -44,27 +45,11 @@ type Env = Rec InternalHandler
 -- allows you to perform operations of the @'Cleff.Reader.Reader' 'String'@ effect and the @'Cleff.State.State' 'Bool'@
 -- effect in a computation returning an 'Integer'.
 type role Eff nominal representational
-newtype Eff es a = PrimEff { primRunEff :: Env es -> IO a }
-  deriving (Semigroup, Monoid)
-
-instance Functor (Eff es) where
-  fmap f (PrimEff m) = PrimEff (fmap f . m)
-  a <$ PrimEff m = PrimEff \es -> a <$ m es
-
-instance Applicative (Eff es) where
-  pure x = PrimEff \_ -> pure x
-  PrimEff mf <*> PrimEff mx = PrimEff \es -> mf es <*> mx es
-  PrimEff ma  *> PrimEff mb = PrimEff \es -> ma es  *> mb es
-  PrimEff ma <*  PrimEff mb = PrimEff \es -> ma es <*  mb es
-
-instance Monad (Eff es) where
-  PrimEff m >>= f = PrimEff \es -> m es >>= \a -> primRunEff (f a) es
-  PrimEff ma >> PrimEff mb = PrimEff \es -> ma es >> mb es
-
-instance MonadFix (Eff es) where
-  mfix f = PrimEff \es -> mfix $ \a -> primRunEff (f a) es
+newtype Eff es a = Eff { unEff :: Env es -> IO a }
+  deriving newtype (Semigroup, Monoid)
+  deriving (Functor, Applicative, Monad, MonadFix) via (ReaderT (Env es) IO)
 
 -- | Perform an effect operation, /i.e./ a value constructed by a constructor of an effect type @e :: 'Effect'@, given
 -- @e@ is in the effect stack.
 send :: e :> es => e (Eff es) ~> Eff es
-send eff = PrimEff \handlers -> primRunEff (runHandler (Rec.index handlers) eff) handlers
+send eff = Eff \handlers -> unEff (runHandler (Mem.read handlers) eff) handlers

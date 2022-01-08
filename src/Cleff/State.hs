@@ -1,14 +1,11 @@
 module Cleff.State where
 
 import           Cleff
-import           Cleff.Internal.Base         (thisIsPureTrustMe)
-import           Control.Concurrent.STM.TVar (stateTVar)
-import           Control.Monad               (void)
-import           Data.Tuple                  (swap)
-import           Lens.Micro                  (Lens', (&), (.~), (^.))
+import           Cleff.Internal.Base (thisIsPureTrustMe)
+import           Data.Atomics        (atomicModifyIORefCAS)
+import           Data.Tuple          (swap)
+import           Lens.Micro          (Lens', (&), (.~), (^.))
 import           UnliftIO.IORef
-import           UnliftIO.MVar
-import           UnliftIO.STM
 
 -- * Effect
 
@@ -33,59 +30,27 @@ modify f = state (((), ) . f)
 
 -- * Interpretations
 
--- | Run a 'State' effect in terms of 'IORef'. This may not be what you want if you need to avoid deadlock in a
--- multithreaded setting.
+-- | Run the 'State' effect.
+--
+-- __Caveat__: The 'runState' interpreter is implemented with `IORef`s and there is no way to do arbitrary atomic
+-- transactions at all. The 'state' operation is atomic though and it is implemented with 'atomicModifyIORefCAS' which
+-- can be faster in contention. For any more complicated cases of atomicity please build your own effect that uses
+-- either @MVar@s or @TVar@s based on your need.
+--
+-- Unlike @mtl@, in @cleff@ the state /will not revert/ when an error is thrown.
+--
+-- 'runState' will stop taking care of state operations done on forked threads as soon as the main thread finishes its
+-- computation. Any state operation done /before main thread finishes/ is still taken into account.
 runState :: forall s es a. s -> Eff (State s ': es) a -> Eff es (a, s)
 runState s m = thisIsPureTrustMe do
   rs <- newIORef s
   x <- reinterpret (\case
-    Get -> readIORef rs
-    Put s' -> writeIORef rs s'
-    State f -> do
-      s' <- readIORef rs
-      let (a, !s'') = f s'
-      writeIORef rs s''
-      pure a) m
+    Get     -> readIORef rs
+    Put s'  -> writeIORef rs s'
+    State f -> liftIO $ atomicModifyIORefCAS rs (swap . f)) m
   s' <- readIORef rs
   pure (x, s')
 {-# INLINE runState #-}
-
--- | Run a 'State' effect in terms of 'IORef', and use 'atomicModifyIORef'' for the 'state' operation.
-runAtomicState :: forall s es a. s -> Eff (State s ': es) a -> Eff es (a, s)
-runAtomicState s m = thisIsPureTrustMe do
-  rs <- newIORef s
-  x <- reinterpret (\case
-    Get     -> readIORef rs
-    Put s'  -> writeIORef rs s'
-    State f -> atomicModifyIORef' rs (swap . f)) m
-  s' <- readIORef rs
-  pure (x, s')
-{-# INLINE runAtomicState #-}
-
--- | Run a 'State' effect in terms of 'MVar'.
-runMVarState :: forall s es a. s -> Eff (State s ': es) a -> Eff es (a, s)
-runMVarState s m = thisIsPureTrustMe do
-  rs <- newMVar s
-  x <- reinterpret (\case
-    Get     -> readMVar rs
-    Put s'  -> void $ swapMVar rs s'
-    State f -> modifyMVar rs \s' -> let (!s'', a) = f s' in pure (a, s'')) m
-  s' <- readMVar rs
-  pure (x, s')
-{-# INLINE runMVarState #-}
-
--- | Run a 'State' effect in terms of 'TVar'. This interpretation imposes an 'IOE' effect constraint in order to avoid
--- running atomic transactions within transactions.
-runTVarState :: forall s es a. IOE :> es => s -> Eff (State s ': es) a -> Eff es (a, s)
-runTVarState s m = do
-  rs <- newTVarIO s
-  x <- interpret (\case
-    Get     -> readTVarIO rs
-    Put s'  -> atomically $ writeTVar rs s'
-    State f -> atomically $ stateTVar rs f) m
-  s' <- readTVarIO rs
-  pure (x, s')
-{-# INLINE runTVarState #-}
 
 -- | Run a 'State' effect in terms of a larger 'State' via a 'Lens''.
 zoom :: State t :> es => Lens' t s -> Eff (State s ': es) ~> Eff es

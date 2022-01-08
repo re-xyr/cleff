@@ -16,10 +16,10 @@ subscribe :: Broker :> es => Int -> (String -> Eff es Bool) -> Eff es ()
 subscribe channel = send . Subscribe channel
 
 runBroker :: IOE :> es => Eff (Broker : es) a -> Eff es a
-runBroker = interpretIO \case
-  Subscribe channel cb -> liftIO do
+runBroker = interpret \case
+  Subscribe channel cb -> withUnliftIO \unlift -> liftIO do
     putStrLn $ "Subscribe: " ++ show channel
-    nestedImpl channel \s icb -> icb =<< runInIO (cb s)
+    nestedImpl channel \s icb -> icb =<< unlift (cb s)
 
 prog :: (IOE :> es, Broker :> es) => Eff es ()
 prog = do

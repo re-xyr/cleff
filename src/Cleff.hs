@@ -23,13 +23,13 @@ module Cleff
     raise, raiseN, KnownList, subsume, subsumeN, inject, Subset
   , -- * Interpreting effects
     -- $interpretingEffects
-    Handler, Interpreter,
+    Handler,
     interpret, reinterpret, reinterpret2, reinterpret3, reinterpretN,
     interpose, impose, imposeN,
-    InterpreterIO, interpretIO
+    HandlerIO, interpretIO
   , -- * Combinators for interpreting higher order effects
     -- $higherOrderEffects
-    Handling, runInIO, runThere, runThereN, runHere, runHere', runHereN, withLiftIO, withLiftEff, withLiftEffN
+    Handling, runThere, runHere, withUnliftIO, withLiftIO, withLiftEff
   , -- * Miscellaneous
     type (~>), type (++), MonadIO (..), MonadUnliftIO (..)
   ) where

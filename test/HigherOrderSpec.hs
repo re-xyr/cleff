@@ -3,8 +3,15 @@
 module HigherOrderSpec where
 
 import           Cleff
+import           Cleff.Error
 import           Cleff.Reader
 import           Test.Hspec
+
+data SomeEff :: Effect where
+  SomeAction :: SomeEff m String
+makeEffect ''SomeEff
+
+data Ex = Ex deriving (Eq, Show)
 
 spec :: Spec
 spec = describe "Reader local" $ do
@@ -14,3 +21,15 @@ spec = describe "Reader local" $ do
                   local (++ "!") $ do
                     ask
     foo `shouldBe` "hello world!"
+
+  it "should local for other interpreted effects" do
+    let
+      localed = runPure $ runReader "unlocaled" $ interpret (\SomeAction -> ask) do
+        local (const "localed") someAction
+    localed `shouldBe` "localed"
+
+  it "should catch errors indirectly thrown from interpreted effects" do
+    let
+      caught = runPure $ runError @Ex $ interpret (\SomeAction -> throwError Ex) do
+        someAction `catchError` \Ex -> return "caught"
+    caught `shouldBe` Right "caught"

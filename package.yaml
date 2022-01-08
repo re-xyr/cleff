@@ -22,20 +22,19 @@ category:            Control, Effect, Language
 description:         Please see the README on GitHub at <https://github.com/re-xyr/cleff#readme>
 
 dependencies:
+- atomic-primops >= 0.8 && < 0.9
 - base >= 4.12 && < 5
 - containers >= 0.6 && < 0.7
 - extra >= 1.6 && < 1.8
 - exceptions >= 0.10 && < 0.11
-- hashable >= 1.2 && < 1.4
 - microlens >= 0.4.9 && < 0.5
 - monad-control >= 1 && < 1.1
 - primitive >= 0.6 && < 0.8
-- stm >= 2.5 && < 2.6
 - template-haskell >= 2.14 && < 3
 - th-abstraction >= 0.2.11 && < 0.5
+- transformers >= 0.5 && < 0.7
 - transformers-base >= 0.4.5 && < 0.5
 - unliftio >= 0.2.8 && < 0.3
-- unordered-containers >= 0.2.9 && < 0.3
 
 flags:
   dynamic-ioe:
@@ -62,6 +61,8 @@ default-extensions:
 - BlockArguments
 - ConstraintKinds
 - DataKinds
+- DerivingStrategies
+- DerivingVia
 - EmptyCase
 - FlexibleContexts
 - FlexibleInstances
@@ -99,14 +100,12 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - cleff
-    - exceptions
     - hspec
     - lifted-base
     - QuickCheck
     default-extensions:
     - DeriveAnyClass
     - DeriveGeneric
-    - DerivingVia
 
   cleff-example:
     main:                Main.hs
@@ -119,4 +118,3 @@ tests:
     - cleff
     default-extensions:
     - DeriveAnyClass
-    - DerivingVia

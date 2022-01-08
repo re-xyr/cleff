@@ -13,10 +13,10 @@ import           Control.Monad.Catch         (ExitCase (ExitCaseException, ExitC
                                               MonadMask (..), MonadThrow (..))
 import           Control.Monad.Primitive     (PrimMonad (..), RealWorld)
 import           Control.Monad.Trans.Control (MonadBaseControl (..))
-import qualified Data.Rec                    as Env
+import qualified Data.Mem                    as Mem
 import           GHC.IO                      (IO (IO))
 import           System.IO.Unsafe            (unsafeDupablePerformIO)
-import           UnliftIO
+import           UnliftIO                    hiding (withUnliftIO)
 
 -- * The 'IOE' effect
 
@@ -50,13 +50,13 @@ data IOE :: Effect where
 -- | Lift an 'IO' action into 'Eff'. This function is /highly unsafe/ and should not be used directly; most of the
 -- times you should use 'liftIO' that wraps this function in a safer type.
 primLiftIO :: IO a -> Eff es a
-primLiftIO = PrimEff . const
+primLiftIO = Eff . const
 {-# INLINE primLiftIO #-}
 
 -- | Give a runner function a way to run 'Eff' actions as an 'IO' action. This function is /highly unsafe/ and should
 -- not be used directly; most of the times you should use 'runInIO' that wraps this function in a safer type.
 primUnliftIO :: ((Eff es ~> IO) -> IO a) -> Eff es a
-primUnliftIO f = PrimEff \handlers -> f (`primRunEff` handlers)
+primUnliftIO f = Eff \es -> f (`unEff` es)
 {-# INLINE primUnliftIO #-}
 
 -- Encouraged usage built upon @unliftio@
@@ -119,32 +119,36 @@ thisIsPureTrustMe :: Eff (IOE ': es) ~> Eff es
 thisIsPureTrustMe = interpret \case
 #ifdef DYNAMIC_IOE
   Lift m   -> primLiftIO m
-  Unlift f -> primLiftIO $ f runInIO
+  Unlift f -> withUnliftIO \unlift -> primLiftIO $ f unlift
 #endif
 {-# INLINE thisIsPureTrustMe #-}
+
+runEff :: Eff '[] a -> IO a
+runEff m = unEff m Mem.empty
+{-# INLINE runEff #-}
 
 -- | Unwrap the 'Eff' monad into an 'IO' action, given that all other effects are interpreted, and only 'IOE' remains
 -- on the effect stack.
 runIOE :: Eff '[IOE] ~> IO
-runIOE = (`primRunEff` Env.empty) . thisIsPureTrustMe
+runIOE = runEff . thisIsPureTrustMe
 {-# INLINE runIOE #-}
 
 -- | Unwrap the 'Eff' monad into a pure value, given that all effects are interpreted and no 'IOE' stays on the effect
 -- stack.
 runPure :: Eff '[] a -> a
-runPure = unsafeDupablePerformIO . (`primRunEff` Env.empty)
+runPure = unsafeDupablePerformIO . runEff
 {-# NOINLINE runPure #-}
 
 -- * Effect interpretation
 
 -- | An effect handler that translates effect @e@ from arbitrary effect stacks into 'IO' actions.
-type InterpreterIO e es = forall esSend. (e :> esSend, Handling e es esSend) => e (Eff esSend) ~> IO
+type HandlerIO e es = forall esSend. (e :> esSend, Handling e es esSend) => e (Eff esSend) ~> IO
 
 -- | Interpret an effect in terms of 'IO'.
 --
 -- @
 -- 'interpretIO' f = 'interpret' ('liftIO' '.' f)
 -- @
-interpretIO :: IOE :> es => InterpreterIO e es -> Eff (e ': es) ~> Eff es
+interpretIO :: IOE :> es => HandlerIO e es -> Eff (e ': es) ~> Eff es
 interpretIO f = interpret (liftIO . f)
 {-# INLINE interpretIO #-}

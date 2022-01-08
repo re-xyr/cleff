@@ -25,18 +25,17 @@ module Data.Rec
   ) where
 
 import           Control.Monad.Primitive   (PrimMonad (PrimState))
+import           Data.Any                  (Any, fromAny, toAny)
 import           Data.Functor.Const        (Const (..))
 import           Data.Kind                 (Type)
 import           Data.List                 (intersperse)
 import           Data.Primitive.SmallArray
 import           Data.Tuple.Extra          ((&&&))
-import           GHC.Exts                  (Any)
 import           GHC.TypeLits              (ErrorMessage (ShowType, Text, (:<>:)), TypeError)
 import           Prelude                   hiding (all, any, concat, drop, head, length, tail, take, zipWith)
 import           Text.Read                 (readPrec)
 import qualified Text.Read                 as R
 import qualified Text.Read.Lex             as R
-import           Unsafe.Coerce             (unsafeCoerce)
 
 -- | Extensible record type supporting efficient \( O(1) \) reads. The underlying implementation is 'SmallArray'
 -- slices, therefore suits small numbers of entries (/i.e./ less than 128).
@@ -357,14 +356,6 @@ degenerate (Rec off len arr) = go 0
 -- | Map each element to a fixed type. \( O(n) \).
 extract :: (forall x. f x -> a) -> Rec f es -> [a]
 extract f xs = degenerate $ natural (Const . f) xs
-
-toAny :: a -> Any
-toAny = unsafeCoerce
-{-# INLINE toAny #-}
-
-fromAny :: Any -> a
-fromAny = unsafeCoerce
-{-# INLINE fromAny #-}
 
 -- | Test the size invariant of 'Rec'.
 sizeInvariant :: Rec f es -> Rec f es
