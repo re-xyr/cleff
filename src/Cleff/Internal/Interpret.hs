@@ -1,6 +1,7 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# OPTIONS_HADDOCK not-home #-}
 -- | This module contains functions for interpreting effects. Most of the times you won't need to import this directly;
 -- the module "Cleff" reexports most of the functionalities.
-{-# OPTIONS_HADDOCK not-home #-}
 module Cleff.Internal.Interpret where
 
 import           Cleff.Internal.Effect

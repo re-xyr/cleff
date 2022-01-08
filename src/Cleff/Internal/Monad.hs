@@ -1,7 +1,7 @@
+{-# OPTIONS_HADDOCK not-home #-}
 -- | This module contains the definition of the 'Eff' monad, which is basically an @'Env' es -> 'IO' a@, as well as
 -- functions for manipulating the effect environment type 'Env'. Most of the times, you won't need to use this module
 -- directly; user-facing functionalities are all exported via the "Cleff" module.
-{-# OPTIONS_HADDOCK not-home #-}
 module Cleff.Internal.Monad
   ( -- * Core types
     InternalHandler (..), Env, Eff (..)

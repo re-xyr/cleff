@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 module Cleff.Error
   ( -- * Effect
     Error (..)

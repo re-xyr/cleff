@@ -1,3 +1,5 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# OPTIONS_HADDOCK not-home #-}
 -- | This module defines an immutable extensible record type, similar to @vinyl@ and @data-diverse@. However this
 -- implementation focuses on fast reads, hence has very different performance characteristics from other libraries:
 --
@@ -5,7 +7,6 @@
 -- * Update: \( O(n) \).
 -- * Shrink: \( O(1) \).
 -- * Append: \( O(n) \).
-{-# OPTIONS_HADDOCK not-home #-}
 module Data.Rec
   ( Rec, length
   , -- * Construction

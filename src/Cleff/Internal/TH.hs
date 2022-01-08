@@ -1,8 +1,8 @@
+{-# LANGUAGE CPP #-}
+{-# OPTIONS_HADDOCK not-home #-}
 -- | This module contains Template Haskell functions for generating definitions of functions that send effect
 -- operations. You mostly won't want to import this module directly; The "Cleff" module reexports the main
 -- functionalities of this module.
-{-# LANGUAGE CPP #-}
-{-# OPTIONS_HADDOCK not-home #-}
 module Cleff.Internal.TH where
 
 import           Cleff.Internal.Effect

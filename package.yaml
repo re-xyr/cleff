@@ -56,7 +56,6 @@ when:
   - -DDYNAMIC_IOE
 
 default-extensions:
-- AllowAmbiguousTypes
 - BangPatterns
 - BlockArguments
 - ConstraintKinds

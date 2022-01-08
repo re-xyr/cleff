@@ -1,6 +1,6 @@
+{-# OPTIONS_HADDOCK not-home #-}
 -- | This module contains definitions of some basic types related to effects. You won't need this module most of the
 -- times; most functionalities are reexported in the "Cleff" module.
-{-# OPTIONS_HADDOCK not-home #-}
 module Cleff.Internal.Effect (Effect, (:>), (:>>), type (++), type (~>)) where
 
 import           Data.Kind (Constraint, Type)

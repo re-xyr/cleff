@@ -9,13 +9,14 @@ module Data.Mem (Mem, MemRef, empty, adjust, read, write, replace, append, updat
 import           Data.Any           (Any, fromAny, toAny)
 import           Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as Map
+import           Data.Kind          (Type)
 import           Data.Rec           (Rec, pattern (:~:))
 import qualified Data.Rec           as Rec
 import           Prelude            hiding (read)
 
 -- | The representation of a reference in a 'Mem'.
 type role MemRef representational nominal
-newtype MemRef f a = MemRef { unMemRef :: Int }
+newtype MemRef (f :: k -> Type) (a :: k) = MemRef { unMemRef :: Int }
   deriving
     ( Eq  -- ^ Pointer equality.
     , Ord -- ^ An arbitrary total order on the references.
@@ -24,7 +25,7 @@ newtype MemRef f a = MemRef { unMemRef :: Int }
 -- | An simulated array of thread-local references. This means for each array cell, you can either change the reference or
 -- change the memory the reference points to.
 type role Mem representational nominal
-data Mem f es = Mem
+data Mem (f :: k -> Type) (es :: [k]) = Mem
   {-# UNPACK #-} !(Rec (MemRef f) es)
   {-# UNPACK #-} !Int
   !(IntMap Any)

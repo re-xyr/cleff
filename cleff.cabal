@@ -62,7 +62,6 @@ library
   hs-source-dirs:
       src
   default-extensions:
-      AllowAmbiguousTypes
       BangPatterns
       BlockArguments
       ConstraintKinds
@@ -122,7 +121,6 @@ test-suite cleff-example
   hs-source-dirs:
       example
   default-extensions:
-      AllowAmbiguousTypes
       BangPatterns
       BlockArguments
       ConstraintKinds
@@ -189,7 +187,6 @@ test-suite cleff-test
   hs-source-dirs:
       test
   default-extensions:
-      AllowAmbiguousTypes
       BangPatterns
       BlockArguments
       ConstraintKinds

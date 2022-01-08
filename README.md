@@ -17,7 +17,7 @@ In particular, `cleff` uses a `ReaderT IO` as the underlying representation of t
 
 However, `cleff` is also like [`polysemy`], in the sense that it supports very flexible and user-friendly effect interpretation. This includes support for [arbitrary effect lifting and subsumption](https://hackage.haskell.org/package/cleff-0.1.0.0/candidate/docs/Cleff.html#g:4), as well as [interpreting higher-order effects](https://hackage.haskell.org/package/cleff-0.1.0.0/candidate/docs/Cleff.html#g:6), with arguably even less boilerplate than `polysemy`.
 
-[In terms of performance](#benchmarks), `cleff` outperforms `polysemy` in microbenchmarks, and often being comparable to `effectful`. However, note that `effectful` and `cleff` have very different design principles. While `effectful` prioritizes performance (by [providing static dispatch](https://github.com/arybczak/effectful/blob/master/effectful-core/src/Effectful/Reader.hs)), `cleff` more focuses on smoothing higher-order effect interpretation and providing user-friendly interpretation combinators, and finally have a unified effect interface that maximizes the ease of use. If you would like minimal performance overhead, please still consider [`effectful`].
+[In terms of performance](#benchmarks), `cleff` outperforms `polysemy` in microbenchmarks, and is slightly behind `effectful`. However, note that `effectful` and `cleff` have very different design principles. While `effectful` prioritizes performance (by [providing static dispatch](https://github.com/arybczak/effectful/blob/master/effectful-core/src/Effectful/Reader.hs)), `cleff` focuses on allowing more expressive higher-order effect interpretation and providing user-friendly interpretation combinators. If you would like minimal performance overhead, please still consider [`effectful`].
 
 In conclusion, `cleff` is an effect library that tries to find a good balance between simplicity, performance, and expressivity.
 
@@ -95,7 +95,7 @@ Blog posts:
 - [Polysemy: Mea Culpa](https://reasonablypolymorphic.com/blog/mea-culpa/) by Sandy Maguire.
 - [Polysemy Internals: The Effect-Interpreter Effect](https://reasonablypolymorphic.com/blog/tactics/) by Sandy Maguire.
 - [ReaderT design pattern](https://www.fpcomplete.com/blog/2017/06/readert-design-pattern/) by Michael Snoyman.
-- [Safe exception handling](https://www.fpcomplete.com/blog/2016/11/exceptions-best-practices-haskell/) by Michael Snoyman.
+- [Safe exception handling](https://www.fpcomplete.com/haskell/tutorial/exceptions/) by Michael Snoyman.
 
 [`polysemy`]: https://hackage.haskell.org/package/polysemy
 [`fused-effects`]: https://hackage.haskell.org/package/fused-effects

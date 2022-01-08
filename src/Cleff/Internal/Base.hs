@@ -1,8 +1,8 @@
--- | This module contains the 'IOE' effect together with a few primitives for using it. It is not usually needed as
--- safe functionalities are re-exported in the "Cleff" module.
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_HADDOCK not-home #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+-- | This module contains the 'IOE' effect together with a few primitives for using it. It is not usually needed as
+-- safe functionalities are re-exported in the "Cleff" module.
 module Cleff.Internal.Base where
 
 import           Cleff.Internal.Effect
