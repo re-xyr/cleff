@@ -20,12 +20,11 @@ module Cleff
     -- $unwrappingEff
     runPure, runIOE
   , -- * Trivial effects handling
-    raise, raiseN, KnownList, subsume, subsumeN, inject, Subset
+    raise, raiseN, inject, subsume, subsumeN, KnownList, Subset
   , -- * Interpreting effects
     -- $interpretingEffects
-    Handler,
-    interpret, reinterpret, reinterpret2, reinterpret3, reinterpretN,
-    interpose, impose, imposeN,
+    Handler, interpret, reinterpret, reinterpret2, reinterpret3, reinterpretN, interpose, impose, imposeN,
+    Translator, transform, translate,
     HandlerIO, interpretIO
   , -- * Combinators for interpreting higher order effects
     -- $higherOrderEffects

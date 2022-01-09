@@ -18,12 +18,12 @@ import           Data.Rec                   (KnownList, Subset)
 import           Type.Reflection            (Typeable, typeRep)
 
 -- | The internal representation of effect handlers. This is just a natural transformation from the effect type
--- @e ('Eff' es)@ to the effect monad @'Eff' es@ for any effect stack @es@ that has @e@ in it.
+-- @e ('Eff' es)@ to the effect monad @'Eff' es@ for any effect stack @es@.
 --
 -- In interpreting functions (see "Cleff.Internal.Interpret"), the user-facing 'Cleff.Handler' type is transformed into
 -- this type.
 newtype InternalHandler e = InternalHandler
-  { runHandler :: forall es. e :> es => e (Eff es) ~> Eff es }
+  { runHandler :: forall es. e (Eff es) ~> Eff es }
 
 -- | @
 -- 'show' (handler :: 'InternalHandler' E) == "Handler E"

@@ -54,7 +54,7 @@ primLiftIO = Eff . const
 {-# INLINE primLiftIO #-}
 
 -- | Give a runner function a way to run 'Eff' actions as an 'IO' action. This function is /highly unsafe/ and should
--- not be used directly; most of the times you should use 'runInIO' that wraps this function in a safer type.
+-- not be used directly; most of the times you should use 'withRunInIO' that wraps this function in a safer type.
 primUnliftIO :: ((Eff es ~> IO) -> IO a) -> Eff es a
 primUnliftIO f = Eff \es -> f (`unEff` es)
 {-# INLINE primUnliftIO #-}
@@ -123,6 +123,7 @@ thisIsPureTrustMe = interpret \case
 #endif
 {-# INLINE thisIsPureTrustMe #-}
 
+-- | Extract the 'IO' action out of an 'Eff' with no effect remaining on the stack.
 runEff :: Eff '[] a -> IO a
 runEff m = unEff m Mem.empty
 {-# INLINE runEff #-}
@@ -142,7 +143,7 @@ runPure = unsafeDupablePerformIO . runEff
 -- * Effect interpretation
 
 -- | An effect handler that translates effect @e@ from arbitrary effect stacks into 'IO' actions.
-type HandlerIO e es = forall esSend. (e :> esSend, Handling e es esSend) => e (Eff esSend) ~> IO
+type HandlerIO e es = forall esSend. (Handling e esSend) => e (Eff esSend) ~> IO
 
 -- | Interpret an effect in terms of 'IO'.
 --

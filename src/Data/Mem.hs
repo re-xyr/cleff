@@ -1,10 +1,11 @@
--- | 'Mem' is a data structure that is a simulation of an array of thread-local references. This structure supports:
+{-# LANGUAGE UnboxedTuples #-}
+-- | 'Mem' is a data structure that is a simulation of an array of thread-local pointers. This structure supports:
 --
--- * \( O(n) \) creation of a new reference;
--- * \( O(n) \) changing the reference in an array cell;
--- * \( O(1) \) modification of the memory a reference points to;
+-- * \( O(n) \) creation of a new pointer;
+-- * \( O(n) \) changing the pointer in an array cell;
+-- * \( O(1) \) modification of the memory a pointer points to;
 -- * \( O(1) \) read.
-module Data.Mem (Mem, MemRef, empty, adjust, read, write, replace, append, update) where
+module Data.Mem (Mem, MemPtr, empty, adjust, alloca, read, write, replace, append, update) where
 
 import           Data.Any           (Any, fromAny, toAny)
 import           Data.IntMap.Strict (IntMap)
@@ -14,55 +15,61 @@ import           Data.Rec           (Rec, pattern (:~:))
 import qualified Data.Rec           as Rec
 import           Prelude            hiding (read)
 
--- | The representation of a reference in a 'Mem'.
-type role MemRef representational nominal
-newtype MemRef (f :: k -> Type) (a :: k) = MemRef { unMemRef :: Int }
+-- | The representation of a pointer in a 'Mem'.
+type role MemPtr representational nominal
+newtype MemPtr (f :: k -> Type) (a :: k) = MemPtr { unMemRef :: Int }
   deriving
     ( Eq  -- ^ Pointer equality.
-    , Ord -- ^ An arbitrary total order on the references.
+    , Ord -- ^ An arbitrary total order on the pointers.
     )
 
--- | An simulated array of thread-local references. This means for each array cell, you can either change the reference or
--- change the memory the reference points to.
+-- | A simulated array of thread-local pointers. This means for each array cell, you can either change the pointer or
+-- change the memory the pointer points to.
+--
+-- Note that like real memory, any of the operations provided is not generally safe and it is your responsibility to
+-- ensure the correctness of your calls.
 type role Mem representational nominal
 data Mem (f :: k -> Type) (es :: [k]) = Mem
-  {-# UNPACK #-} !(Rec (MemRef f) es)
-  {-# UNPACK #-} !Int
-  !(IntMap Any)
+  {-# UNPACK #-} !(Rec (MemPtr f) es) -- ^ The array.
+  {-# UNPACK #-} !Int -- ^ The next memory address to allocate.
+  !(IntMap Any) -- ^ The simulated memory.
 
--- | Create a 'Mem' with no references.
+-- | Create a 'Mem' with no pointers.
 empty :: Mem f '[]
 empty = Mem Rec.empty 0 Map.empty
 {-# INLINE empty #-}
 
--- | Adjust the array of references.
-adjust :: (Rec (MemRef f) es -> Rec (MemRef f) es') -> Mem f es -> Mem f es'
+-- | Adjust the array of pointers.
+adjust :: (Rec (MemPtr f) es -> Rec (MemPtr f) es') -> Mem f es -> Mem f es'
 adjust f (Mem re n mem) = Mem (f re) n mem
 {-# INLINE adjust #-}
 
--- | Read a reference. \( O(1) \).
+-- | Allocate a new address. \( O(1) \).
+alloca :: forall e es f. Mem f es -> (# MemPtr f e, Mem f es #)
+alloca (Mem re n mem) = (# MemPtr n, Mem re (succ n) mem #)
+{-# INLINE alloca #-}
+
+-- | Read a pointer. \( O(1) \).
 read :: forall e es f. Rec.Elem e es => Mem f es -> f e
 read (Mem re _ mem) = fromAny $ mem Map.! unMemRef (Rec.index @e re)
 {-# INLINE read #-}
 
--- | Write to the memory a reference points to. \( O(1) \).
-write :: forall e es f. Rec.Elem e es => f e -> Mem f es -> Mem f es
-write x (Mem re n mem) = Mem re n (Map.insert (unMemRef $ Rec.index @e re) (toAny x) mem)
+-- | Write to the memory a pointer points to. \( O(1) \).
+write :: forall e es f. MemPtr f e -> f e -> Mem f es -> Mem f es
+write (MemPtr m) x (Mem re n mem) = Mem re n (Map.insert m (toAny x) mem)
 {-# INLINE write #-}
 
--- | Replace a reference with a new one. \( O(n) \).
-replace :: forall e es f. Rec.Elem e es => f e -> Mem f es -> Mem f es
-replace x (Mem re n mem) = Mem (Rec.modify @e (MemRef n) re) (succ n) (Map.insert n (toAny x) mem)
+-- | Replace a pointer with a new one. \( O(n) \).
+replace :: forall e es f. Rec.Elem e es => MemPtr f e -> f e -> Mem f es -> Mem f es
+replace (MemPtr m) x (Mem re n mem) = Mem (Rec.modify @e (MemPtr m) re) n (Map.insert m (toAny x) mem)
 {-# INLINE replace #-}
 
--- | Add a new reference to the array. \( O(n) \).
-append :: forall e es f. f e -> Mem f es -> Mem f (e ': es)
-append x (Mem re n mem) = Mem (MemRef n :~: re) (succ n) (Map.insert n (toAny x) mem)
+-- | Add a new pointer to the array. \( O(n) \).
+append :: forall e es f. MemPtr f e -> f e -> Mem f es -> Mem f (e ': es)
+append (MemPtr m) x (Mem re n mem) = Mem (MemPtr m :~: re) n (Map.insert m (toAny x) mem)
 {-# INLINE append #-}
 
 -- | Use the memory of LHS as a newer version for the memory of RHS. \( O(1) \).
---
--- This is a potentially unsafe operation and specifically, is only safe when LHS is a revision of RHS.
 update :: Mem f es' -> Mem f es -> Mem f es
 update (Mem _ n mem) (Mem re' _ _) = Mem re' n mem
 {-# INLINE update #-}
