@@ -143,7 +143,7 @@ runPure = unsafeDupablePerformIO . runEff
 -- * Effect interpretation
 
 -- | An effect handler that translates effect @e@ from arbitrary effect stacks into 'IO' actions.
-type HandlerIO e es = forall esSend. (Handling e esSend) => e (Eff esSend) ~> IO
+type HandlerIO e es = forall esSend. (Handling e es esSend) => e (Eff esSend) ~> IO
 
 -- | Interpret an effect in terms of 'IO'.
 --

@@ -17,7 +17,7 @@ import           Prelude            hiding (read)
 
 -- | The representation of a pointer in a 'Mem'.
 type role MemPtr representational nominal
-newtype MemPtr (f :: k -> Type) (a :: k) = MemPtr { unMemRef :: Int }
+newtype MemPtr (f :: k -> Type) (a :: k) = MemPtr { unMemPtr :: Int }
   deriving
     ( Eq  -- ^ Pointer equality.
     , Ord -- ^ An arbitrary total order on the pointers.
@@ -51,7 +51,7 @@ alloca (Mem re n mem) = (# MemPtr n, Mem re (succ n) mem #)
 
 -- | Read a pointer. \( O(1) \).
 read :: forall e es f. Rec.Elem e es => Mem f es -> f e
-read (Mem re _ mem) = fromAny $ mem Map.! unMemRef (Rec.index @e re)
+read (Mem re _ mem) = fromAny $ mem Map.! unMemPtr (Rec.index @e re)
 {-# INLINE read #-}
 
 -- | Write to the memory a pointer points to. \( O(1) \).
