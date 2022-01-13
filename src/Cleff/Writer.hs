@@ -47,7 +47,7 @@ runWriter m = thisIsPureTrustMe do
       Tell w' -> traverse_ (\rw -> liftIO $ atomicModifyIORefCAS_ rw (<> w')) rws
       Listen (m' :: Eff es'' a') -> do
         rw' <- newIORef mempty
-        x <- runHere (h $ rw' : rws) m'
+        x <- toEffWith (h $ rw' : rws) m'
         w' <- readIORef rw'
         pure (x, w')
 {-# INLINE runWriter #-}

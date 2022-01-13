@@ -43,12 +43,8 @@ onError m mz = bracketOnError (pure ()) (const mz) (const m)
 -- | Interpret the 'Mask' effect in terms of primitive 'IO' actions.
 runMask :: Eff (Mask ': es) ~> Eff es
 runMask = thisIsPureTrustMe . reinterpret \case
-  Mask f -> withUnliftIO \unlift -> liftIO $ withLiftIO \lift ->
-    Exc.mask \restore -> unlift $ f (lift . restore . unlift)
-  UninterruptibleMask f -> withUnliftIO \unlift -> liftIO $ withLiftIO \lift ->
-    Exc.uninterruptibleMask \restore -> unlift $ f (lift . restore . unlift)
-  Bracket ma mz m -> withUnliftIO \unlift -> liftIO $
-    Exc.bracket (unlift ma) (unlift . mz) (unlift . m)
-  BracketOnError ma mz m -> withUnliftIO \unlift -> liftIO $
-    Exc.bracketOnError (unlift ma) (unlift . mz) (unlift . m)
+  Mask f                 -> withToIO \toIO -> Exc.mask \restore -> toIO $ f (fromIO . restore . toIO)
+  UninterruptibleMask f  -> withToIO \toIO -> Exc.uninterruptibleMask \restore -> toIO $ f (fromIO . restore . toIO)
+  Bracket ma mz m        -> withToIO \toIO -> Exc.bracket (toIO ma) (toIO . mz) (toIO . m)
+  BracketOnError ma mz m -> withToIO \toIO -> Exc.bracketOnError (toIO ma) (toIO . mz) (toIO . m)
 {-# INLINE runMask #-}

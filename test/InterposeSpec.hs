@@ -16,7 +16,7 @@ annoy = interpose @(Reader Int) h
         x <- ask
         trace $ show x
         pure x
-      Local f m -> local f (runThere m)
+      Local f m -> local f (toEff m)
 
 countdown :: Reader Int :> es => Eff es ()
 countdown = do

@@ -45,7 +45,7 @@ data IOE :: Effect where
   Unlift :: ((m ~> IO) -> IO a) -> IOE m a
 #endif
 
--- * Primitive IO functions
+-- * Primitive 'IO' functions
 
 -- | Lift an 'IO' action into 'Eff'. This function is /highly unsafe/ and should not be used directly; most of the
 -- times you should use 'liftIO' that wraps this function in a safer type.
@@ -119,7 +119,7 @@ thisIsPureTrustMe :: Eff (IOE ': es) ~> Eff es
 thisIsPureTrustMe = interpret \case
 #ifdef DYNAMIC_IOE
   Lift m   -> primLiftIO m
-  Unlift f -> withUnliftIO \unlift -> primLiftIO $ f unlift
+  Unlift f -> primUnliftIO \runInIO -> f (runInIO . toEff)
 #endif
 {-# INLINE thisIsPureTrustMe #-}
 
@@ -153,3 +153,15 @@ type HandlerIO e es = forall esSend. (Handling e es esSend) => e (Eff esSend) ~>
 interpretIO :: IOE :> es => HandlerIO e es -> Eff (e ': es) ~> Eff es
 interpretIO f = interpret (liftIO . f)
 {-# INLINE interpretIO #-}
+
+-- * Combinators for interpreting higher-order effects
+
+-- | Temporarily gain the ability to unlift an @'Eff' esSend@ action into 'IO'. This is useful for dealing with
+-- higher-order effects that involves 'IO'.
+withToIO :: (Handling e es esSend, IOE :> es) => ((Eff esSend ~> IO) -> IO a) -> Eff es a
+withToIO f = Eff \es -> f \m -> unEff m (Mem.update es sendEnv)
+
+-- | Lift an 'IO' action into @'Eff' esSend@. This is useful for dealing with effect operations with the monad type in
+-- the negative position within 'Cleff.IOE', like 'UnliftIO.mask'ing.
+fromIO :: (Handling e es esSend, IOE :> es) => IO ~> Eff esSend
+fromIO = Eff . const

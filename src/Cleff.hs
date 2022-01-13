@@ -23,12 +23,16 @@ module Cleff
     raise, raiseN, inject, subsume, subsumeN, KnownList, Subset
   , -- * Interpreting effects
     -- $interpretingEffects
-    Handler, interpret, reinterpret, reinterpret2, reinterpret3, reinterpretN, interpose, impose, imposeN,
-    Translator, transform, translate,
+    Handler, interpret, reinterpret, reinterpret2, reinterpret3, reinterpretN, interpose, impose, imposeN
+  , -- ** Interpreting in terms of 'IO'
     HandlerIO, interpretIO
+  , -- ** Translating effects
+    Translator, transform, translate
   , -- * Combinators for interpreting higher order effects
     -- $higherOrderEffects
-    Handling, runThere, runHere, withUnliftIO, withLiftIO, withLiftEff
+    Handling, toEff, toEffWith, withFromEff
+  , -- ** Interpreting 'IO'-related higher order effects
+    withToIO, fromIO
   , -- * Miscellaneous
     type (~>), type (++), MonadIO (..), MonadUnliftIO (..)
   ) where
@@ -142,5 +146,5 @@ import           UnliftIO                 (MonadIO (..), MonadUnliftIO (..))
 -- thread other effects through themselves. This is why Cleff also provides convenient combinators for doing so.
 --
 -- In a 'Handler', you can temporarily "unlift" a computation from an arbitrary effect stack into the current stack via
--- 'runThere', explicitly change current effect interpretation in the computation via 'runHere', or directly express
+-- 'toEff', explicitly change current effect interpretation in the computation via 'toEffWith', or directly express
 -- the effect in terms of 'IO' via 'runInIO'.

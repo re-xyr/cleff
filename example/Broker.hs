@@ -17,9 +17,9 @@ subscribe channel = send . Subscribe channel
 
 runBroker :: IOE :> es => Eff (Broker : es) a -> Eff es a
 runBroker = interpret \case
-  Subscribe channel cb -> withUnliftIO \unlift -> liftIO do
+  Subscribe channel cb -> withToIO \toIO -> do
     putStrLn $ "Subscribe: " ++ show channel
-    nestedImpl channel \s icb -> icb =<< unlift (cb s)
+    nestedImpl channel \s icb -> icb =<< toIO (cb s)
 
 prog :: (IOE :> es, Broker :> es) => Eff es ()
 prog = do

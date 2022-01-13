@@ -97,7 +97,7 @@ try' eid m = catch' eid (Right <$> m) (pure . Left)
 errorHandler :: Typeable e => Unique -> Handler (Error e) (IOE ': es)
 errorHandler eid = \case
   ThrowError e     -> Exc.throwIO $ ErrorExc eid e
-  CatchError m' h' -> withUnliftIO \unlift -> liftIO $ catch' eid (unlift m') (unlift . h')
+  CatchError m' h' -> withToIO \toIO -> liftIO $ catch' eid (toIO m') (toIO . h')
 {-# INLINE errorHandler #-}
 
 -- | Run an 'Error' effect.
@@ -123,8 +123,8 @@ mapError f = thisIsPureTrustMe . reinterpret \case
   ThrowError e   -> throwError $ f e
   CatchError m h -> do
     eid <- liftIO newUnique
-    res <- try' @e eid $ runHere (errorHandler eid) m
+    res <- try' @e eid $ toEffWith (errorHandler eid) m
     case res of
-      Left e  -> runThere (h e)
+      Left e  -> toEff (h e)
       Right a -> pure a
 {-# INLINE mapError #-}

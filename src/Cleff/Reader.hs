@@ -28,12 +28,12 @@ runReader x = interpret (h x)
     h :: r -> Handler (Reader r) es
     h r = \case
       Ask       -> pure r
-      Local f m -> runHere (h (f r)) m
+      Local f m -> toEffWith (h (f r)) m
 {-# INLINE runReader #-}
 
 -- | Run a 'Reader' effect in terms of a larger 'Reader' via a 'Lens''.
 magnify :: Reader t :> es => Lens' t r -> Eff (Reader r ': es) ~> Eff es
 magnify field = interpret \case
   Ask       -> asks (^. field)
-  Local f m -> local (& field %~ f) $ runThere m
+  Local f m -> local (& field %~ f) $ toEff m
 {-# INLINE magnify #-}

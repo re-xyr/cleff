@@ -122,6 +122,8 @@ imposeN handle m = Eff \es ->
   let (# ptr, es' #) = Mem.alloca es
   in unEff m $ Mem.replace ptr (mkInternalHandler ptr es' handle) $ Mem.adjust (Env.drop @es') es'
 
+-- * Translating effects
+
 -- | Interpret an effect in terms of another effect in the stack via a simple 'Translator'.
 transform :: forall e' e es. e' :> es => Translator e e' -> Eff (e ': es) ~> Eff es
 transform = translateN @'[]
@@ -151,12 +153,12 @@ translateN trans m = Eff \es ->
 -- @
 -- Bracket alloc dealloc use ->
 --   'UnliftIO.bracket'
---     ('runThere' alloc)
---     ('runThere' . dealloc)
---     ('runThere' . use)
+--     ('toEff' alloc)
+--     ('toEff' . dealloc)
+--     ('toEff' . use)
 -- @
-runThere :: Handling e es esSend => Eff esSend ~> Eff es
-runThere m = Eff \es -> unEff m (Mem.update es sendEnv)
+toEff :: Handling e es esSend => Eff esSend ~> Eff es
+toEff m = Eff \es -> unEff m (Mem.update es sendEnv)
 
 -- | Run a computation in the current effect stack, but handles the current effect inside the computation differently
 -- by providing a new 'Handler'. This is useful for interpreting effect with local contexts, like 'Cleff.Reader.Local':
@@ -168,25 +170,14 @@ runThere m = Eff \es -> unEff m (Mem.update es sendEnv)
 --     handle :: r -> 'Handler' ('Reader' r) es
 --     handle r = \\case
 --       'Cleff.Reader.Ask'       -> 'pure' r
---       'Cleff.Reader.Local' f m -> 'runHere' (handle $ f r) m
+--       'Cleff.Reader.Local' f m -> 'toEffWith' (handle $ f r) m
 -- @
-runHere :: Handling e es esSend => Handler e es -> Eff esSend ~> Eff es
-runHere handle m = Eff \es -> unEff m $
+toEffWith :: Handling e es esSend => Handler e es -> Eff esSend ~> Eff es
+toEffWith handle m = Eff \es -> unEff m $
   Mem.write hdlPtr (mkInternalHandler hdlPtr es handle) $ Mem.update es sendEnv
-
--- | Temporarily gain the ability to unlift an @'Eff' esSend@ action into 'IO', as long as an @'Eff' es@ action can
--- be returned. This is useful for dealing with higher-order effects that involves 'IO'.
-withUnliftIO :: Handling e es esSend => ((Eff esSend ~> IO) -> Eff es a) -> Eff es a
-withUnliftIO f = Eff \es -> unEff (f \m -> unEff m (Mem.update es sendEnv)) es
-
--- | Temporarily gain the ability to lift arbitrary 'IO' actions into 'Eff' as long as an 'IO' action is finally
--- returned. This is useful for dealing with effect operations with the monad type in the negative position within
--- 'Cleff.IOE', like masking. It's unlikely that you need to use this function in implementing your effects.
-withLiftIO :: Handling e es esSend => ((IO ~> Eff esSend) -> IO a) -> IO a
-withLiftIO f = f (Eff . const)
 
 -- | Temporarily gain the ability to lift some @'Eff' es@ actions into some other @'Eff' es'@ as long as an @'Eff' es@
 -- is finally returned. This is useful for dealing with effect operations with the monad type in the negative position.
 -- It's unlikely that you need to use this function in implementing your effects.
-withLiftEff :: Handling e es esSend => ((Eff es ~> Eff esSend) -> Eff es a) -> Eff es a
-withLiftEff f = Eff \es -> unEff (f \m -> Eff \esSend -> unEff m (Mem.update esSend es)) es
+withFromEff :: Handling e es esSend => ((Eff es ~> Eff esSend) -> Eff esSend a) -> Eff es a
+withFromEff f = Eff \es -> unEff (f \m -> Eff \esSend -> unEff m (Mem.update esSend es)) (Mem.update es sendEnv)
