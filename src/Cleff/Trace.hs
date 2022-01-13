@@ -2,7 +2,7 @@ module Cleff.Trace where
 
 import           Cleff
 import           Cleff.Output
-import           System.IO
+import           System.IO    (Handle, hPutStrLn, stderr, stdout)
 
 -- * Effect
 

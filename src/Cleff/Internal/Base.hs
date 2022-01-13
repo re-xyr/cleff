@@ -8,15 +8,17 @@ module Cleff.Internal.Base where
 import           Cleff.Internal.Effect
 import           Cleff.Internal.Interpret
 import           Cleff.Internal.Monad
-import           Control.Monad.Base          (MonadBase (..))
-import           Control.Monad.Catch         (ExitCase (ExitCaseException, ExitCaseSuccess), MonadCatch (..),
-                                              MonadMask (..), MonadThrow (..))
-import           Control.Monad.Primitive     (PrimMonad (..), RealWorld)
-import           Control.Monad.Trans.Control (MonadBaseControl (..))
+import           Control.Monad.Base          (MonadBase (liftBase))
+import           Control.Monad.Catch         (ExitCase (ExitCaseException, ExitCaseSuccess), MonadCatch (catch),
+                                              MonadMask (generalBracket, mask, uninterruptibleMask),
+                                              MonadThrow (throwM))
+import           Control.Monad.Primitive     (PrimMonad (PrimState, primitive), RealWorld)
+import           Control.Monad.Trans.Control (MonadBaseControl (StM, liftBaseWith, restoreM))
 import qualified Data.Mem                    as Mem
 import           GHC.IO                      (IO (IO))
 import           System.IO.Unsafe            (unsafeDupablePerformIO)
-import           UnliftIO                    hiding (withUnliftIO)
+import           UnliftIO                    (MonadIO (liftIO), MonadUnliftIO (withRunInIO), catch, mask, throwIO,
+                                              uninterruptibleMask)
 
 -- * The 'IOE' effect
 

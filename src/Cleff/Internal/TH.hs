@@ -13,8 +13,9 @@ import           Data.Foldable                (foldl')
 import qualified Data.Map.Strict              as Map
 import           Data.Maybe                   (maybeToList)
 import           Language.Haskell.TH
-import           Language.Haskell.TH.Datatype
-import           Language.Haskell.TH.PprLib
+import           Language.Haskell.TH.Datatype (ConstructorInfo (constructorName), DatatypeInfo (datatypeCons),
+                                               TypeSubstitution (applySubstitution), reifyDatatype)
+import           Language.Haskell.TH.PprLib   (text, (<>))
 import           Prelude                      hiding ((<>))
 
 -- | For a datatype @T@ representing an effect, @'makeEffect' T@ generates functions defintions for performing the
@@ -90,7 +91,7 @@ makeCon makeSig name = do
   where
     toSmartConName (':' : xs) = xs
     toSmartConName (x : xs)   = toLower x : xs
-    toSmartConName _          = error "empty identifier name"
+    toSmartConName _          = error "Cleff.makeEffect: Empty constructor name. Please report this as a bug."
 
     extractCtx (ForallT _ ctx t) = ctx ++ extractCtx t
     extractCtx _                 = []

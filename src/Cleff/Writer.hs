@@ -1,7 +1,7 @@
 module Cleff.Writer where
 
 import           Cleff
-import           Cleff.Internal.Base (thisIsPureTrustMe)
+import           Cleff.Internal.Base
 import           Data.Atomics        (atomicModifyIORefCAS_)
 import           Data.Foldable       (traverse_)
 import           UnliftIO.IORef      (IORef, newIORef, readIORef)

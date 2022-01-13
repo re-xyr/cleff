@@ -1,10 +1,10 @@
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Cleff.Fail where
 
 import           Cleff
 import           Cleff.Error
-import           Control.Monad.Fail (MonadFail (..))
-import           Prelude            hiding (MonadFail (..), fail)
+import qualified Control.Monad.Fail as Fail
 
 -- * Effect
 
@@ -12,7 +12,7 @@ import           Prelude            hiding (MonadFail (..), fail)
 data Fail :: Effect where
   Fail :: String -> Fail m a
 
-instance Fail :> es => MonadFail (Eff es) where
+instance Fail :> es => Fail.MonadFail (Eff es) where
   fail = send . Fail
 
 -- * Interpretations
@@ -26,5 +26,5 @@ runFail = runError . reinterpret \case
 -- | Run a 'Fail' effect in terms of throwing exceptions in 'IO'.
 runFailIO :: IOE :> es => Eff (Fail ': es) ~> Eff es
 runFailIO = interpret \case
-  Fail msg -> liftIO $ fail msg
+  Fail msg -> liftIO $ Fail.fail msg
 {-# INLINE runFailIO #-}

@@ -42,7 +42,7 @@ import           Cleff.Internal.Effect
 import           Cleff.Internal.Interpret
 import           Cleff.Internal.Monad
 import           Cleff.Internal.TH
-import           UnliftIO                 (MonadIO (..), MonadUnliftIO (..))
+import           UnliftIO                 (MonadIO (liftIO), MonadUnliftIO (withRunInIO))
 
 -- $definingEffects
 -- An effect should be defined as a GADT and have the kind 'Effect'. Each operation in the effect is a constructor of

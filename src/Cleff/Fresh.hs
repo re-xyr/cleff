@@ -2,7 +2,7 @@ module Cleff.Fresh where
 
 import           Cleff
 import           Cleff.State
-import           Data.Unique
+import           Data.Unique (Unique, newUnique)
 
 -- * Effect
 

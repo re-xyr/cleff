@@ -1,11 +1,11 @@
 module Cleff.State where
 
 import           Cleff
-import           Cleff.Internal.Base (thisIsPureTrustMe)
+import           Cleff.Internal.Base
 import           Data.Atomics        (atomicModifyIORefCAS)
 import           Data.Tuple          (swap)
 import           Lens.Micro          (Lens', (&), (.~), (^.))
-import           UnliftIO.IORef
+import           UnliftIO.IORef      (newIORef, readIORef, writeIORef)
 
 -- * Effect
 

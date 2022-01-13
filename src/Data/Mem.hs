@@ -7,7 +7,7 @@
 -- * \( O(1) \) read.
 module Data.Mem (Mem, MemPtr, empty, adjust, alloca, read, write, replace, append, update) where
 
-import           Data.Any           (Any, fromAny, toAny)
+import           Data.Any
 import           Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as Map
 import           Data.Kind          (Type)

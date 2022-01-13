@@ -10,7 +10,7 @@ module Cleff.Error
   ) where
 
 import           Cleff
-import           Cleff.Internal.Base (thisIsPureTrustMe)
+import           Cleff.Internal.Base
 import           Control.Exception   (Exception)
 import           Data.Bool           (bool)
 import           Data.Unique         (Unique, newUnique)

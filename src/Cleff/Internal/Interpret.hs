@@ -49,7 +49,11 @@ data SendSite e esSend = SendSite
 class Handling e es esSend | e -> es esSend, es -> e esSend, esSend -> e es where
   -- | Obtain the send-site environment.
   sendSite :: SendSite e esSend
-  sendSite = error "unimplemented"
+  sendSite = error $
+    "Cleff.Internal.Interpret.sendSite: Attempting to access the send site without a reflected value.\n" <>
+    "This is perhaps because you are trying to define an instance for the 'Handling' typeclass,\n" <>
+    "which you should not be doing whatsoever.\n" <>
+    "If that or other shenanigans seem unlikely, please report this as a bug."
 
 -- | Get the pointer to the effect handler of the effect being handled.
 hdlPtr :: forall e es esSend. Handling e es esSend => MemPtr InternalHandler e

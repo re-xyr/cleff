@@ -26,17 +26,18 @@ module Data.Rec
   ) where
 
 import           Control.Monad.Primitive   (PrimMonad (PrimState))
-import           Data.Any                  (Any, fromAny, toAny)
-import           Data.Functor.Const        (Const (..))
+import           Data.Any
+import           Data.Functor.Const        (Const (Const, getConst))
 import           Data.Kind                 (Type)
 import           Data.List                 (intersperse)
-import           Data.Primitive.SmallArray
+import           Data.Primitive.SmallArray (SmallArray, SmallMutableArray, copySmallArray, indexSmallArray,
+                                            newSmallArray, runSmallArray, sizeofSmallArray, writeSmallArray)
 import           Data.Tuple.Extra          ((&&&))
 import           GHC.TypeLits              (ErrorMessage (ShowType, Text, (:<>:)), TypeError)
 import           Prelude                   hiding (all, any, concat, drop, head, length, tail, take, zipWith)
 import           Text.Read                 (readPrec)
 import qualified Text.Read                 as R
-import qualified Text.Read.Lex             as R
+import qualified Text.Read.Lex             as RL
 
 -- | Extensible record type supporting efficient \( O(1) \) reads. The underlying implementation is 'SmallArray'
 -- slices, therefore suits small numbers of entries (/i.e./ less than 128).
@@ -66,7 +67,7 @@ instance Show (Rec f '[]) where
 -- @
 instance Read (Rec f '[]) where
   readPrec = R.parens $ R.prec appPrec $
-    empty <$ R.lift (R.expect (R.Ident "empty"))
+    empty <$ R.lift (RL.expect (R.Ident "empty"))
     where appPrec = 10
 
 -- | @
@@ -83,7 +84,7 @@ instance (Show (f x), Show (Rec f xs)) => Show (Rec f (x ': xs)) where
 -- @
 instance (Read (f x), Read (Rec f xs)) => Read (Rec f (x ': xs)) where
   readPrec = R.parens $ R.prec consPrec $
-    cons <$> R.step (readPrec @(f x)) <* R.lift (R.expect (R.Symbol ":~:")) <*> readPrec @(Rec f xs)
+    cons <$> R.step (readPrec @(f x)) <* R.lift (RL.expect (R.Symbol ":~:")) <*> readPrec @(Rec f xs)
 
 -- | @
 -- 'show' ('Const' 'False' ':~:' 'Const' 'True' ':~:' 'empty')
@@ -127,7 +128,8 @@ length (Rec _ len _) = len
 
 -- | Create a new 'SmallMutableArray' with no contents.
 newArr :: PrimMonad m => Int -> m (SmallMutableArray (PrimState m) a)
-newArr len = newSmallArray len $ error "reading nonexistent data"
+newArr len = newSmallArray len $ error
+  "Data.Rec.newArr: Attempting to read an element of the underlying array of a 'Rec'. Please report this as a bug."
 
 -- | Create an empty record. \( O(1) \).
 empty :: Rec f '[]
@@ -184,12 +186,19 @@ infixr 5 :++:
 tail :: Rec f (e ': es) -> Rec f es
 tail (Rec off len arr) = Rec (off + 1) (len - 1) arr
 
+unreifiable :: String -> String -> String -> a
+unreifiable clsName funName comp = error $
+  funName <> ": Attempting to access " <> comp <> " without a reflected value.\n" <>
+  "This is perhaps because you are trying to define an instance for the '" <> clsName <> "' typeclass,\n" <>
+  "which you should not be doing whatsoever.\n" <>
+  "If that or other shenanigans seem unlikely, please report this as a bug."
+
 -- | Typeclass that shows a list has a known structure (/i.e./ known length). Practically, this means you know the
 -- contents of the list.
 class KnownList (es :: [k]) where
   -- | Get the length of the list.
   reifyLen :: Int
-  reifyLen = error "unimplemented Data.Rec.reifyLen"
+  reifyLen = unreifiable "KnownList" "Data.Rec.reifyLen" "the length of a type-level list"
 
 instance KnownList '[] where
   reifyLen = 0
@@ -218,7 +227,7 @@ take (Rec off _ arr) = Rec 0 len $ runSmallArray do
 class Elem (e :: k) (es :: [k]) where
   -- | Get the index of the element.
   reifyIndex :: Int
-  reifyIndex = error "unimplemented Data.Rec.reifyIndex"
+  reifyIndex = unreifiable "Elem" "Data.Rec.reifyIndex" "the index of an element of a type-level list"
 
 instance {-# OVERLAPPING #-} Elem e (e ': es) where
   reifyIndex = 0
@@ -229,7 +238,7 @@ instance Elem e es => Elem e (e' ': es) where
 type ElemNotFound e = 'Text "The element '" ':<>: 'ShowType e ':<>: 'Text "' is not present in the constraint"
 
 instance TypeError (ElemNotFound e) => Elem e '[] where
-  reifyIndex = error "trying to refer to a nonexistent member"
+  reifyIndex = error "Data.Rec.reifyIndex: Attempting to refer to a nonexistent member. Please report this as a bug."
 
 -- | Get an element in the record. Amortized \( O(1) \).
 index :: forall e es f. Elem e es => Rec f es -> f e
@@ -239,7 +248,7 @@ index (Rec off _ arr) = fromAny $ indexSmallArray arr (off + reifyIndex @_ @e @e
 class KnownList es => Subset (es :: [k]) (es' :: [k]) where
   -- | Get a list of indices of the elements.
   reifyIndices :: [Int]
-  reifyIndices = error "unimplemented Data.Rec.reifyIndices"
+  reifyIndices = unreifiable "Subset" "Data.Rec.reifyIndices" "the index of multiple elements of a type-level list"
 
 instance Subset '[] es where
   reifyIndices = []
@@ -362,7 +371,7 @@ extract f xs = degenerate $ natural (Const . f) xs
 sizeInvariant :: Rec f es -> Rec f es
 sizeInvariant xs@(Rec off len arr)
   | tracked == actual = xs
-  | otherwise = error $ "Rec invariant violated: tracked size " <> show tracked <> ", actual size " <> show actual
+  | otherwise = error $ "Data.Rec.sizeInvariant: tracked size " <> show tracked <> ", actual size " <> show actual
   where
     tracked = len + off
     actual = sizeofSmallArray arr
