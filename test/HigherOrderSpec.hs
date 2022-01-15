@@ -11,7 +11,8 @@ data SomeEff :: Effect where
   SomeAction :: SomeEff m String
 makeEffect ''SomeEff
 
-data Ex = Ex deriving (Eq, Show)
+data Ex = Ex
+  deriving stock (Eq, Show)
 
 spec :: Spec
 spec = describe "Reader local" $ do

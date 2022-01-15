@@ -52,23 +52,23 @@ data Instance = ADTI | GADTI | NTI | MMI
 
 data family Family (s :: Instance) (m :: Type -> Type) a
 
-data instance Family 'ADTI m a = ADTIC1 Int | ADTIC2 String
+data instance Family 'ADTI _ _ = ADTIC1 Int | ADTIC2 String
 
 makeEffect 'ADTIC1
 
-data instance Family 'GADTI m a where
+data instance Family 'GADTI _ _ where
   GADTIC1 :: Int -> Family 'GADTI m Int
   GADTIC2 :: String -> Family 'GADTI m String
 
 makeEffect 'GADTIC1
 
-newtype instance Family 'NTI m a = NTIC Int
+newtype instance Family 'NTI _ _ = NTIC Int
 
 makeEffect 'NTIC
 
-data instance Family 'MMI m (f m) where
+data instance Family 'MMI m (_ m) where
   MMIC1 :: f m -> Family 'MMI m (f m)
-  MMIC2 :: (forall x. m x -> m (f m)) -> Family 'MMI m (f m)
+  MMIC2 :: (∀ x. m x -> m (f m)) -> Family 'MMI m (f m)
 
 -- TODO(daylily): This cannot produce desired result.
 -- makeEffect 'MMIC1
@@ -81,13 +81,13 @@ data Complex m a where
   Lots            :: a -> b -> c -> d -> e -> f -> Complex m ()
   Nested          :: Maybe b -> Complex m (Maybe a)
   MultiNested     :: (Maybe a, [b]) -> Complex m (Maybe a, [b])
-  Existential     :: (forall e. e -> Maybe e) -> Complex m a
+  Existential     :: (∀ e. e -> Maybe e) -> Complex m a
   LotsNested      :: Maybe a -> [b] -> (c, c) -> Complex m (a, b, c)
   Dict            :: Ord a => a -> Complex m a
   MultiDict       :: (Eq a, Ord b, Enum a, Num c)
                   => a -> b -> c -> Complex m ()
   IndexedMono     :: f 0 -> Complex m Int
-  IndexedPoly     :: forall f (n :: Nat) m . f n -> Complex m (f (n + 1))
+  IndexedPoly     :: ∀ f (n :: Nat) m . f n -> Complex m (f (n + 1))
   IndexedPolyDict :: KnownNat n => f n -> Complex m Int
 
 makeEffect ''Complex
@@ -96,7 +96,7 @@ data HOEff m a where
   EffArgMono :: m () -> HOEff m ()
   EffArgPoly :: m a -> HOEff m a
   EffArgComb :: m a -> (m a -> m b) -> HOEff m b
-  EffRank2   :: (forall x. m x -> m (Maybe x)) -> HOEff m a
+  EffRank2   :: (∀ x. m x -> m (Maybe x)) -> HOEff m a
 
 makeEffect ''HOEff
 
@@ -114,7 +114,7 @@ data ComplexEffArgs b c m a where
 -- makeEffect ''ComplexEffArgs
 
 data HKEffArgs f g m a where
-  HKRank2 :: (forall x . f x -> g x) -> HKEffArgs f g m a
+  HKRank2 :: (∀ x . f x -> g x) -> HKEffArgs f g m a
 
 makeEffect ''HKEffArgs
 

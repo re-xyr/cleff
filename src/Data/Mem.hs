@@ -18,7 +18,7 @@ import           Prelude            hiding (read)
 -- | The representation of a pointer in a 'Mem'.
 type role MemPtr representational nominal
 newtype MemPtr (f :: k -> Type) (a :: k) = MemPtr { unMemPtr :: Int }
-  deriving
+  deriving newtype
     ( Eq  -- ^ Pointer equality.
     , Ord -- ^ An arbitrary total order on the pointers.
     )
@@ -40,36 +40,36 @@ empty = Mem Rec.empty 0 Map.empty
 {-# INLINE empty #-}
 
 -- | Adjust the array of pointers.
-adjust :: (Rec (MemPtr f) es -> Rec (MemPtr f) es') -> Mem f es -> Mem f es'
+adjust :: ∀ es' es f. (Rec (MemPtr f) es -> Rec (MemPtr f) es') -> Mem f es -> Mem f es'
 adjust f (Mem re n mem) = Mem (f re) n mem
 {-# INLINE adjust #-}
 
 -- | Allocate a new address. \( O(1) \).
-alloca :: forall e es f. Mem f es -> (# MemPtr f e, Mem f es #)
+alloca :: ∀ e es f. Mem f es -> (# MemPtr f e, Mem f es #)
 alloca (Mem re n mem) = (# MemPtr n, Mem re (succ n) mem #)
 {-# INLINE alloca #-}
 
 -- | Read a pointer. \( O(1) \).
-read :: forall e es f. Rec.Elem e es => Mem f es -> f e
+read :: ∀ e es f. Rec.Elem e es => Mem f es -> f e
 read (Mem re _ mem) = fromAny $ mem Map.! unMemPtr (Rec.index @e re)
 {-# INLINE read #-}
 
 -- | Write to the memory a pointer points to. \( O(1) \).
-write :: forall e es f. MemPtr f e -> f e -> Mem f es -> Mem f es
+write :: ∀ e es f. MemPtr f e -> f e -> Mem f es -> Mem f es
 write (MemPtr m) x (Mem re n mem) = Mem re n (Map.insert m (toAny x) mem)
 {-# INLINE write #-}
 
 -- | Replace a pointer with a new one. \( O(n) \).
-replace :: forall e es f. Rec.Elem e es => MemPtr f e -> f e -> Mem f es -> Mem f es
+replace :: ∀ e es f. Rec.Elem e es => MemPtr f e -> f e -> Mem f es -> Mem f es
 replace (MemPtr m) x (Mem re n mem) = Mem (Rec.modify @e (MemPtr m) re) n (Map.insert m (toAny x) mem)
 {-# INLINE replace #-}
 
 -- | Add a new pointer to the array. \( O(n) \).
-append :: forall e es f. MemPtr f e -> f e -> Mem f es -> Mem f (e ': es)
+append :: ∀ e es f. MemPtr f e -> f e -> Mem f es -> Mem f (e ': es)
 append (MemPtr m) x (Mem re n mem) = Mem (MemPtr m :~: re) n (Map.insert m (toAny x) mem)
 {-# INLINE append #-}
 
 -- | Use the memory of LHS as a newer version for the memory of RHS. \( O(1) \).
-update :: Mem f es' -> Mem f es -> Mem f es
+update :: ∀ es es' f. Mem f es' -> Mem f es -> Mem f es
 update (Mem _ n mem) (Mem re' _ _) = Mem re' n mem
 {-# INLINE update #-}

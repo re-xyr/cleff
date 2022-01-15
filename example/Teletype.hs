@@ -59,7 +59,9 @@ echoPure tty = runPure $ runTeletypePure tty echo
 echoIO :: IO ()
 echoIO = runIOE $ runTeletypeIO echo
 
-data CustomException = ThisException | ThatException deriving (Show, Exception)
+data CustomException = ThisException | ThatException
+  deriving stock (Show)
+  deriving anyclass (Exception)
 
 program :: '[Mask, Teletype, Error CustomException] :>> es => Eff es ()
 program = catchError @CustomException work \e -> writeTTY $ "Caught " ++ show e

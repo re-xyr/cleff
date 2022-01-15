@@ -44,7 +44,7 @@ exceptionInteract = do
   testCatch UE.catch
   where
     testTry
-      :: (forall a es. IOE :> es => Eff es a -> Eff es (Either Ex a))
+      :: (∀ a es. IOE :> es => Eff es a -> Eff es (Either Ex a))
       -> IO ()
     testTry tryImpl = do
       e <- runIOE $ tryImpl $ runState (0::Int) action
@@ -52,7 +52,7 @@ exceptionInteract = do
       s <- runIOE $ fmap snd $ runState (0::Int) $ tryImpl action
       s `shouldBe` 1
     testCatch
-      :: (forall a es. IOE :> es => Eff es a -> (Ex -> Eff es a) -> Eff es a)
+      :: (∀ a es. IOE :> es => Eff es a -> (Ex -> Eff es a) -> Eff es a)
       -> IO ()
     testCatch catchImpl = do
       s <- runIOE . fmap snd . runState (0::Int) $ do
@@ -95,7 +95,9 @@ runHasInt n =
     GetInt   -> get
     PutInt i -> put i
 
-data Ex = Ex deriving (Eq, Show, Exception)
+data Ex = Ex
+  deriving stock (Eq, Show)
+  deriving anyclass (Exception)
 
 collatzStart :: Integer
 collatzStart = 9780657630

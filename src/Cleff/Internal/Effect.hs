@@ -16,6 +16,6 @@ infix 0 :>
 
 -- | A convenient type alias for @(e1 ':>' es, ..., en ':>' es)@.
 type family xs :>> es :: Constraint where
-  '[] :>> es = ()
+  '[] :>> _ = ()
   (x ': xs) :>> es = (x :> es, xs :>> es)
 infix 0 :>>

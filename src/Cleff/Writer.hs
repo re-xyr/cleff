@@ -35,7 +35,7 @@ listens f m = do
 -- __Caveat__: Both 'runWriter' and 'listen's under 'runWriter' will stop taking care of writer operations done on
 -- forked threads as soon as the main thread finishes its computation. Any writer operation done
 -- /before main thread finishes/ is still taken into account.
-runWriter :: forall w es a. Monoid w => Eff (Writer w ': es) a -> Eff es (a, w)
+runWriter :: ∀ w es a. Monoid w => Eff (Writer w ': es) a -> Eff es (a, w)
 runWriter m = thisIsPureTrustMe do
   rw <- newIORef mempty
   x <- reinterpret (h [rw]) m
@@ -45,7 +45,7 @@ runWriter m = thisIsPureTrustMe do
     h :: [IORef w] -> Handler (Writer w) (IOE ': es)
     h rws = \case
       Tell w' -> traverse_ (\rw -> liftIO $ atomicModifyIORefCAS_ rw (<> w')) rws
-      Listen (m' :: Eff es'' a') -> do
+      Listen m' -> do
         rw' <- newIORef mempty
         x <- toEffWith (h $ rw' : rws) m'
         w' <- readIORef rw'

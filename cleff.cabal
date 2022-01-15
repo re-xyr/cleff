@@ -21,7 +21,7 @@ tested-with:
     GHC == 8.6.5
   , GHC == 8.8.4
   , GHC == 8.10.7
-  , GHC == 9.0.1
+  , GHC == 9.0.2
 extra-source-files:
     CHANGELOG.md
     README.md
@@ -66,7 +66,6 @@ library
       BlockArguments
       ConstraintKinds
       DataKinds
-      DerivingStrategies
       DerivingVia
       EmptyCase
       FlexibleContexts
@@ -76,7 +75,6 @@ library
       GeneralizedNewtypeDeriving
       KindSignatures
       LambdaCase
-      MultiParamTypeClasses
       NoStarIsType
       PatternSynonyms
       PolyKinds
@@ -90,8 +88,9 @@ library
       TypeFamilies
       TypeOperators
       UndecidableInstances
+      UnicodeSyntax
       ViewPatterns
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wpartial-fields -Wincomplete-record-updates -Widentities
+  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wpartial-fields -Wunused-type-patterns
   build-depends:
       atomic-primops ==0.8.*
     , base >=4.12 && <5
@@ -125,7 +124,6 @@ test-suite cleff-example
       BlockArguments
       ConstraintKinds
       DataKinds
-      DerivingStrategies
       DerivingVia
       EmptyCase
       FlexibleContexts
@@ -135,7 +133,6 @@ test-suite cleff-example
       GeneralizedNewtypeDeriving
       KindSignatures
       LambdaCase
-      MultiParamTypeClasses
       NoStarIsType
       PatternSynonyms
       PolyKinds
@@ -149,9 +146,10 @@ test-suite cleff-example
       TypeFamilies
       TypeOperators
       UndecidableInstances
+      UnicodeSyntax
       ViewPatterns
       DeriveAnyClass
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wpartial-fields -Wincomplete-record-updates -Widentities -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       atomic-primops ==0.8.*
     , base >=4.12 && <5
@@ -191,7 +189,6 @@ test-suite cleff-test
       BlockArguments
       ConstraintKinds
       DataKinds
-      DerivingStrategies
       DerivingVia
       EmptyCase
       FlexibleContexts
@@ -201,7 +198,6 @@ test-suite cleff-test
       GeneralizedNewtypeDeriving
       KindSignatures
       LambdaCase
-      MultiParamTypeClasses
       NoStarIsType
       PatternSynonyms
       PolyKinds
@@ -215,10 +211,11 @@ test-suite cleff-test
       TypeFamilies
       TypeOperators
       UndecidableInstances
+      UnicodeSyntax
       ViewPatterns
       DeriveAnyClass
       DeriveGeneric
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wpartial-fields -Wincomplete-record-updates -Widentities -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck
     , atomic-primops ==0.8.*

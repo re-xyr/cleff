@@ -53,7 +53,7 @@ instance Eq (Rec f '[]) where
 instance (Eq (Rec f xs), Eq (f x)) => Eq (Rec f (x ': xs)) where
   x :~: xs == y :~: ys = x == y && xs == ys
 
-instance {-# OVERLAPPABLE #-} (forall x. Eq (f x)) => Eq (Rec f xs) where
+instance {-# OVERLAPPABLE #-} (∀ x. Eq (f x)) => Eq (Rec f xs) where
   xs == ys = all (== Const True) $ zipWith (\x y -> Const $ x == y) xs ys
 
 -- | @
@@ -90,7 +90,7 @@ instance (Read (f x), Read (Rec f xs)) => Read (Rec f (x ': xs)) where
 -- 'show' ('Const' 'False' ':~:' 'Const' 'True' ':~:' 'empty')
 -- == "Const False :~: Const True :~: empty"
 -- @
-instance {-# OVERLAPPABLE #-} (forall x. Show (f x)) => Show (Rec f xs) where
+instance {-# OVERLAPPABLE #-} (∀ x. Show (f x)) => Show (Rec f xs) where
   showsPrec p xs = showParen (p > consPrec) $
     foldr (.) id $ intersperse (showString " :~: ") $ extract (showsPrec (consPrec + 1)) xs
 
@@ -105,7 +105,7 @@ instance Semigroup (Rec f '[]) where
 instance (Semigroup (f x), Semigroup (Rec f xs)) => Semigroup (Rec f (x ': xs)) where
   (x :~: xs) <> (y :~: ys) = x <> y :~: xs <> ys
 
-instance {-# OVERLAPPABLE #-} (forall x. Semigroup (f x)) => Semigroup (Rec f xs) where
+instance {-# OVERLAPPABLE #-} (∀ x. Semigroup (f x)) => Semigroup (Rec f xs) where
   xs <> ys = zipWith (<>) xs ys
 
 -- | @
@@ -176,7 +176,7 @@ concat (Rec off len arr) (Rec off' len' arr') = Rec 0 (len + len') $ runSmallArr
   pure marr
 
 -- | Infix version of 'concat' that also supports destructuring.
-pattern (:++:) :: forall es es' f. KnownList es => Rec f es -> Rec f es' -> Rec f (es ++ es')
+pattern (:++:) :: ∀ es es' f. KnownList es => Rec f es -> Rec f es' -> Rec f (es ++ es')
 pattern xs :++: xs' <- (take @es @es' &&& drop @es @es' -> (xs, xs'))
   where (:++:) = concat
 infixr 5 :++:
@@ -207,7 +207,7 @@ instance KnownList es => KnownList (e ': es) where
   reifyLen = 1 + reifyLen @_ @es
 
 -- | Slice off several entries from the top of the record. \( O(1) \).
-drop :: forall es es' f. KnownList es => Rec f (es ++ es') -> Rec f es'
+drop :: ∀ es es' f. KnownList es => Rec f (es ++ es') -> Rec f es'
 drop (Rec off len arr) = Rec (off + len') (len - len') arr
   where len' = reifyLen @_ @es
 
@@ -216,7 +216,7 @@ head :: Rec f (e ': es) -> f e
 head (Rec off _ arr) = fromAny $ indexSmallArray arr off
 
 -- | Take elements from the top of the record. \( O(m) \).
-take :: forall es es' f. KnownList es => Rec f (es ++ es') -> Rec f es
+take :: ∀ es es' f. KnownList es => Rec f (es ++ es') -> Rec f es
 take (Rec off _ arr) = Rec 0 len $ runSmallArray do
   marr <- newArr len
   copySmallArray marr 0 arr off (off + len)
@@ -241,7 +241,7 @@ instance TypeError (ElemNotFound e) => Elem e '[] where
   reifyIndex = error "Data.Rec.reifyIndex: Attempting to refer to a nonexistent member. Please report this as a bug."
 
 -- | Get an element in the record. Amortized \( O(1) \).
-index :: forall e es f. Elem e es => Rec f es -> f e
+index :: ∀ e es f. Elem e es => Rec f es -> f e
 index (Rec off _ arr) = fromAny $ indexSmallArray arr (off + reifyIndex @_ @e @es)
 
 -- | Typeclass that witnesses @es@ being a subset of @es'@.
@@ -257,7 +257,7 @@ instance (Subset es es', Elem e es') => Subset (e ': es) es' where
   reifyIndices = reifyIndex @_ @e @es' : reifyIndices @_ @es @es'
 
 -- | Get a subset of the record. Amortized \( O(m) \).
-pick :: forall es es' f. Subset es es' => Rec f es' -> Rec f es
+pick :: ∀ es es' f. Subset es es' => Rec f es' -> Rec f es
 pick (Rec off _ arr) = Rec 0 (reifyLen @_ @es) $ runSmallArray do
   marr <- newArr (reifyLen @_ @es)
   go marr (0 :: Int) (reifyIndices @_ @es @es')
@@ -270,7 +270,7 @@ pick (Rec off _ arr) = Rec 0 (reifyLen @_ @es) $ runSmallArray do
       go marr (newIx + 1) ixs
 
 -- | Modify an entry in the record. \( O(n) \).
-modify :: forall e es f. Elem e es => f e -> Rec f es -> Rec f es
+modify :: ∀ e es f. Elem e es => f e -> Rec f es -> Rec f es
 modify x (Rec off len arr) = Rec 0 len $ runSmallArray do
   marr <- newArr len
   copySmallArray marr 0 arr off len
@@ -283,7 +283,7 @@ modify x (Rec off len arr) = Rec 0 len $ runSmallArray do
 infixl 9 /~/
 
 -- | Merge a subset into the original record, updating several entries at once. \( O(m+n) \).
-batch :: forall es es' f. Subset es es' => Rec f es -> Rec f es' -> Rec f es'
+batch :: ∀ es es' f. Subset es es' => Rec f es -> Rec f es' -> Rec f es'
 batch (Rec off _ arr) (Rec off' len' arr') = Rec 0 len' $ runSmallArray do
   marr <- newArr len'
   copySmallArray marr 0 arr' off' len'
@@ -302,7 +302,7 @@ batch (Rec off _ arr) (Rec off' len' arr') = Rec 0 len' $ runSmallArray do
 infixl 9 /++/
 
 -- | The type of natural transformations from functor @f@ to @g@.
-type f ~> g = forall a. f a -> g a
+type f ~> g = ∀ a. f a -> g a
 infixr 0 ~>
 
 -- | Apply a natural transformation to the record. \( O(n) \).
@@ -325,7 +325,7 @@ natural f (Rec off len arr) = Rec 0 len $ runSmallArray do
 infixl 4 <#>
 
 -- | Zip two records with a natural transformation. \( O(n) \).
-zipWith :: (forall x. f x -> g x -> h x) -> Rec f es -> Rec g es -> Rec h es
+zipWith :: (∀ x. f x -> g x -> h x) -> Rec f es -> Rec g es -> Rec h es
 zipWith f (Rec off len arr) (Rec off' _ arr') = Rec 0 len $ runSmallArray do
   marr <- newArr len
   go marr (0 :: Int)
@@ -340,7 +340,7 @@ zipWith f (Rec off len arr) (Rec off' _ arr') = Rec 0 len $ runSmallArray do
         go marr (n + 1)
 
 -- | Check if a predicate is true on all elements. \( O(n) \).
-all :: (forall x. f x -> Bool) -> Rec f es -> Bool
+all :: (∀ x. f x -> Bool) -> Rec f es -> Bool
 all f (Rec off len arr) = go 0
   where
     go n
@@ -348,7 +348,7 @@ all f (Rec off len arr) = go 0
       | otherwise = f (fromAny $ indexSmallArray arr (off + n)) && go (n + 1)
 
 -- | Check if a predicate is true on at least one element. \( O(n) \).
-any :: (forall x. f x -> Bool) -> Rec f es -> Bool
+any :: (∀ x. f x -> Bool) -> Rec f es -> Bool
 any f (Rec off len arr) = go 0
   where
     go n
@@ -364,7 +364,7 @@ degenerate (Rec off len arr) = go 0
       | otherwise = getConst (fromAny $ indexSmallArray arr (off + n)) : go (n + 1)
 
 -- | Map each element to a fixed type. \( O(n) \).
-extract :: (forall x. f x -> a) -> Rec f es -> [a]
+extract :: (∀ x. f x -> a) -> Rec f es -> [a]
 extract f xs = degenerate $ natural (Const . f) xs
 
 -- | Test the size invariant of 'Rec'.

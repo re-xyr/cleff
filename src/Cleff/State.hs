@@ -41,7 +41,7 @@ modify f = state (((), ) . f)
 --
 -- 'runState' will stop taking care of state operations done on forked threads as soon as the main thread finishes its
 -- computation. Any state operation done /before main thread finishes/ is still taken into account.
-runState :: forall s es a. s -> Eff (State s ': es) a -> Eff es (a, s)
+runState :: s -> Eff (State s ': es) a -> Eff es (a, s)
 runState s m = thisIsPureTrustMe do
   rs <- newIORef s
   x <- reinterpret (\case
@@ -50,7 +50,7 @@ runState s m = thisIsPureTrustMe do
     State f -> liftIO $ atomicModifyIORefCAS rs (swap . f)) m
   s' <- readIORef rs
   pure (x, s')
-{-# INLINE runState #-}
+-- {-# INLINE runState #-}
 
 -- | Run a 'State' effect in terms of a larger 'State' via a 'Lens''.
 zoom :: State t :> es => Lens' t s -> Eff (State s ': es) ~> Eff es
