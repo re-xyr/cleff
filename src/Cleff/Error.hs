@@ -12,9 +12,9 @@ module Cleff.Error
 import           Cleff
 import           Cleff.Internal.Base
 import           Control.Exception   (Exception)
+import           Data.Any            (Any, fromAny, toAny)
 import           Data.Bool           (bool)
-import           Data.Unique         (Unique, newUnique)
-import           Type.Reflection     (Typeable, typeOf)
+import           Data.Unique         (Unique, hashUnique, newUnique)
 import qualified UnliftIO.Exception  as Exc
 
 -- | An effect capable of breaking out of current control flow by raising an exceptional value @e@. This effect roughly
@@ -80,23 +80,28 @@ tryErrorJust :: Error e :> es => (e -> Maybe b) -> Eff es a -> Eff es (Either b 
 tryErrorJust f m = (Right <$> m) `catchError` \e -> maybe (throwError e) (pure . Left) $ f e
 
 -- | Exception wrapper used in 'runError' in order not to conflate error types with exception types.
-data ErrorExc e = ErrorExc !Unique e
-instance Typeable e => Show (ErrorExc e) where
-  showsPrec p (ErrorExc _ e) =
-    ("Cleff.Error.ErrorEx " ++) . showsPrec p (typeOf e)
-instance Typeable e => Exception (ErrorExc e)
+data ErrorExc = ErrorExc !Unique Any
 
-catch' :: (Typeable e, MonadUnliftIO m) => Unique -> m a -> (e -> m a) -> m a
-catch' eid m h = m `Exc.catch` \ex@(ErrorExc eid' e) -> if eid == eid' then h e else Exc.throwIO ex
+instance Exception ErrorExc
+
+instance Show ErrorExc where
+  showsPrec _ (ErrorExc uid _) = showString
+    "Cleff.Error.runError: Escaped error (error UID hash: " . shows (hashUnique uid) . showString ("). This is " <>
+    "possibly due to trying to throwError in a forked thread, or trying to 'wait' on an 'Async' computation out of " <>
+    "the effect scope where the error is thrown. Refer to the haddock of 'runError' for details on the caveats. If " <>
+    "all those shenanigans mentioned or other similar ones seem unlikely, please report this as a bug.")
+
+catch' :: ∀ e m a. MonadUnliftIO m => Unique -> m a -> (e -> m a) -> m a
+catch' eid m h = m `Exc.catch` \ex@(ErrorExc eid' e) -> if eid == eid' then h (fromAny e) else Exc.throwIO ex
 {-# INLINE catch' #-}
 
-try' :: (Typeable e, MonadUnliftIO m) => Unique -> m a -> m (Either e a)
+try' :: ∀ e m a. MonadUnliftIO m => Unique -> m a -> m (Either e a)
 try' eid m = catch' eid (Right <$> m) (pure . Left)
 {-# INLINE try' #-}
 
-errorHandler :: Typeable e => Unique -> Handler (Error e) (IOE ': es)
+errorHandler :: Unique -> Handler (Error e) (IOE ': es)
 errorHandler eid = \case
-  ThrowError e     -> Exc.throwIO $ ErrorExc eid e
+  ThrowError e     -> Exc.throwIO $ ErrorExc eid (toAny e)
   CatchError m' h' -> withToIO \toIO -> liftIO $ catch' eid (toIO m') (toIO . h')
 {-# INLINE errorHandler #-}
 
@@ -111,14 +116,14 @@ errorHandler eid = \case
 -- the same 'runError' handler), the error /will/ be caught in the parent thread even if you don't deal with it in the
 -- forked thread. But if you passed the @Async@ value out of the effect scope and @wait@ed for it elsewhere, the error
 -- will again not be caught. The best choice is /not to pass @Async@ values around randomly/.
-runError :: ∀ e es a. Typeable e => Eff (Error e ': es) a -> Eff es (Either e a)
+runError :: ∀ e es a. Eff (Error e ': es) a -> Eff es (Either e a)
 runError m = thisIsPureTrustMe do
   eid <- liftIO newUnique
   try' eid $ reinterpret (errorHandler eid) m
 {-# INLINE runError #-}
 
 -- | Transform an 'Error' into another. This is useful for aggregating multiple errors into one type.
-mapError :: ∀ e e' es. (Typeable e, Error e' :> es) => (e -> e') -> Eff (Error e ': es) ~> Eff es
+mapError :: ∀ e e' es. Error e' :> es => (e -> e') -> Eff (Error e ': es) ~> Eff es
 mapError f = thisIsPureTrustMe . reinterpret \case
   ThrowError e   -> throwError $ f e
   CatchError m h -> do
