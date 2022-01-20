@@ -191,9 +191,9 @@ tail (Rec off len arr) = Rec (off + 1) (len - 1) arr
 
 unreifiable :: String -> String -> String -> a
 unreifiable clsName funName comp = error $
-  funName <> ": Attempting to access " <> comp <> " without a reflected value. This is perhaps because you are " <>
-  "trying to define an instance for the '" <> clsName <> "' typeclass, which you should not be doing whatsoever. " <>
-  "If that or other shenanigans seem unlikely, please report this as a bug."
+  funName <> ": Attempting to access " <> comp <> " without a reflected value. This is perhaps because you are trying \
+  \to define an instance for the '" <> clsName <> "' typeclass, which you should not be doing whatsoever. If that or \
+  \other shenanigans seem unlikely, please report this as a bug."
 
 -- | The list @es@ list is concrete, i.e. is of the form @'[a1, a2, ..., an]@, i.e. is not a type variable.
 class KnownList (es :: [k]) where

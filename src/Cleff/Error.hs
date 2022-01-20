@@ -85,11 +85,11 @@ data ErrorExc = ErrorExc !Unique Any
 instance Exception ErrorExc
 
 instance Show ErrorExc where
-  showsPrec _ (ErrorExc uid _) = showString
-    "Cleff.Error.runError: Escaped error (error UID hash: " . shows (hashUnique uid) . showString ("). This is " <>
-    "possibly due to trying to throwError in a forked thread, or trying to 'wait' on an 'Async' computation out of " <>
-    "the effect scope where the error is thrown. Refer to the haddock of 'runError' for details on the caveats. If " <>
-    "all those shenanigans mentioned or other similar ones seem unlikely, please report this as a bug.")
+  showsPrec _ (ErrorExc uid _) =
+    ("Cleff.Error.runError: Escaped error (error UID hash: " <>) . shows (hashUnique uid) . ("). This is possibly due \
+    \to trying to 'throwError' in a forked thread, or trying to 'wait' on an error-throwing \'Async' computation out \
+    \of the effect scope where it is created. Refer to the haddock of 'runError' for details on the caveats. If all \
+    \those shenanigans mentioned or other similar ones seem unlikely, please report this as a bug." <>)
 
 catch' :: ∀ e m a. MonadUnliftIO m => Unique -> m a -> (e -> m a) -> m a
 catch' eid m h = m `Exc.catch` \ex@(ErrorExc eid' e) -> if eid == eid' then h (fromAny e) else Exc.throwIO ex
