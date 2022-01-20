@@ -2,6 +2,9 @@
 -- | This module contains the definition of the 'Eff' monad, which is basically an @'Env' es -> 'IO' a@, as well as
 -- functions for manipulating the effect environment type 'Env'. Most of the times, you won't need to use this module
 -- directly; user-facing functionalities are all exported via the "Cleff" module.
+--
+-- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
+-- extra careful if you're to depend on this module.
 module Cleff.Internal.Monad
   ( -- * Core types
     InternalHandler (..), Env, Eff (..)
@@ -34,9 +37,10 @@ instance Typeable e => Show (InternalHandler e) where
 -- | The effect memironment that stores handlers of any effect present in the stack @es@.
 type Env = Mem InternalHandler
 
--- | The extensible effect monad. A monad @'Eff' es@ is capable of performing any effect in the /effect stack/ @es@.
--- Most of the times, @es@ should be a polymorphic effect stack, constrained by the '(:>)' and '(:>>)' operators that
--- indicate what effects are present in it. For example, the type
+-- | The extensible effect monad. A monad @'Eff' es@ is capable of performing any effect in the /effect stack/ @es@,
+-- which is a type-level list that holds all effects available. However, most of the times, for flexibility, @es@
+-- should be a polymorphic type variable, and you should use the '(:>)' and '(:>>)' operators in constraints to
+-- indicate what effects are in the stack. For example,
 --
 -- @
 -- 'Cleff.Reader.Reader' 'String' ':>' es, 'Cleff.State.State' 'Bool' ':>' es => 'Eff' es 'Integer'
@@ -49,7 +53,7 @@ newtype Eff es a = Eff { unEff :: Env es -> IO a }
   deriving newtype (Semigroup, Monoid)
   deriving (Functor, Applicative, Monad, MonadFix) via (ReaderT (Env es) IO)
 
--- | Perform an effect operation, /i.e./ a value constructed by a constructor of an effect type @e :: 'Effect'@, given
--- @e@ is in the effect stack.
+-- | Perform an effect operation, /i.e./ a value of an effect type @e :: 'Effect'@. This requires @e@ to be in the
+-- effect stack.
 send :: e :> es => e (Eff es) ~> Eff es
 send eff = Eff \handlers -> unEff (runHandler (Mem.read handlers) eff) handlers

@@ -3,6 +3,9 @@
 {-# OPTIONS_HADDOCK not-home #-}
 -- | This module contains functions for interpreting effects. Most of the times you won't need to import this directly;
 -- the module "Cleff" reexports most of the functionalities.
+--
+-- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
+-- extra careful if you're to depend on this module.
 module Cleff.Internal.Interpret where
 
 import           Cleff.Internal.Effect
@@ -15,16 +18,16 @@ import           Unsafe.Coerce         (unsafeCoerce)
 
 -- * Trivial handling
 
--- | Lift an action into a bigger effect stack with one more effect. For a more general version see 'raiseN'.
+-- | Lift a computation into a bigger effect stack with one more effect. For a more general version see 'raiseN'.
 raise :: ∀ e es. Eff es ~> Eff (e ': es)
 raise = raiseN @'[e]
 
--- | Lift an action into a bigger effect stack with arbitrarily more effects. This function requires
+-- | Lift a computation into a bigger effect stack with arbitrarily more effects. This function requires
 -- @TypeApplications@.
 raiseN :: ∀ es' es. KnownList es' => Eff es ~> Eff (es' ++ es)
 raiseN m = Eff (unEff m . Mem.adjust (Env.drop @es'))
 
--- | Lift an action with a known effect stack into some superset of the stack.
+-- | Lift a computation with a fixed, known effect stack into some superset of the stack.
 inject :: ∀ es' es. Subset es' es => Eff es' ~> Eff es
 inject m = Eff (unEff m . Mem.adjust (Env.pick @es'))
 
@@ -43,19 +46,19 @@ data SendSite e esSend = SendSite
   {-# UNPACK #-} !(MemPtr InternalHandler e) -- ^ The pointer to the effect handler of the effect being handled.
   {-# UNPACK #-} !(Env esSend) -- ^ The send-site 'Env'.
 
--- | The typeclass that indicates a handler scope handling effect @e@ sent from an arbitrary effect stack @esSend@.
+-- | The typeclass that indicates a handler scope, handling effect @e@ sent from the effect stack @esSend@ in the
+-- effect stack @es@.
 --
 -- You should not define instances for this typeclass whatsoever.
 class Handling e es esSend | e -> es esSend, es -> e esSend, esSend -> e es where
   -- | Obtain the send-site environment.
   sendSite :: SendSite e esSend
   sendSite = error $
-    "Cleff.Internal.Interpret.sendSite: Attempting to access the send site without a reflected value.\n" <>
-    "This is perhaps because you are trying to define an instance for the 'Handling' typeclass,\n" <>
-    "which you should not be doing whatsoever.\n" <>
-    "If that or other shenanigans seem unlikely, please report this as a bug."
+    "Cleff.Internal.Interpret.sendSite: Attempting to access the send site without a reflected value. This is " <>
+    "perhaps because you are trying to define an instance for the 'Handling' typeclass, which you should not be " <>
+    "doing whatsoever. If that or other shenanigans seem unlikely, please report this as a bug."
 
--- | Get the pointer to the effect handler of the effect being handled.
+-- | Get the pointer to the current effect handler itself.
 hdlPtr :: Handling e es esSend => MemPtr InternalHandler e
 hdlPtr = let SendSite ptr _ = sendSite in ptr
 {-# INLINE hdlPtr #-}
@@ -70,13 +73,13 @@ sendEnv = let SendSite _ env = sendSite in env
 newtype InstHandling e es esSend a = InstHandling (Handling e es esSend => a)
 
 -- | Instantiate an 'Handling' typeclass, i.e. pass an implicit send-site environment in. This function shouldn't
--- be directly used anyway.
+-- be directly used anyhow.
 instHandling :: ∀ e es esSend a. (Handling e es esSend => a) -> SendSite e esSend -> a
 instHandling x = unsafeCoerce (InstHandling x :: InstHandling e es esSend a)
 {-# INLINE instHandling #-}
 
--- | The type of an effect handler, /i.e./ a function that interprets an effect @e@ from an arbitrary effect stack into
--- the effect stack @es@.
+-- | The type of an /effect handler/, which is a function that transforms an effect @e@ from an arbitrary effect stack
+-- into computations in the effect stack @es@.
 type Handler e es = ∀ esSend. Handling e es esSend => e (Eff esSend) ~> Eff es
 
 -- | The type of a simple transformation function from effect @e@ to @e'@.
@@ -90,7 +93,7 @@ mkInternalHandler :: MemPtr InternalHandler e -> Env es -> Handler e es -> Inter
 mkInternalHandler ptr es handle = InternalHandler \eff -> Eff \esSend ->
   unEff (instHandling handle (SendSite ptr esSend) eff) (Mem.update esSend es)
 
--- | Interpret an effect @e@ in terms of effects in the effect stack @es@.
+-- | Interpret an effect @e@ in terms of effects in the effect stack @es@ with an effect handler.
 interpret :: ∀ e es. Handler e es -> Eff (e ': es) ~> Eff es
 interpret = reinterpretN @'[]
 
@@ -146,8 +149,8 @@ translateN trans m = Eff \es ->
 
 -- * Combinators for interpreting higher effects
 
--- | Run a computation in the current effect stack. The effects will have the same interpretations inside the
--- computation. This is useful for interpreting effects that don't have local contexts, like a bracketing effect:
+-- | Run a computation in the current effect stack. This is useful for interpreting higher-order effects, like a
+-- bracketing effect:
 --
 -- @
 -- data Resource m a where
@@ -165,7 +168,7 @@ toEff :: Handling e es esSend => Eff esSend ~> Eff es
 toEff m = Eff \es -> unEff m (Mem.update es sendEnv)
 
 -- | Run a computation in the current effect stack, but handles the current effect inside the computation differently
--- by providing a new 'Handler'. This is useful for interpreting effect with local contexts, like 'Cleff.Reader.Local':
+-- by providing a new 'Handler'. This is useful for interpreting effects with local contexts, like 'Cleff.Reader.Local':
 --
 -- @
 -- runReader :: r -> 'Eff' ('Cleff.Reader.Reader' r ': es) '~>' 'Eff' es
@@ -180,8 +183,8 @@ toEffWith :: Handling e es esSend => Handler e es -> Eff esSend ~> Eff es
 toEffWith handle m = Eff \es -> unEff m $
   Mem.write hdlPtr (mkInternalHandler hdlPtr es handle) $ Mem.update es sendEnv
 
--- | Temporarily gain the ability to lift some @'Eff' es@ actions into some other @'Eff' es'@ as long as an @'Eff' es@
--- is finally returned. This is useful for dealing with effect operations with the monad type in the negative position.
--- It's unlikely that you need to use this function in implementing your effects.
+-- | Temporarily gain the ability to lift some @'Eff' es@ actions into @'Eff' esSend@. This is useful for dealing with
+-- effect operations with the monad type in the negative position, which means it's unlikely that you need to use this
+-- function in implementing your effects.
 withFromEff :: Handling e es esSend => ((Eff es ~> Eff esSend) -> Eff esSend a) -> Eff es a
 withFromEff f = Eff \es -> unEff (f \m -> Eff \esSend -> unEff m (Mem.update esSend es)) (Mem.update es sendEnv)

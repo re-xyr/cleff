@@ -1,4 +1,7 @@
 -- | This module contains utility functions for 'Any'.
+--
+-- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
+-- extra careful if you're to depend on this module.
 module Data.Any (Any, fromAny, toAny) where
 
 import           GHC.Exts      (Any)

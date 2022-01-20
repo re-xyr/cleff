@@ -3,6 +3,9 @@
 -- | This module contains Template Haskell functions for generating definitions of functions that send effect
 -- operations. You mostly won't want to import this module directly; The "Cleff" module reexports the main
 -- functionalities of this module.
+--
+-- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
+-- extra careful if you're to depend on this module.
 module Cleff.Internal.TH where
 
 import           Cleff.Internal.Effect
@@ -19,9 +22,9 @@ import           Language.Haskell.TH.PprLib   (text, (<>))
 import           Prelude                      hiding ((<>))
 
 -- | For a datatype @T@ representing an effect, @'makeEffect' T@ generates functions defintions for performing the
--- operations (/i.e./ constructors) of @T@ via 'send'. The naming rule is changing the first uppercase letter in the
--- constructor name to lowercase or removing the @:@ symbol in the case of operator constructors. Also, this function
--- will preserve any fixity declarations defined on the constructors.
+-- operations of @T@ via 'send'. The naming rule is changing the first uppercase letter in the constructor name to
+-- lowercase or removing the @:@ symbol in the case of operator constructors. Also, this function will preserve any
+-- fixity declarations defined on the constructors.
 --
 -- Because of the limitations of Template Haskell, all constructors of @T@ should be /polymorphic in the monad type/,
 -- if they are to be used by 'makeEffect'. For example, this is not OK:

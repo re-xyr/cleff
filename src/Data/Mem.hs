@@ -5,6 +5,9 @@
 -- * \( O(n) \) changing the pointer in an array cell;
 -- * \( O(1) \) modification of the memory a pointer points to;
 -- * \( O(1) \) read.
+--
+-- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
+-- extra careful if you're to depend on this module.
 module Data.Mem (Mem, MemPtr, empty, adjust, alloca, read, write, replace, append, update) where
 
 import           Data.Any

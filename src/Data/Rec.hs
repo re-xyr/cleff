@@ -7,6 +7,9 @@
 -- * Update: \( O(n) \).
 -- * Shrink: \( O(1) \).
 -- * Append: \( O(n) \).
+--
+-- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
+-- extra careful if you're to depend on this module.
 module Data.Rec
   ( Rec, length
   , -- * Construction
@@ -188,13 +191,11 @@ tail (Rec off len arr) = Rec (off + 1) (len - 1) arr
 
 unreifiable :: String -> String -> String -> a
 unreifiable clsName funName comp = error $
-  funName <> ": Attempting to access " <> comp <> " without a reflected value.\n" <>
-  "This is perhaps because you are trying to define an instance for the '" <> clsName <> "' typeclass,\n" <>
-  "which you should not be doing whatsoever.\n" <>
+  funName <> ": Attempting to access " <> comp <> " without a reflected value. This is perhaps because you are " <>
+  "trying to define an instance for the '" <> clsName <> "' typeclass, which you should not be doing whatsoever. " <>
   "If that or other shenanigans seem unlikely, please report this as a bug."
 
--- | Typeclass that shows a list has a known structure (/i.e./ known length). Practically, this means you know the
--- contents of the list.
+-- | The list @es@ list is concrete, i.e. is of the form @'[a1, a2, ..., an]@, i.e. is not a type variable.
 class KnownList (es :: [k]) where
   -- | Get the length of the list.
   reifyLen :: Int
@@ -223,7 +224,7 @@ take (Rec off _ arr) = Rec 0 len $ runSmallArray do
   pure marr
   where len = reifyLen @_ @es
 
--- | Witnesses the presence of an element in a type level list.
+-- | The element @e@ is present in the list @es@.
 class Elem (e :: k) (es :: [k]) where
   -- | Get the index of the element.
   reifyIndex :: Int
@@ -244,7 +245,7 @@ instance TypeError (ElemNotFound e) => Elem e '[] where
 index :: ∀ e es f. Elem e es => Rec f es -> f e
 index (Rec off _ arr) = fromAny $ indexSmallArray arr (off + reifyIndex @_ @e @es)
 
--- | Typeclass that witnesses @es@ being a subset of @es'@.
+-- | @es@ is a subset of @es'@.
 class KnownList es => Subset (es :: [k]) (es' :: [k]) where
   -- | Get a list of indices of the elements.
   reifyIndices :: [Int]

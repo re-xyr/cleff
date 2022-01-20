@@ -1,8 +1,12 @@
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_HADDOCK not-home #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
--- | This module contains the 'IOE' effect together with a few primitives for using it. It is not usually needed as
--- safe functionalities are re-exported in the "Cleff" module.
+-- | This module contains the 'IOE' effect together with a few primitives for using it, as well as interpretation
+-- combinators for 'IO'-related effects. It is not usually needed because safe functionalities are re-exported in the
+-- "Cleff" module.
+--
+-- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
+-- extra careful if you're to depend on this module.
 module Cleff.Internal.Base where
 
 import           Cleff.Internal.Effect
@@ -49,19 +53,19 @@ data IOE :: Effect where
 
 -- * Primitive 'IO' functions
 
--- | Lift an 'IO' action into 'Eff'. This function is /highly unsafe/ and should not be used directly; most of the
--- times you should use 'liftIO' that wraps this function in a safer type.
+-- | Lift an 'IO' computation into 'Eff'. This function is /highly unsafe/ and should not be used directly; use 'liftIO'
+-- instead, or if you're interpreting higher-order effects, use 'fromIO'.
 primLiftIO :: IO a -> Eff es a
 primLiftIO = Eff . const
 {-# INLINE primLiftIO #-}
 
--- | Give a runner function a way to run 'Eff' actions as an 'IO' action. This function is /highly unsafe/ and should
--- not be used directly; most of the times you should use 'withRunInIO' that wraps this function in a safer type.
+-- | Give a runner function a way to run 'Eff' actions as an 'IO' computation. This function is /highly unsafe/ and
+-- should not be used directly; use 'withRunInIO' instead, or if you're interpreting higher-order effects, use
+-- 'withToIO'.
 primUnliftIO :: ((Eff es ~> IO) -> IO a) -> Eff es a
 primUnliftIO f = Eff \es -> f (`unEff` es)
 {-# INLINE primUnliftIO #-}
 
--- Encouraged usage built upon @unliftio@
 instance IOE :> es => MonadIO (Eff es) where
 #ifdef DYNAMIC_IOE
   liftIO = send . Lift
@@ -95,11 +99,11 @@ instance IOE :> es => MonadMask (Eff es) where
     z <- mz a (ExitCaseSuccess x)
     pure (x, z)
 
--- | Compatibility instance. This is not encouraged usage; use 'MonadIO' if possible.
+-- | Compatibility instance; use 'MonadIO' if possible.
 instance IOE :> es => MonadBase IO (Eff es) where
   liftBase = liftIO
 
--- | Compatibility instance. This is not encouraged usage; use 'MonadUnliftIO' if possible.
+-- | Compatibility instance; use 'MonadUnliftIO' if possible.
 instance IOE :> es => MonadBaseControl IO (Eff es) where
   type StM (Eff es) a = a
   liftBaseWith = withRunInIO
@@ -111,12 +115,9 @@ instance IOE :> es => PrimMonad (Eff es) where
 
 -- * Unwrapping 'Eff'
 
--- | Eliminate an 'IOE' effect from the stack. This is mainly for implementing effects that don't really interact with
--- the outside world (i.e. can be safely used 'unsafeDupablePerformIO' on), such as a State effect using
--- 'Data.IORef.IORef'.
---
--- This function is /unsafe/ and you should be careful not to use it for interpreting effects that do affect the real
--- world.
+-- | Unsafely eliminate an 'IOE' effect from the top of the effect stack. This is mainly for implementing effects that
+-- uses 'IO' but does not do anything really /impure/ (i.e. can be safely used 'unsafeDupablePerformIO' on), such as a
+-- State effect.
 thisIsPureTrustMe :: Eff (IOE ': es) ~> Eff es
 thisIsPureTrustMe = interpret \case
 #ifdef DYNAMIC_IOE
@@ -125,29 +126,29 @@ thisIsPureTrustMe = interpret \case
 #endif
 {-# INLINE thisIsPureTrustMe #-}
 
--- | Extract the 'IO' action out of an 'Eff' with no effect remaining on the stack.
+-- | Extract the 'IO' computation out of an 'Eff' given no effect remains on the stack.
 runEff :: Eff '[] a -> IO a
 runEff m = unEff m Mem.empty
 {-# INLINE runEff #-}
 
--- | Unwrap the 'Eff' monad into an 'IO' action, given that all other effects are interpreted, and only 'IOE' remains
--- on the effect stack.
+-- | Unwrap an 'Eff' computation with side effects into an 'IO' computation, given that all effects other than 'IOE' are
+-- interpreted.
 runIOE :: Eff '[IOE] ~> IO
 runIOE = runEff . thisIsPureTrustMe
 {-# INLINE runIOE #-}
 
--- | Unwrap the 'Eff' monad into a pure value, given that all effects are interpreted and no 'IOE' stays on the effect
--- stack.
+-- | Unwrap a pure 'Eff' computation into a pure value, given that all effects are interpreted.
 runPure :: Eff '[] a -> a
 runPure = unsafeDupablePerformIO . runEff
 {-# NOINLINE runPure #-}
 
 -- * Effect interpretation
 
--- | An effect handler that translates effect @e@ from arbitrary effect stacks into 'IO' actions.
+-- | The type of an /'IO' effect handler/, which is a function that transforms an effect @e@ into 'IO' computations.
+-- This is used for 'interpretIO'.
 type HandlerIO e es = ∀ esSend. (Handling e es esSend) => e (Eff esSend) ~> IO
 
--- | Interpret an effect in terms of 'IO'.
+-- | Interpret an effect in terms of 'IO', by transforming an effect into 'IO' computations.
 --
 -- @
 -- 'interpretIO' f = 'interpret' ('liftIO' '.' f)
@@ -158,12 +159,12 @@ interpretIO f = interpret (liftIO . f)
 
 -- * Combinators for interpreting higher-order effects
 
--- | Temporarily gain the ability to unlift an @'Eff' esSend@ action into 'IO'. This is useful for dealing with
+-- | Temporarily gain the ability to unlift an @'Eff' esSend@ computation into 'IO'. This is useful for dealing with
 -- higher-order effects that involves 'IO'.
 withToIO :: (Handling e es esSend, IOE :> es) => ((Eff esSend ~> IO) -> IO a) -> Eff es a
 withToIO f = Eff \es -> f \m -> unEff m (Mem.update es sendEnv)
 
--- | Lift an 'IO' action into @'Eff' esSend@. This is useful for dealing with effect operations with the monad type in
+-- | Lift an 'IO' computation into @'Eff' esSend@. This is useful for dealing with effect operations with the monad type in
 -- the negative position within 'Cleff.IOE', like 'UnliftIO.mask'ing.
 fromIO :: (Handling e es esSend, IOE :> es) => IO ~> Eff esSend
 fromIO = Eff . const

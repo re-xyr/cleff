@@ -33,7 +33,7 @@ inputToListState = reinterpret \case
     x : xs' -> Just x <$ put xs'
 {-# INLINE inputToListState #-}
 
--- | Run an 'Input' effect by performing an action for each input request.
+-- | Run an 'Input' effect by performing a computation for each input request.
 runInputEff :: Eff es i -> Eff (Input i ': es) ~> Eff es
 runInputEff m = interpret \case
   Input -> m

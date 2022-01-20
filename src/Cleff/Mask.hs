@@ -30,11 +30,11 @@ uninterruptibleMask_ m = uninterruptibleMask \_ -> m
 bracket_ :: Mask :> es => Eff es a -> Eff es c -> (a -> Eff es b) -> Eff es b
 bracket_ ma = bracket ma . const
 
--- | Attach a cleanup action that will always run to a potentially throwing action.
+-- | Attach a cleanup action that will always run to a potentially throwing computation.
 finally :: Mask :> es => Eff es a -> Eff es b -> Eff es a
 finally m mz = bracket_ (pure ()) mz (const m)
 
--- | Attach an action that runs if the main action throws an exception.
+-- | Attach an action that runs if the main computation throws an exception.
 onError :: Mask :> es => Eff es a -> Eff es b -> Eff es a
 onError m mz = bracketOnError (pure ()) (const mz) (const m)
 
