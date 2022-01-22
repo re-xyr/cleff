@@ -96,7 +96,6 @@ library
     , base >=4.12 && <5
     , containers ==0.6.*
     , exceptions ==0.10.*
-    , extra >=1.6 && <1.8
     , microlens >=0.4.9 && <0.5
     , monad-control >=1 && <1.1
     , primitive >=0.6 && <0.8
@@ -156,7 +155,7 @@ test-suite cleff-example
     , cleff
     , containers ==0.6.*
     , exceptions ==0.10.*
-    , extra >=1.6 && <1.8
+    , extra
     , microlens >=0.4.9 && <0.5
     , monad-control >=1 && <1.1
     , primitive >=0.6 && <0.8
@@ -223,7 +222,7 @@ test-suite cleff-test
     , cleff
     , containers ==0.6.*
     , exceptions ==0.10.*
-    , extra >=1.6 && <1.8
+    , extra
     , hspec
     , lifted-base
     , microlens >=0.4.9 && <0.5

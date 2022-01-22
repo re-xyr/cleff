@@ -9,7 +9,7 @@ module Cleff.Internal.Monad
   ( -- * Core types
     InternalHandler (..), Env, Eff (..)
   , -- * Performing effect operations
-    KnownList, Subset, send,
+    KnownList, Subset, send
   ) where
 
 import           Cleff.Internal.Effect

@@ -50,7 +50,7 @@ runState s m = thisIsPureTrustMe do
     State f -> liftIO $ atomicModifyIORefCAS rs (swap . f)) m
   s' <- readIORef rs
   pure (x, s')
--- {-# INLINE runState #-}
+{-# INLINE runState #-}
 
 -- | Run a 'State' effect in terms of a larger 'State' via a 'Lens''.
 zoom :: State t :> es => Lens' t s -> Eff (State s ': es) ~> Eff es

@@ -25,7 +25,6 @@ dependencies:
 - atomic-primops >= 0.8 && < 0.9
 - base >= 4.12 && < 5
 - containers >= 0.6 && < 0.7
-- extra >= 1.6 && < 1.8
 - exceptions >= 0.10 && < 0.11
 - microlens >= 0.4.9 && < 0.5
 - monad-control >= 1 && < 1.1
@@ -51,6 +50,10 @@ ghc-options:
 - -Wmissing-deriving-strategies
 - -Wpartial-fields
 - -Wunused-type-patterns
+# - -ddump-simpl
+# - -ddump-to-file
+# - -dsuppress-all
+# - -dsuppress-uniques
 
 when:
 - condition: flag(dynamic-ioe)
@@ -100,6 +103,7 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - cleff
+    - extra
     - hspec
     - lifted-base
     - QuickCheck
@@ -116,5 +120,6 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - cleff
+    - extra
     default-extensions:
     - DeriveAnyClass

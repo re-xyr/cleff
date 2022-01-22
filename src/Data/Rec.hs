@@ -28,6 +28,7 @@ module Data.Rec
     invariant, sizeInvariant, allAccessible
   ) where
 
+import           Control.Arrow             ((&&&))
 import           Control.Monad.Primitive   (PrimMonad (PrimState))
 import           Data.Any
 import           Data.Functor.Const        (Const (Const, getConst))
@@ -35,7 +36,6 @@ import           Data.Kind                 (Type)
 import           Data.List                 (intersperse)
 import           Data.Primitive.SmallArray (SmallArray, SmallMutableArray, copySmallArray, indexSmallArray,
                                             newSmallArray, runSmallArray, sizeofSmallArray, writeSmallArray)
-import           Data.Tuple.Extra          ((&&&))
 import           GHC.TypeLits              (ErrorMessage (ShowType, Text, (:<>:)), TypeError)
 import           Prelude                   hiding (all, any, concat, drop, head, length, tail, take, zipWith)
 import           Text.Read                 (readPrec)
@@ -261,7 +261,7 @@ instance (Subset es es', Elem e es') => Subset (e ': es) es' where
 pick :: ∀ es es' f. Subset es es' => Rec f es' -> Rec f es
 pick (Rec off _ arr) = Rec 0 (reifyLen @_ @es) $ runSmallArray do
   marr <- newArr (reifyLen @_ @es)
-  go marr (0 :: Int) (reifyIndices @_ @es @es')
+  go marr 0 (reifyIndices @_ @es @es')
   pure marr
   where
     go :: PrimMonad m => SmallMutableArray (PrimState m) Any -> Int -> [Int] -> m ()
@@ -288,7 +288,7 @@ batch :: ∀ es es' f. Subset es es' => Rec f es -> Rec f es' -> Rec f es'
 batch (Rec off _ arr) (Rec off' len' arr') = Rec 0 len' $ runSmallArray do
   marr <- newArr len'
   copySmallArray marr 0 arr' off' len'
-  go marr (0 :: Int) (reifyIndices @_ @es @es')
+  go marr 0 (reifyIndices @_ @es @es')
   pure marr
   where
     go :: PrimMonad m => SmallMutableArray (PrimState m) Any -> Int -> [Int] -> m ()
