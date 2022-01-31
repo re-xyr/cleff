@@ -45,17 +45,18 @@ listens f m = do
 runWriter :: ∀ w es a. Monoid w => Eff (Writer w ': es) a -> Eff es (a, w)
 runWriter m = thisIsPureTrustMe do
   rw <- newIORef mempty
-  x <- reinterpret (h [rw]) m
+  x <- reinterpret (h rw) m
   w' <- readIORef rw
   pure (x, w')
   where
-    h :: [IORef w] -> Handler (Writer w) (IOE ': es)
-    h rws = \case
-      Tell w' -> traverse_ (\rw -> liftIO $ atomicModifyIORefCAS_ rw (<> w')) rws
+    h :: IORef w -> Handler (Writer w) (IOE ': es)
+    h rw = \case
+      Tell w' -> liftIO $ atomicModifyIORefCAS_ rw (<> w')
       Listen m' -> do
         rw' <- newIORef mempty
-        x <- toEffWith (h $ rw' : rws) m'
+        x <- toEffWith (h rw') m'
         w' <- readIORef rw'
+        h rw (Tell w')
         pure (x, w')
 {-# INLINE runWriter #-}
 
