@@ -1,4 +1,11 @@
-module Cleff.Fresh where
+module Cleff.Fresh
+  ( -- * Effect
+    Fresh (..)
+  , -- * Operations
+    fresh
+  , -- * Interpretations
+    freshIntToState, runFreshUnique
+  ) where
 
 import           Cleff
 import           Cleff.State

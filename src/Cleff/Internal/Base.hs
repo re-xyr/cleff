@@ -7,22 +7,33 @@
 --
 -- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
 -- extra careful if you're to depend on this module.
-module Cleff.Internal.Base where
+module Cleff.Internal.Base
+  ( -- * The 'IOE' Effect
+    IOE
+  , -- * Primitive 'IO' functions
+    primLiftIO, primUnliftIO
+  , -- * Unwrapping 'Eff'
+    thisIsPureTrustMe, runIOE, runPure
+  , -- * Effect interpretation
+    HandlerIO, interpretIO
+  , -- * Combinators for interpreting higher-order effects
+    withToIO, fromIO
+  ) where
 
 import           Cleff.Internal.Effect
 import           Cleff.Internal.Interpret
 import           Cleff.Internal.Monad
 import           Control.Monad.Base          (MonadBase (liftBase))
-import           Control.Monad.Catch         (ExitCase (ExitCaseException, ExitCaseSuccess), MonadCatch (catch),
-                                              MonadMask (generalBracket, mask, uninterruptibleMask),
-                                              MonadThrow (throwM))
+import           Control.Monad.Catch         (ExitCase (ExitCaseException, ExitCaseSuccess), MonadCatch, MonadMask,
+                                              MonadThrow)
+import qualified Control.Monad.Catch         as Catch
 import           Control.Monad.Primitive     (PrimMonad (PrimState, primitive), RealWorld)
 import           Control.Monad.Trans.Control (MonadBaseControl (StM, liftBaseWith, restoreM))
 import qualified Data.Mem                    as Mem
 import           GHC.IO                      (IO (IO))
 import           System.IO.Unsafe            (unsafeDupablePerformIO)
-import           UnliftIO                    (MonadIO (liftIO), MonadUnliftIO (withRunInIO), catch, mask, throwIO,
-                                              uninterruptibleMask)
+import           UnliftIO                    (MonadIO (liftIO), MonadUnliftIO (withRunInIO), throwIO)
+import qualified UnliftIO
 
 -- * The 'IOE' effect
 

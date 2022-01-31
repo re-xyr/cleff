@@ -1,4 +1,11 @@
-module Cleff.Mask where
+module Cleff.Mask
+  ( -- * Effect
+    Mask (..)
+  , -- * Operations
+    mask, uninterruptibleMask, bracket, bracketOnError, mask_, uninterruptibleMask_, bracket_, finally, onError
+  , -- * Interpretations
+    runMask
+  ) where
 
 import           Cleff
 import           Cleff.Internal.Base

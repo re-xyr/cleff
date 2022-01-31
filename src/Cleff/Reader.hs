@@ -1,4 +1,11 @@
-module Cleff.Reader where
+module Cleff.Reader
+  ( -- * Effect
+    Reader (..)
+  , -- * Operations
+    ask, local, asks
+  , -- * Interpretations
+    runReader, magnify
+  ) where
 
 import           Cleff
 import           Lens.Micro (Lens', (%~), (&), (^.))

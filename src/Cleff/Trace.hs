@@ -1,4 +1,11 @@
-module Cleff.Trace where
+module Cleff.Trace
+  ( -- * Effect
+    Trace (..)
+  , -- * Operations
+    trace
+  , -- * Interpretations
+    runTraceHandle, runTraceStdout, runTraceStderr, ignoreTrace, traceToOutput
+  ) where
 
 import           Cleff
 import           Cleff.Output

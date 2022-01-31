@@ -90,7 +90,7 @@ library
       UndecidableInstances
       UnicodeSyntax
       ViewPatterns
-  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wpartial-fields -Wunused-type-patterns
+  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wpartial-fields -Wunused-type-patterns -Wmissing-export-lists
   build-depends:
       atomic-primops ==0.8.*
     , base >=4.12 && <5

@@ -1,4 +1,11 @@
-module Cleff.Writer where
+module Cleff.Writer
+  ( -- * Effect
+    Writer (..)
+  , -- * Operations
+    tell, listen, listens
+  , -- * Interpretations
+    runWriter
+  ) where
 
 import           Cleff
 import           Cleff.Internal.Base

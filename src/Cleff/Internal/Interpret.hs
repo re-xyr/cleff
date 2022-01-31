@@ -6,7 +6,18 @@
 --
 -- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
 -- extra careful if you're to depend on this module.
-module Cleff.Internal.Interpret where
+module Cleff.Internal.Interpret
+  ( -- * Trivial handling
+    raise, raiseN, inject, subsume, subsumeN
+  , -- * Handler types
+    Handling, sendEnv, Handler, Translator
+  , -- * Interpreting effects
+    interpret, reinterpret, reinterpret2, reinterpret3, reinterpretN, interpose, impose, imposeN
+  , -- * Translating effects
+    transform, translate
+  , -- * Combinators for interpreting higher effects
+    toEff, toEffWith, withFromEff
+  ) where
 
 import           Cleff.Internal.Effect
 import           Cleff.Internal.Monad
@@ -174,7 +185,7 @@ toEff m = Eff \es -> unEff m (Mem.update es sendEnv)
 -- runReader :: r -> 'Eff' ('Cleff.Reader.Reader' r ': es) '~>' 'Eff' es
 -- runReader x = 'interpret' (handle x)
 --   where
---     handle :: r -> 'Handler' ('Reader' r) es
+--     handle :: r -> 'Handler' ('Cleff.Reader.Reader' r) es
 --     handle r = \\case
 --       'Cleff.Reader.Ask'       -> 'pure' r
 --       'Cleff.Reader.Local' f m -> 'toEffWith' (handle $ f r) m

@@ -1,4 +1,11 @@
-module Cleff.State where
+module Cleff.State
+  ( -- * Effect
+    State (..)
+  , -- * Operations
+    get, put, state, gets, modify
+  , -- * Interpretations
+    runState, zoom
+  ) where
 
 import           Cleff
 import           Cleff.Internal.Base
@@ -32,10 +39,10 @@ modify f = state (((), ) . f)
 
 -- | Run the 'State' effect.
 --
--- __Caveat__: The 'runState' interpreter is implemented with `IORef`s and there is no way to do arbitrary atomic
--- transactions at all. The 'state' operation is atomic though and it is implemented with 'atomicModifyIORefCAS' which
--- can be faster in contention. For any more complicated cases of atomicity please build your own effect that uses
--- either @MVar@s or @TVar@s based on your need.
+-- __Caveat__: The 'runState' interpreter is implemented with 'Data.IORef.IORef's and there is no way to do arbitrary
+-- atomic transactions. The 'state' operation is atomic though and it is implemented with 'atomicModifyIORefCAS', which
+-- can be faster than @atomicModifyIORef@ in contention. For any more complicated cases of atomicity, please build your
+-- own effect that uses either @MVar@s or @TVar@s based on your need.
 --
 -- Unlike @mtl@, in @cleff@ the state /will not revert/ when an error is thrown.
 --

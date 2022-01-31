@@ -1,4 +1,11 @@
-module Cleff.Input where
+module Cleff.Input
+  ( -- * Effect
+    Input (..)
+  , -- * Operations
+    input, inputs
+  , -- * Interpretations
+    runInputConst, inputToListState, runInputEff
+  ) where
 
 import           Cleff
 import           Cleff.State

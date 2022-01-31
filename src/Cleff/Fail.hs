@@ -1,6 +1,11 @@
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
-module Cleff.Fail where
+module Cleff.Fail
+  ( -- * Effect
+    Fail (..)
+  , -- * Interpretations
+    runFail, runFailIO
+  ) where
 
 import           Cleff
 import           Cleff.Error

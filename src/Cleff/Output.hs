@@ -1,4 +1,11 @@
-module Cleff.Output where
+module Cleff.Output
+  ( -- * Effect
+    Output (..)
+  , -- * Operations
+    output
+  , -- * Interpretations
+    outputToListState, outputToWriter, ignoreOutput, runOutputEff
+  ) where
 
 import           Cleff
 import           Cleff.State

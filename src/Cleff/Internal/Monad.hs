@@ -7,7 +7,7 @@
 -- extra careful if you're to depend on this module.
 module Cleff.Internal.Monad
   ( -- * Core types
-    InternalHandler (..), Env, Eff (..)
+    InternalHandler (InternalHandler, runHandler), Env, Eff (Eff, unEff)
   , -- * Performing effect operations
     KnownList, Subset, send
   ) where
@@ -26,7 +26,7 @@ import           Type.Reflection            (Typeable, typeRep)
 -- In interpreting functions (see "Cleff.Internal.Interpret"), the user-facing 'Cleff.Handler' type is transformed into
 -- this type.
 newtype InternalHandler e = InternalHandler
-  { runHandler :: forall es. e (Eff es) ~> Eff es }
+  { runHandler :: ∀ es. e (Eff es) ~> Eff es }
 
 -- | @
 -- 'show' (handler :: 'InternalHandler' E) == "Handler E"

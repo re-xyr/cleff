@@ -17,11 +17,16 @@ import           Data.Bool           (bool)
 import           Data.Unique         (Unique, hashUnique, newUnique)
 import qualified UnliftIO.Exception  as Exc
 
+-- * Effect
+
 -- | An effect capable of breaking out of current control flow by raising an exceptional value @e@. This effect roughly
 -- corresponds to the @MonadError@ typeclass and @ExceptT@ monad transformer in @mtl@.
 data Error e :: Effect where
   ThrowError :: e -> Error e m a
   CatchError :: m a -> (e -> m a) -> Error e m a
+
+-- * Operations
+
 makeEffect ''Error
 
 -- | Lift an 'Either' value into the 'Error' effect.
@@ -78,6 +83,8 @@ tryError m = (Right <$> m) `catchError` (pure . Left)
 -- error.
 tryErrorJust :: Error e :> es => (e -> Maybe b) -> Eff es a -> Eff es (Either b a)
 tryErrorJust f m = (Right <$> m) `catchError` \e -> maybe (throwError e) (pure . Left) $ f e
+
+-- * Interpretations
 
 -- | Exception wrapper used in 'runError' in order not to conflate error types with exception types.
 data ErrorExc = ErrorExc !Unique Any
