@@ -10,6 +10,7 @@
 ### Added
 
 - `Trustworthy` flags for non-internal modules
+- `sendVia` for sending an effect operation along a transformation between effect stacks
 
 ## 0.1.0.0
 

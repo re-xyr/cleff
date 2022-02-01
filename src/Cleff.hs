@@ -34,7 +34,7 @@ module Cleff
     runPure, runIOE
   , -- * Defining effects
     -- $definingEffects
-    send, makeEffect, makeEffect_
+    send, sendVia, makeEffect, makeEffect_
   , -- * Trivial effects handling
     raise, raiseN, inject, subsume, subsumeN, KnownList, Subset
   , -- * Interpreting effects

@@ -16,7 +16,7 @@ module Cleff.Internal.Monad
   ( -- * Core types
     InternalHandler (InternalHandler, runHandler), Env, Eff (Eff, unEff)
   , -- * Performing effect operations
-    KnownList, Subset, send
+    KnownList, Subset, send, sendVia
   ) where
 
 import           Cleff.Internal.Effect
@@ -63,4 +63,14 @@ newtype Eff es a = Eff { unEff :: Env es -> IO a }
 -- | Perform an effect operation, /i.e./ a value of an effect type @e :: 'Effect'@. This requires @e@ to be in the
 -- effect stack.
 send :: e :> es => e (Eff es) ~> Eff es
-send eff = Eff \handlers -> unEff (runHandler (Mem.read handlers) eff) handlers
+send = sendVia id
+
+-- | Perform an action in another effect stack via a transformation to that stack; in other words, this function "maps"
+-- the effect operation from effect stack @es@ to @es'@. This is a generalization of 'send'; end users most likely
+-- won't need to use this.
+--
+-- @
+-- 'send' = 'sendVia' 'id'
+-- @
+sendVia :: e :> es' => (Eff es ~> Eff es') -> e (Eff es) ~> Eff es'
+sendVia f e = Eff \es -> unEff (f (runHandler (Mem.read es) e)) es

@@ -80,7 +80,7 @@ class Handling esSend e es | esSend -> e es where
     \whatsoever. If that or other shenanigans seem unlikely, please report this as a bug."
 
 -- | Get the pointer to the current effect handler itself.
-hdlPtr :: forall esSend e es. Handling esSend e es => MemPtr InternalHandler e
+hdlPtr :: ∀ esSend e es. Handling esSend e es => MemPtr InternalHandler e
 hdlPtr = let SendSite _ ptr = sendSite @esSend in ptr
 {-# INLINE hdlPtr #-}
 
@@ -153,20 +153,20 @@ imposeN handle m = Eff \es ->
 -- * Translating effects
 
 -- | Interpret an effect in terms of another effect in the stack via a simple 'Translator'.
-transform :: ∀ e' e es. e' :> es => Translator e e' -> Eff (e ': es) ~> Eff es
-transform = translateN @'[]
+--
+-- @
+-- 'transform' trans = 'interpret' ('sendVia' 'toEff' '.' trans)
+-- @
+transform :: ∀ e e' es. e' :> es => Translator e e' -> Eff (e ': es) ~> Eff es
+transform trans = interpret (sendVia toEff . trans)
 
 -- | Like 'transform', but instead of using an effect in stack, add a new one to the top of it.
-translate :: ∀ e' e es. Translator e e' -> Eff (e ': es) ~> Eff (e' ': es)
-translate = translateN @'[e']
-
--- | Common implementation of 'transform' and 'translate'. It is overly general on its own so it is not exported in
--- "Cleff".
-translateN :: ∀ es' e' e es. (KnownList es', e' :> es' ++ es) => Translator e e' -> Eff (e ': es) ~> Eff (es' ++ es)
-translateN trans m = Eff \es ->
-  let (# ptr, es' #) = Mem.alloca es
-  in let handler = InternalHandler (runHandler (Mem.read es') . trans)
-  in unEff m $ Mem.append ptr handler $ Mem.adjust (Env.drop @es') es'
+--
+-- @
+-- 'translate' trans = 'reinterpret' ('sendVia' 'toEff' '.' trans)
+-- @
+translate :: ∀ e e' es. Translator e e' -> Eff (e ': es) ~> Eff (e' ': es)
+translate trans = reinterpret (sendVia toEff . trans)
 
 -- * Combinators for interpreting higher effects
 
@@ -200,7 +200,7 @@ toEff m = Eff \es -> unEff m (Mem.update es sendEnv)
 --       'Cleff.Reader.Ask'       -> 'pure' r
 --       'Cleff.Reader.Local' f m -> 'toEffWith' (handle $ f r) m
 -- @
-toEffWith :: forall esSend e es. Handling esSend e es => Handler e es -> Eff esSend ~> Eff es
+toEffWith :: ∀ esSend e es. Handling esSend e es => Handler e es -> Eff esSend ~> Eff es
 toEffWith handle m = Eff \es -> unEff m $
   -- The 'Handling' constraint of 'handle' will NOT be prematurely initialized here because that will make 'handle'
   -- monomorphic. Therefore this usage is safe.
