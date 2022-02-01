@@ -1,3 +1,10 @@
+{-# LANGUAGE Trustworthy #-}
+-- |
+-- Copyright: (c) 2021 Xy Ren
+-- License: BSD3
+-- Maintainer: xy.r@outlook.com
+-- Stability: experimental
+-- Portability: non-portable (GHC only)
 module Cleff.Fresh
   ( -- * Effect
     Fresh (..)

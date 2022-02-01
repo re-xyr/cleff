@@ -1,6 +1,13 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# OPTIONS_HADDOCK not-home #-}
--- | This module defines an immutable extensible record type, similar to @vinyl@ and @data-diverse@. However this
+-- |
+-- Copyright: (c) 2021 Xy Ren
+-- License: BSD3
+-- Maintainer: xy.r@outlook.com
+-- Stability: unstable
+-- Portability: non-portable (GHC only)
+--
+-- This module defines an immutable extensible record type, similar to @vinyl@ and @data-diverse@. However this
 -- implementation focuses on fast reads, hence has very different performance characteristics from other libraries:
 --
 -- * Lookup: Amortized \( O(1) \).

@@ -1,4 +1,12 @@
--- | This library implements an /extensible effects system/, where sets of monadic actions ("effects") are encoded as
+{-# LANGUAGE Trustworthy #-}
+-- |
+-- Copyright: (c) 2021 Xy Ren
+-- License: BSD3
+-- Maintainer: xy.r@outlook.com
+-- Stability: experimental
+-- Portability: non-portable (GHC only)
+--
+-- This library implements an /extensible effects system/, where sets of monadic actions ("effects") are encoded as
 -- datatypes, tracked at the type level and can have multiple different implementations. This means you can swap out
 -- implementations of certain monadic actions in mock tests or in different environments. The notion of "effect" is
 -- general here: it can be an 'IO'-performing side effect, or just obtaining the value of a static global environment.

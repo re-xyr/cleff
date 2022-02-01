@@ -1,7 +1,14 @@
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_HADDOCK not-home #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
--- | This module contains the 'IOE' effect together with a few primitives for using it, as well as interpretation
+-- |
+-- Copyright: (c) 2021 Xy Ren
+-- License: BSD3
+-- Maintainer: xy.r@outlook.com
+-- Stability: unstable
+-- Portability: non-portable (GHC only)
+--
+-- This module contains the 'IOE' effect together with a few primitives for using it, as well as interpretation
 -- combinators for 'IO'-related effects. It is not usually needed because safe functionalities are re-exported in the
 -- "Cleff" module.
 --

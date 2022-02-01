@@ -1,6 +1,13 @@
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_HADDOCK not-home #-}
--- | This module contains Template Haskell functions for generating definitions of functions that send effect
+-- |
+-- Copyright: (c) 2021 Xy Ren
+-- License: BSD3
+-- Maintainer: xy.r@outlook.com
+-- Stability: unstable
+-- Portability: non-portable (GHC only)
+--
+-- This module contains Template Haskell functions for generating definitions of functions that send effect
 -- operations. You mostly won't want to import this module directly; The "Cleff" module reexports the main
 -- functionalities of this module.
 --

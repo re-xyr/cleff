@@ -1,7 +1,14 @@
 {-# OPTIONS_HADDOCK not-home #-}
--- | This module contains the definition of the 'Eff' monad, which is basically an @'Env' es -> 'IO' a@, as well as
--- functions for manipulating the effect environment type 'Env'. Most of the times, you won't need to use this module
--- directly; user-facing functionalities are all exported via the "Cleff" module.
+-- |
+-- Copyright: (c) 2021 Xy Ren
+-- License: BSD3
+-- Maintainer: xy.r@outlook.com
+-- Stability: unstable
+-- Portability: non-portable (GHC only)
+--
+-- This module contains the definition of the 'Eff' monad, which is basically an @'Env' es -> 'IO' a@. Most of the
+-- times, you won't need to use this module directly; user-facing functionalities are all exported via the "Cleff"
+-- module.
 --
 -- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
 -- extra careful if you're to depend on this module.

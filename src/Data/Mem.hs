@@ -1,5 +1,12 @@
 {-# LANGUAGE UnboxedTuples #-}
--- | 'Mem' is a data structure that is a simulation of an array of thread-local pointers. This structure supports:
+-- |
+-- Copyright: (c) 2021 Xy Ren
+-- License: BSD3
+-- Maintainer: xy.r@outlook.com
+-- Stability: unstable
+-- Portability: non-portable (GHC only)
+--
+-- 'Mem' is a data structure that is a simulation of an array of thread-local pointers. This structure supports:
 --
 -- * \( O(n) \) creation of a new pointer;
 -- * \( O(n) \) changing the pointer in an array cell;

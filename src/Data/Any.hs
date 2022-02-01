@@ -1,4 +1,11 @@
--- | This module contains utility functions for 'Any'.
+-- |
+-- Copyright: (c) 2021 Xy Ren
+-- License: BSD3
+-- Maintainer: xy.r@outlook.com
+-- Stability: unstable
+-- Portability: non-portable (GHC only)
+--
+-- This module contains utility functions for 'Any'.
 --
 -- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
 -- extra careful if you're to depend on this module.

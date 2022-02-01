@@ -1,5 +1,12 @@
 {-# OPTIONS_HADDOCK not-home #-}
--- | This module contains definitions of some basic types related to effects. You won't need this module directly;
+-- |
+-- Copyright: (c) 2021 Xy Ren
+-- License: BSD3
+-- Maintainer: xy.r@outlook.com
+-- Stability: unstable
+-- Portability: non-portable (GHC only)
+--
+-- This module contains definitions of some basic types related to effects. You won't need this module directly;
 -- these functionalities are reexported in the "Cleff" module.
 --
 -- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
