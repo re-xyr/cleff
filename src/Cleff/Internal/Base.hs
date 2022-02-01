@@ -164,7 +164,7 @@ runPure = unsafeDupablePerformIO . runEff
 
 -- | The type of an /'IO' effect handler/, which is a function that transforms an effect @e@ into 'IO' computations.
 -- This is used for 'interpretIO'.
-type HandlerIO e es = ∀ esSend. (Handling e es esSend) => e (Eff esSend) ~> IO
+type HandlerIO e es = ∀ esSend. Handling esSend e es => e (Eff esSend) ~> IO
 
 -- | Interpret an effect in terms of 'IO', by transforming an effect into 'IO' computations.
 --
@@ -179,10 +179,10 @@ interpretIO f = interpret (liftIO . f)
 
 -- | Temporarily gain the ability to unlift an @'Eff' esSend@ computation into 'IO'. This is useful for dealing with
 -- higher-order effects that involves 'IO'.
-withToIO :: (Handling e es esSend, IOE :> es) => ((Eff esSend ~> IO) -> IO a) -> Eff es a
+withToIO :: (Handling esSend e es, IOE :> es) => ((Eff esSend ~> IO) -> IO a) -> Eff es a
 withToIO f = Eff \es -> f \m -> unEff m (Mem.update es sendEnv)
 
 -- | Lift an 'IO' computation into @'Eff' esSend@. This is useful for dealing with effect operations with the monad type in
 -- the negative position within 'Cleff.IOE', like 'UnliftIO.mask'ing.
-fromIO :: (Handling e es esSend, IOE :> es) => IO ~> Eff esSend
+fromIO :: (Handling esSend e es, IOE :> es) => IO ~> Eff esSend
 fromIO = Eff . const

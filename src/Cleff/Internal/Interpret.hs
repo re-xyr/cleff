@@ -60,45 +60,48 @@ subsumeN m = Eff (unEff m . Mem.adjust (\re -> Env.pick @es' re :++: re))
 -- * Handler types
 
 -- | The send-site environment.
-data SendSite e esSend = SendSite
-  {-# UNPACK #-} !(MemPtr InternalHandler e) -- ^ The pointer to the effect handler of the effect being handled.
+data SendSite esSend e = SendSite
   {-# UNPACK #-} !(Env esSend) -- ^ The send-site 'Env'.
+  {-# UNPACK #-} !(MemPtr InternalHandler e) -- ^ The pointer to the effect handler of the effect being handled.
 
--- | The typeclass that indicates a handler scope, handling effect @e@ sent from the effect stack @esSend@ in the
+-- | The typeclass that denotes a handler scope, handling effect @e@ sent from the effect stack @esSend@ in the
 -- effect stack @es@.
 --
 -- You should not define instances for this typeclass whatsoever.
-class Handling e es esSend | e -> es esSend, es -> e esSend, esSend -> e es where
+class Handling esSend e es | esSend -> e es where
+  -- @esSend@ is existential so it uniquely determines the other two variables. As handling scopes can nest, the other
+  -- two variables cannot determine anything.
+
   -- | Obtain the send-site environment.
-  sendSite :: SendSite e esSend
+  sendSite :: SendSite esSend e
   sendSite = error
     "Cleff.Internal.Interpret.sendSite: Attempting to access the send site without a reflected value. This is perhaps \
     \because you are trying to define an instance for the 'Handling' typeclass, which you should not be doing \
     \whatsoever. If that or other shenanigans seem unlikely, please report this as a bug."
 
 -- | Get the pointer to the current effect handler itself.
-hdlPtr :: Handling e es esSend => MemPtr InternalHandler e
-hdlPtr = let SendSite ptr _ = sendSite in ptr
+hdlPtr :: forall esSend e es. Handling esSend e es => MemPtr InternalHandler e
+hdlPtr = let SendSite _ ptr = sendSite @esSend in ptr
 {-# INLINE hdlPtr #-}
 
 -- | Get the send-site 'Env'.
-sendEnv :: Handling e es esSend => Env esSend
-sendEnv = let SendSite _ env = sendSite in env
+sendEnv :: Handling esSend e es => Env esSend
+sendEnv = let SendSite env _ = sendSite in env
 {-# INLINE sendEnv #-}
 
 -- | Newtype wrapper for instantiating the 'Handling' typeclass locally, a la the reflection trick. We do not use
 -- the @reflection@ library directly so as not to expose this piece of implementation detail to the user.
-newtype InstHandling e es esSend a = InstHandling (Handling e es esSend => a)
+newtype InstHandling esSend e es a = InstHandling (Handling esSend e es => a)
 
 -- | Instantiate an 'Handling' typeclass, i.e. pass an implicit send-site environment in. This function shouldn't
 -- be directly used anyhow.
-instHandling :: ∀ e es esSend a. (Handling e es esSend => a) -> SendSite e esSend -> a
-instHandling x = unsafeCoerce (InstHandling x :: InstHandling e es esSend a)
+instHandling :: ∀ esSend e es a. (Handling esSend e es => a) -> SendSite esSend e -> a
+instHandling x = unsafeCoerce (InstHandling x :: InstHandling esSend e es a)
 {-# INLINE instHandling #-}
 
 -- | The type of an /effect handler/, which is a function that transforms an effect @e@ from an arbitrary effect stack
 -- into computations in the effect stack @es@.
-type Handler e es = ∀ esSend. Handling e es esSend => e (Eff esSend) ~> Eff es
+type Handler e es = ∀ esSend. Handling esSend e es => e (Eff esSend) ~> Eff es
 
 -- | The type of a simple transformation function from effect @e@ to @e'@.
 type Translator e e' = ∀ esSend. e (Eff esSend) ~> e' (Eff esSend)
@@ -109,7 +112,7 @@ type Translator e e' = ∀ esSend. e (Eff esSend) ~> e' (Eff esSend)
 -- and the current 'Env'.
 mkInternalHandler :: MemPtr InternalHandler e -> Env es -> Handler e es -> InternalHandler e
 mkInternalHandler ptr es handle = InternalHandler \eff -> Eff \esSend ->
-  unEff (instHandling handle (SendSite ptr esSend) eff) (Mem.update esSend es)
+  unEff (instHandling handle (SendSite esSend ptr) eff) (Mem.update esSend es)
 
 -- | Interpret an effect @e@ in terms of effects in the effect stack @es@ with an effect handler.
 interpret :: ∀ e es. Handler e es -> Eff (e ': es) ~> Eff es
@@ -182,7 +185,7 @@ translateN trans m = Eff \es ->
 --     ('toEff' . dealloc)
 --     ('toEff' . use)
 -- @
-toEff :: Handling e es esSend => Eff esSend ~> Eff es
+toEff :: Handling esSend e es => Eff esSend ~> Eff es
 toEff m = Eff \es -> unEff m (Mem.update es sendEnv)
 
 -- | Run a computation in the current effect stack, but handles the current effect inside the computation differently
@@ -197,12 +200,14 @@ toEff m = Eff \es -> unEff m (Mem.update es sendEnv)
 --       'Cleff.Reader.Ask'       -> 'pure' r
 --       'Cleff.Reader.Local' f m -> 'toEffWith' (handle $ f r) m
 -- @
-toEffWith :: Handling e es esSend => Handler e es -> Eff esSend ~> Eff es
+toEffWith :: forall esSend e es. Handling esSend e es => Handler e es -> Eff esSend ~> Eff es
 toEffWith handle m = Eff \es -> unEff m $
-  Mem.write hdlPtr (mkInternalHandler hdlPtr es handle) $ Mem.update es sendEnv
+  -- The 'Handling' constraint of 'handle' will NOT be prematurely initialized here because that will make 'handle'
+  -- monomorphic. Therefore this usage is safe.
+  Mem.write (hdlPtr @esSend) (mkInternalHandler (hdlPtr @esSend) es handle) $ Mem.update es sendEnv
 
 -- | Temporarily gain the ability to lift some @'Eff' es@ actions into @'Eff' esSend@. This is useful for dealing with
 -- effect operations with the monad type in the negative position, which means it's unlikely that you need to use this
 -- function in implementing your effects.
-withFromEff :: Handling e es esSend => ((Eff es ~> Eff esSend) -> Eff esSend a) -> Eff es a
+withFromEff :: Handling esSend e es => ((Eff es ~> Eff esSend) -> Eff esSend a) -> Eff es a
 withFromEff f = Eff \es -> unEff (f \m -> Eff \esSend -> unEff m (Mem.update esSend es)) (Mem.update es sendEnv)
