@@ -7,11 +7,11 @@
 
 ## Overview
 
-Different from [many](`polysemy`) [previous](`fused-effects`) [libraries](`freer-simple`), `cleff` does not use techniques like Freer monads or monad transformers. Instead, the `Eff` monad is esentially a `ReaderT IO`, which provides predictable semantics and reliable performance. The only caveat is that `cleff` does not support nondeterminism and continuations in the `Eff` monad - but after all, [most effects libraries has broken nondeterminism support](https://github.com/polysemy-research/polysemy/issues/246), and we encourage users to wrap another monad transformer with support of nondeterminism (e.g. `ListT`) over the main `Eff` monad in such cases.
+Different from [many](`polysemy`) [previous](`fused-effects`) [libraries](`freer-simple`), `cleff` does not use techniques like Freer monads or monad transformers. Instead, the `Eff` monad is essentially a `ReaderT IO`, which provides predictable semantics and reliable performance. The only caveat is that `cleff` does not support nondeterminism and continuations in the `Eff` monad - but after all, [most effects libraries has broken nondeterminism support](https://github.com/polysemy-research/polysemy/issues/246), and we encourage users to wrap another monad transformer with support of nondeterminism (e.g. `ListT`) over the main `Eff` monad in such cases.
 
 ### Performance
 
-`cleff`'s `Eff` monad is esentially implemented as a `ReaderT IO`. This concrete formulation [allows more GHC optimizations to fire][alexis-talk], and brings lower performance overhead. This is first done by [`eff`], and then [`effectful`]; it proved to work, so we followed this path.
+`cleff`'s `Eff` monad is essentially implemented as a `ReaderT IO`. This concrete formulation [allows more GHC optimizations to fire][alexis-talk], and brings lower performance overhead. This is first done by [`eff`], and then [`effectful`]; it proved to work, so we followed this path.
 
 [In microbenchmarks](#benchmarks), `cleff` outperforms [`polysemy`], and is slightly behind [`effectful`]. However, note that `effectful` and `cleff` have very different design principles. While `effectful` prioritizes performance over anything else (by [providing static dispatch](https://github.com/arybczak/effectful/blob/master/effectful-core/src/Effectful/Reader/Static.hs)), `cleff` focuses on balancing expressivity and performance. If you would like minimal performance overhead, consider [`effectful`].
 
@@ -29,7 +29,7 @@ Traditional effect libraries have many surprising behaviors, such as [`mtl` reve
 
 ### Higher-order effects
 
-*Higher-order* effects are effects that take monadic computations. They are often useful in real world applications, as examples of higher-order effect operations include `local`, `catchError` and `mask`. Implementing higher-order effects is often tedious, or even not supported in some effect libraries. `polysemy` is the first library that aims to provide easy higher-order effects mechanicsm with its [`Tactics`](https://hackage.haskell.org/package/polysemy-1.7.1.0/docs/Polysemy.html#g:16) API. Following its path, `cleff` provides a set of combinators that can be used to implement higher-order effects. These combinators are as expressive as `polysemy`'s, and are also easier to use correctly.
+*Higher-order* effects are effects that take monadic computations. They are often useful in real world applications, as examples of higher-order effect operations include `local`, `catchError` and `mask`. Implementing higher-order effects is often tedious, or even not supported in some effect libraries. `polysemy` is the first library that aims to provide easy higher-order effects mechanism with its [`Tactics`](https://hackage.haskell.org/package/polysemy-1.7.1.0/docs/Polysemy.html#g:16) API. Following its path, `cleff` provides a set of combinators that can be used to implement higher-order effects. These combinators are as expressive as `polysemy`'s, and are also easier to use correctly.
 
 ## Example
 
@@ -91,7 +91,7 @@ These are the results of the [effect-zoo](https://github.com/ocharles/effect-zoo
 
 ## References
 
-These are the useful resourses that inspired this library's design and implementation.
+These are the useful resources that inspired this library's design and implementation.
 
 Papers:
 

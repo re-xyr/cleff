@@ -41,7 +41,7 @@ newtype InternalHandler e = InternalHandler
 instance Typeable e => Show (InternalHandler e) where
   showsPrec p _ = ("Handler " ++) . showsPrec p (typeRep @e)
 
--- | The effect memironment that stores handlers of any effect present in the stack @es@.
+-- | The effect environment that stores handlers of any effect present in the stack @es@.
 type Env = Mem InternalHandler
 
 -- | The extensible effect monad. A monad @'Eff' es@ is capable of performing any effect in the /effect stack/ @es@,

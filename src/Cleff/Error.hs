@@ -121,7 +121,7 @@ errorHandler eid = \case
 
 -- | Run an 'Error' effect.
 --
--- __Caveat__: 'runError' is implemented with 'Exc.Exception's therefore inherits some of its unexpected behavoirs.
+-- __Caveat__: 'runError' is implemented with 'Exc.Exception's therefore inherits some of its unexpected behaviors.
 -- Errors thrown in forked threads will /not/ be directly caught by 'catchError's in the parent thread. Instead it will
 -- incur an exception, and we won't be quite able to display the details of that exception properly at that point.
 -- Therefore please properly handle the errors in the forked threads separately.
