@@ -12,6 +12,7 @@
 - `Trustworthy` flags for non-internal modules
 - `sendVia` for sending an effect operation along a transformation between effect stacks
 - `raiseUnder`, `raiseNUnder`, `raiseUnderN`, `raiseNUnderN` for introducing effects under other effects in the effect stack
+- `runWriterBatch` as a more efficient `Writer` interpreter that writes `listen`ed values in batch instead of in real time
 
 ## 0.1.0.0
 

@@ -11,7 +11,7 @@ module Cleff.Writer
   , -- * Operations
     tell, listen, listens
   , -- * Interpretations
-    runWriter
+    runWriter, runWriterBatch
   ) where
 
 import           Cleff
@@ -66,10 +66,35 @@ runWriter m = thisIsPureTrustMe do
         pure (x, w')
 {-# INLINE runWriter #-}
 
--- f :: Writer String :> es => Int -> Eff es [String]
--- f 0 = tell "0" >> pure []
--- f n = do
---   tell (show n) >> uncurry (flip (:)) <$> listen (f $ n - 1)
-
--- >>> runPure $ runWriter @String $ f 10
--- (["9876543210","876543210","76543210","6543210","543210","43210","3210","210","10","0"],"109876543210")
+-- | Run a monoidal 'Writer' effect, but appends the listened output to the parent value only when the listen operation
+-- finishes. This means that when you run two 'listen's on two threads, the values 'tell'ed inside will not be appended
+-- to the parent value in real time, but only after the thread finishes 'listen'ing. For example, this code
+--
+-- @
+-- 'UnliftIO.concurrently_'
+--   ('listen' '$' 'tell' "1" '>>' 'tell' "2" '>>' 'tell' "3")
+--   ('listen' '$' 'tell' "4" '>>' 'tell' "5" '>>' 'tell' "6")
+-- @
+--
+-- will produce either @"123456"@ or @"456123"@ with 'runWriterBatch', but may produce these digits in any order with
+-- 'runWriter'.
+--
+-- This version of interpreter can be slightly faster than 'runWriter' in 'listen'-intense code. It is subject to all
+-- caveats of 'runWriter'.
+runWriterBatch :: ∀ w es a. Monoid w => Eff (Writer w ': es) a -> Eff es (a, w)
+runWriterBatch m = thisIsPureTrustMe do
+  rw <- newIORef mempty
+  x <- reinterpret (h rw) m
+  w' <- readIORef rw
+  pure (x, w')
+  where
+    h :: IORef w -> Handler (Writer w) (IOE ': es)
+    h rw = \case
+      Tell w' -> liftIO $ atomicModifyIORefCAS_ rw (<> w')
+      Listen m' -> do
+        rw' <- newIORef mempty
+        x <- toEffWith (h rw') m'
+        w' <- readIORef rw'
+        liftIO $ atomicModifyIORefCAS_ rw (<> w')
+        pure (x, w')
+{-# INLINE runWriterBatch #-}
