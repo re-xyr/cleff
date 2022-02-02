@@ -11,6 +11,7 @@
 
 - `Trustworthy` flags for non-internal modules
 - `sendVia` for sending an effect operation along a transformation between effect stacks
+- `raiseUnder`, `raiseNUnder`, `raiseUnderN`, `raiseNUnderN` for introducing effects under other effects in the effect stack
 
 ## 0.1.0.0
 

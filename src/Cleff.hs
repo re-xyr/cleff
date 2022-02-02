@@ -44,6 +44,8 @@ module Cleff
     HandlerIO, interpretIO
   , -- ** Translating effects
     Translator, transform, translate
+  , -- ** Transforming interpreters
+    raiseUnder, raiseNUnder, raiseUnderN, raiseNUnderN
   , -- * Combinators for interpreting higher order effects
     -- $higherOrderEffects
     Handling, toEff, toEffWith, withFromEff

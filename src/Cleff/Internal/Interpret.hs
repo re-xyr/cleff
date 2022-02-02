@@ -15,7 +15,7 @@
 -- extra careful if you're to depend on this module.
 module Cleff.Internal.Interpret
   ( -- * Trivial handling
-    raise, raiseN, inject, subsume, subsumeN
+    raise, raiseN, inject, subsume, subsumeN, raiseUnder, raiseNUnder, raiseUnderN, raiseNUnderN
   , -- * Handler types
     Handling, sendEnv, Handler, Translator
   , -- * Interpreting effects
@@ -44,6 +44,45 @@ raise = raiseN @'[e]
 -- @TypeApplications@.
 raiseN :: ∀ es' es. KnownList es' => Eff es ~> Eff (es' ++ es)
 raiseN m = Eff (unEff m . Mem.adjust (Env.drop @es'))
+
+-- | Like 'raise', but adds the new effect under the top effect. This is useful for transforming an interpreter
+-- @e' ':>' es => 'Eff' (e ': es) '~>` 'Eff' es@ into a reinterpreter @'Eff' (e ': es) '~>' 'Eff' (e' ': es)@:
+--
+-- @
+-- myInterpreter :: 'Bar' ':>' es => 'Eff' (Foo ': es) '~>' 'Eff' es
+-- myInterpreter = ...
+--
+-- myReinterpreter :: 'Eff' (Foo ': es) '~>' 'Eff' (Bar ': es)
+-- myReinterpreter = myInterpreter '.' 'raiseUnder'
+-- @
+--
+-- In other words,
+--
+-- @
+-- 'reinterpret' h == 'interpret' h . 'raiseUnder'
+-- @
+--
+-- However, note that this function is suited for transforming an existing interpreter into a reinterpreter; if you
+-- want to define a reinterpreter from scratch, you should still prefer 'reinterpret', which is both easier to use and
+-- more efficient.
+raiseUnder :: ∀ e' e es. Eff (e ': es) ~> Eff (e ': e' ': es)
+raiseUnder = raiseNUnder @'[e']
+
+-- | Like 'raiseUnder', but allows introducing multiple effects. This function requires @TypeApplications@.
+raiseNUnder :: ∀ es' e es. KnownList es' => Eff (e ': es) ~> Eff (e ': es' ++ es)
+raiseNUnder = raiseNUnderN @es' @'[e]
+
+-- | Like 'raiseUnder', but allows introducing the effect under multiple effects. This function requires
+-- @TypeApplications@.
+raiseUnderN :: ∀ e es' es. KnownList es' => Eff (es' ++ es) ~> Eff (es' ++ e ': es)
+raiseUnderN = raiseNUnderN @'[e] @es' @es
+
+-- | A generalization of both 'raiseUnderN' and 'raiseNUnder', allowing introducing multiple effects under multiple
+-- effects. This function requires @TypeApplications@ and is subject to serious type ambiguity; you most likely will
+-- need to supply all three type variables explicitly.
+raiseNUnderN :: ∀ es'' es' es. (KnownList es', KnownList es'') => Eff (es' ++ es) ~> Eff (es' ++ (es'' ++ es))
+raiseNUnderN m = Eff $ unEff m . Mem.adjust \es ->
+  Env.concat (Env.take @es' @(es'' ++ es) es) (Env.drop @es'' @es (Env.drop @es' @(es'' ++ es) es))
 
 -- | Lift a computation with a fixed, known effect stack into some superset of the stack.
 inject :: ∀ es' es. Subset es' es => Eff es' ~> Eff es
@@ -135,6 +174,7 @@ reinterpretN :: ∀ es' e es. KnownList es' => Handler e (es' ++ es) -> Eff (e '
 reinterpretN handle m = Eff \es ->
   let (# ptr, es' #) = Mem.alloca es
   in unEff m $ Mem.append ptr (mkInternalHandler ptr es' handle) $ Mem.adjust (Env.drop @es') es'
+{-# INLINE reinterpretN #-}
 
 -- | Respond to an effect while being able to leave it unhandled (i.e. you can resend the effects in the handler).
 interpose :: ∀ e es. e :> es => Handler e es -> Eff es ~> Eff es
@@ -149,6 +189,7 @@ imposeN :: ∀ es' e es. (KnownList es', e :> es) => Handler e (es' ++ es) -> Ef
 imposeN handle m = Eff \es ->
   let (# ptr, es' #) = Mem.alloca es
   in unEff m $ Mem.replace ptr (mkInternalHandler ptr es' handle) $ Mem.adjust (Env.drop @es') es'
+{-# INLINE imposeN #-}
 
 -- * Translating effects
 
