@@ -15,7 +15,7 @@
 -- extra careful if you're to depend on this module.
 module Cleff.Internal.Interpret
   ( -- * Trivial handling
-    raise, raiseN, inject, subsume, subsumeN, raiseUnder, raiseNUnder, raiseUnderN, raiseNUnderN
+    adjust, raise, raiseN, inject, subsume, subsumeN, raiseUnder, raiseNUnder, raiseUnderN, raiseNUnderN
   , -- * Handler types
     Handling, sendEnv, Handler, Translator
   , -- * Interpreting effects
@@ -36,6 +36,12 @@ import           Unsafe.Coerce           (unsafeCoerce)
 
 -- * Trivial handling
 
+-- | Adjust the effect stack by a contravariant transformation function over the stack. This function reveals the
+-- profunctorial nature of 'Eff'; in particular, 'Eff' is a profunctor @['Effect'] -> 'Data.Kind.Type'@, @lmap@ is
+-- 'adjust', and @rmap@ is 'fmap'.
+adjust :: ∀ es es'. (∀ f. Rec f es' -> Rec f es) -> Eff es ~> Eff es'
+adjust f m = Eff (unEff m . Mem.adjust f)
+
 -- | Lift a computation into a bigger effect stack with one more effect. For a more general version see 'raiseN'.
 raise :: ∀ e es. Eff es ~> Eff (e ': es)
 raise = raiseN @'[e]
@@ -43,7 +49,7 @@ raise = raiseN @'[e]
 -- | Lift a computation into a bigger effect stack with arbitrarily more effects. This function requires
 -- @TypeApplications@.
 raiseN :: ∀ es' es. KnownList es' => Eff es ~> Eff (es' ++ es)
-raiseN m = Eff (unEff m . Mem.adjust (Env.drop @es'))
+raiseN = adjust (Env.drop @es')
 
 -- | Like 'raise', but adds the new effect under the top effect. This is useful for transforming an interpreter
 -- @e' ':>' es => 'Eff' (e ': es) '~>` 'Eff' es@ into a reinterpreter @'Eff' (e ': es) '~>' 'Eff' (e' ': es)@:
@@ -81,8 +87,8 @@ raiseUnderN = raiseNUnderN @'[e] @es' @es
 -- effects. This function requires @TypeApplications@ and is subject to serious type ambiguity; you most likely will
 -- need to supply all three type variables explicitly.
 raiseNUnderN :: ∀ es'' es' es. (KnownList es', KnownList es'') => Eff (es' ++ es) ~> Eff (es' ++ (es'' ++ es))
-raiseNUnderN m = Eff $ unEff m . Mem.adjust \es ->
-  Env.concat (Env.take @es' @(es'' ++ es) es) (Env.drop @es'' @es (Env.drop @es' @(es'' ++ es) es))
+raiseNUnderN = adjust \es -> Env.concat
+  (Env.take @es' @(es'' ++ es) es) (Env.drop @es'' @es (Env.drop @es' @(es'' ++ es) es))
 
 -- | Lift a computation with a fixed, known effect stack into some superset of the stack.
 inject :: ∀ es' es. Subset es' es => Eff es' ~> Eff es
@@ -94,7 +100,7 @@ subsume = subsumeN @'[e]
 
 -- | Eliminate several duplicate effects from the top of the effect stack. This function requires @TypeApplications@.
 subsumeN :: ∀ es' es. Subset es' es => Eff (es' ++ es) ~> Eff es
-subsumeN m = Eff (unEff m . Mem.adjust (\re -> Env.pick @es' re :++: re))
+subsumeN = adjust \re -> Env.pick @es' re :++: re
 
 -- * Handler types
 
