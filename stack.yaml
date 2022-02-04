@@ -1,7 +1,11 @@
-resolver: lts-18.23
+resolver: lts-18.24
 
 packages:
 - .
+
+extra-deps:
+# - ../rec-smallarray
+- rec-smallarray-0.1.0.0
 
 ghc-options:
   "$everything": -haddock

@@ -29,6 +29,7 @@ dependencies:
 - microlens >= 0.4.9 && < 0.5
 - monad-control >= 1 && < 1.1
 - primitive >= 0.6 && < 0.8
+- rec-smallarray >= 0.1 && < 0.2
 - template-haskell >= 2.14 && < 3
 - th-abstraction >= 0.2.11 && < 0.5
 - transformers >= 0.5 && < 0.7

@@ -19,12 +19,12 @@ module Cleff.Internal.Monad
     KnownList, Subset, send, sendVia
   ) where
 
+import           Cleff.Internal.Data.Mem    (Mem)
+import qualified Cleff.Internal.Data.Mem    as Mem
 import           Cleff.Internal.Effect
 import           Control.Monad.Fix          (MonadFix)
 import           Control.Monad.Trans.Reader (ReaderT (ReaderT))
-import           Data.Mem                   (Mem)
-import qualified Data.Mem                   as Mem
-import           Data.Rec                   (KnownList, Subset)
+import           Data.Rec.SmallArray        (KnownList, Subset)
 import           Type.Reflection            (Typeable, typeRep)
 
 -- | The internal representation of effect handlers. This is just a natural transformation from the effect type

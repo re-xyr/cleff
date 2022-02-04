@@ -27,6 +27,7 @@ module Cleff.Internal.Base
     withToIO, fromIO
   ) where
 
+import qualified Cleff.Internal.Data.Mem     as Mem
 import           Cleff.Internal.Effect
 import           Cleff.Internal.Interpret
 import           Cleff.Internal.Monad
@@ -36,7 +37,6 @@ import           Control.Monad.Catch         (ExitCase (ExitCaseException, ExitC
 import qualified Control.Monad.Catch         as Catch
 import           Control.Monad.Primitive     (PrimMonad (PrimState, primitive), RealWorld)
 import           Control.Monad.Trans.Control (MonadBaseControl (StM, liftBaseWith, restoreM))
-import qualified Data.Mem                    as Mem
 import           GHC.IO                      (IO (IO))
 import           System.IO.Unsafe            (unsafeDupablePerformIO)
 import           UnliftIO                    (MonadIO (liftIO), MonadUnliftIO (withRunInIO), throwIO)

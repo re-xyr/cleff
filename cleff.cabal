@@ -44,6 +44,8 @@ library
       Cleff.Fresh
       Cleff.Input
       Cleff.Internal.Base
+      Cleff.Internal.Data.Any
+      Cleff.Internal.Data.Mem
       Cleff.Internal.Effect
       Cleff.Internal.Interpret
       Cleff.Internal.Monad
@@ -54,9 +56,6 @@ library
       Cleff.State
       Cleff.Trace
       Cleff.Writer
-      Data.Any
-      Data.Mem
-      Data.Rec
   other-modules:
       Paths_cleff
   hs-source-dirs:
@@ -99,6 +98,7 @@ library
     , microlens >=0.4.9 && <0.5
     , monad-control >=1 && <1.1
     , primitive >=0.6 && <0.8
+    , rec-smallarray ==0.1.*
     , template-haskell >=2.14 && <3
     , th-abstraction >=0.2.11 && <0.5
     , transformers >=0.5 && <0.7
@@ -159,6 +159,7 @@ test-suite cleff-example
     , microlens >=0.4.9 && <0.5
     , monad-control >=1 && <1.1
     , primitive >=0.6 && <0.8
+    , rec-smallarray ==0.1.*
     , template-haskell >=2.14 && <3
     , th-abstraction >=0.2.11 && <0.5
     , transformers >=0.5 && <0.7
@@ -177,7 +178,6 @@ test-suite cleff-test
       HigherOrderSpec
       InterposeSpec
       MaskSpec
-      RecSpec
       StateSpec
       ThSpec
       Paths_cleff
@@ -228,6 +228,7 @@ test-suite cleff-test
     , microlens >=0.4.9 && <0.5
     , monad-control >=1 && <1.1
     , primitive >=0.6 && <0.8
+    , rec-smallarray ==0.1.*
     , template-haskell >=2.14 && <3
     , th-abstraction >=0.2.11 && <0.5
     , transformers >=0.5 && <0.7

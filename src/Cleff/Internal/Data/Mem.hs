@@ -15,15 +15,15 @@
 --
 -- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
 -- extra careful if you're to depend on this module.
-module Data.Mem (Mem, MemPtr, empty, adjust, alloca, read, write, replace, append, update) where
+module Cleff.Internal.Data.Mem (Mem, MemPtr, empty, adjust, alloca, read, write, replace, append, update) where
 
-import           Data.Any
-import           Data.IntMap.Strict (IntMap)
-import qualified Data.IntMap.Strict as Map
-import           Data.Kind          (Type)
-import           Data.Rec           (Rec, pattern (:~:))
-import qualified Data.Rec           as Rec
-import           Prelude            hiding (read)
+import           Cleff.Internal.Data.Any (Any, fromAny, toAny)
+import           Data.IntMap.Strict      (IntMap)
+import qualified Data.IntMap.Strict      as Map
+import           Data.Kind               (Type)
+import           Data.Rec.SmallArray     (Rec, pattern (:~:))
+import qualified Data.Rec.SmallArray     as Rec
+import           Prelude                 hiding (read)
 
 -- | The representation of a pointer in a 'Mem'.
 type role MemPtr representational nominal
@@ -71,7 +71,7 @@ write (MemPtr m) x (Mem re n mem) = Mem re n (Map.insert m (toAny x) mem)
 
 -- | Replace a pointer with a new one. \( O(n) \).
 replace :: ∀ e es f. Rec.Elem e es => MemPtr f e -> f e -> Mem f es -> Mem f es
-replace (MemPtr m) x (Mem re n mem) = Mem (Rec.modify @e (MemPtr m) re) n (Map.insert m (toAny x) mem)
+replace (MemPtr m) x (Mem re n mem) = Mem (Rec.update @e (MemPtr m) re) n (Map.insert m (toAny x) mem)
 {-# INLINE replace #-}
 
 -- | Add a new pointer to the array. \( O(n) \).

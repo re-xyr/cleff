@@ -3,5 +3,8 @@ resolver: lts-16.31
 packages:
 - .
 
+extra-deps:
+- rec-smallarray-0.1.0.0
+
 ghc-options:
   "$everything": -haddock

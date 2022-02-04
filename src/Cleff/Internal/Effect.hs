@@ -13,8 +13,8 @@
 -- extra careful if you're to depend on this module.
 module Cleff.Internal.Effect (Effect, (:>), (:>>), type (++), type (~>)) where
 
-import           Data.Kind (Constraint, Type)
-import           Data.Rec  (Elem, type (++), type (~>))
+import           Data.Kind           (Constraint, Type)
+import           Data.Rec.SmallArray (Elem, type (++), type (~>))
 
 -- | The type of effects. An effect @e m a@ takes an effect monad type @m :: 'Type' -> 'Type'@ and a result type
 -- @a :: 'Type'@.

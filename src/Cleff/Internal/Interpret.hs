@@ -26,13 +26,13 @@ module Cleff.Internal.Interpret
     toEff, toEffWith, withFromEff
   ) where
 
+import           Cleff.Internal.Data.Mem (MemPtr)
+import qualified Cleff.Internal.Data.Mem as Mem
 import           Cleff.Internal.Effect
 import           Cleff.Internal.Monad
-import           Data.Mem              (MemPtr)
-import qualified Data.Mem              as Mem
-import           Data.Rec              (pattern (:++:))
-import qualified Data.Rec              as Env
-import           Unsafe.Coerce         (unsafeCoerce)
+import           Data.Rec.SmallArray     (Rec, pattern (:++:))
+import qualified Data.Rec.SmallArray     as Env
+import           Unsafe.Coerce           (unsafeCoerce)
 
 -- * Trivial handling
 

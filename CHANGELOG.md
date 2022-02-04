@@ -4,8 +4,9 @@
 
 ### Changed
 
-- Changed parameter order of `Handling` class from `e es esSend` to `esSend e es`
-- Relaxed fundep of `Handling` to `esSend -> e es` (HO combinators may require `TypeApplication` more often)
+- **[BREAKING]** Changed parameter order of `Handling` class from `e es esSend` to `esSend e es`
+- **[BREAKING]** Relaxed fundep of `Handling` to `esSend -> e es` (HO combinators may require `TypeApplication` more often)
+- Moved `Data.*` modules to `Cleff.Internal.Data.*` so as not to pollute common namespaces
 
 ### Added
 
