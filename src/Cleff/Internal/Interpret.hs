@@ -17,7 +17,7 @@ module Cleff.Internal.Interpret
   ( -- * Trivial handling
     adjust, raise, raiseN, inject, subsume, subsumeN, raiseUnder, raiseNUnder, raiseUnderN, raiseNUnderN
   , -- * Handler types
-    Handling, sendEnv, Handler, Translator
+    Handling, esSend, Handler, Translator
   , -- * Interpreting effects
     interpret, reinterpret, reinterpret2, reinterpret3, reinterpretN, interpose, impose, imposeN
   , -- * Translating effects
@@ -26,13 +26,11 @@ module Cleff.Internal.Interpret
     toEff, toEffWith, withFromEff
   ) where
 
-import           Cleff.Internal.Data.Mem (MemPtr)
-import qualified Cleff.Internal.Data.Mem as Mem
 import           Cleff.Internal.Effect
 import           Cleff.Internal.Monad
-import           Data.Rec.SmallArray     (Rec, pattern (:++:))
-import qualified Data.Rec.SmallArray     as Env
-import           Unsafe.Coerce           (unsafeCoerce)
+import           Data.Rec.SmallArray   (Rec, pattern (:++:))
+import qualified Data.Rec.SmallArray   as Rec
+import           Unsafe.Coerce         (unsafeCoerce)
 
 -- * Trivial handling
 
@@ -40,7 +38,7 @@ import           Unsafe.Coerce           (unsafeCoerce)
 -- profunctorial nature of 'Eff'; in particular, 'Eff' is a profunctor @['Effect'] -> 'Data.Kind.Type'@, @lmap@ is
 -- 'adjust', and @rmap@ is 'fmap'.
 adjust :: ∀ es es'. (∀ f. Rec f es' -> Rec f es) -> Eff es ~> Eff es'
-adjust f m = Eff (unEff m . Mem.adjust f)
+adjust f m = Eff (unEff m . adjustEnv f)
 
 -- | Lift a computation into a bigger effect stack with one more effect. For a more general version see 'raiseN'.
 raise :: ∀ e es. Eff es ~> Eff (e ': es)
@@ -49,7 +47,7 @@ raise = raiseN @'[e]
 -- | Lift a computation into a bigger effect stack with arbitrarily more effects. This function requires
 -- @TypeApplications@.
 raiseN :: ∀ es' es. KnownList es' => Eff es ~> Eff (es' ++ es)
-raiseN = adjust (Env.drop @es')
+raiseN = adjust (Rec.drop @es')
 
 -- | Like 'raise', but adds the new effect under the top effect. This is useful for transforming an interpreter
 -- @e' ':>' es => 'Eff' (e ': es) '~>` 'Eff' es@ into a reinterpreter @'Eff' (e ': es) '~>' 'Eff' (e' ': es)@:
@@ -87,12 +85,12 @@ raiseUnderN = raiseNUnderN @'[e] @es' @es
 -- effects. This function requires @TypeApplications@ and is subject to serious type ambiguity; you most likely will
 -- need to supply all three type variables explicitly.
 raiseNUnderN :: ∀ es'' es' es. (KnownList es', KnownList es'') => Eff (es' ++ es) ~> Eff (es' ++ (es'' ++ es))
-raiseNUnderN = adjust \es -> Env.concat
-  (Env.take @es' @(es'' ++ es) es) (Env.drop @es'' @es (Env.drop @es' @(es'' ++ es) es))
+raiseNUnderN = adjust \re -> Rec.concat
+  (Rec.take @es' @(es'' ++ es) re) (Rec.drop @es'' @es (Rec.drop @es' @(es'' ++ es) re))
 
 -- | Lift a computation with a fixed, known effect stack into some superset of the stack.
 inject :: ∀ es' es. Subset es' es => Eff es' ~> Eff es
-inject m = Eff (unEff m . Mem.adjust (Env.pick @es'))
+inject = adjust (Rec.pick @es')
 
 -- | Eliminate a duplicate effect from the top of the effect stack. For a more general version see 'subsumeN'.
 subsume :: ∀ e es. e :> es => Eff (e ': es) ~> Eff es
@@ -100,14 +98,14 @@ subsume = subsumeN @'[e]
 
 -- | Eliminate several duplicate effects from the top of the effect stack. This function requires @TypeApplications@.
 subsumeN :: ∀ es' es. Subset es' es => Eff (es' ++ es) ~> Eff es
-subsumeN = adjust \re -> Env.pick @es' re :++: re
+subsumeN = adjust \re -> Rec.pick @es' re :++: re
 
 -- * Handler types
 
 -- | The send-site environment.
 data SendSite esSend e = SendSite
   {-# UNPACK #-} !(Env esSend) -- ^ The send-site 'Env'.
-  {-# UNPACK #-} !(MemPtr InternalHandler e) -- ^ The pointer to the effect handler of the effect being handled.
+  {-# UNPACK #-} !(HandlerPtr e) -- ^ The pointer to the current effect handler.
 
 -- | The typeclass that denotes a handler scope, handling effect @e@ sent from the effect stack @esSend@ in the
 -- effect stack @es@.
@@ -125,14 +123,14 @@ class Handling esSend e es | esSend -> e es where
     \whatsoever. If that or other shenanigans seem unlikely, please report this as a bug."
 
 -- | Get the pointer to the current effect handler itself.
-hdlPtr :: ∀ esSend e es. Handling esSend e es => MemPtr InternalHandler e
+hdlPtr :: ∀ esSend e es. Handling esSend e es => HandlerPtr e
 hdlPtr = let SendSite _ ptr = sendSite @esSend in ptr
 {-# INLINE hdlPtr #-}
 
 -- | Get the send-site 'Env'.
-sendEnv :: Handling esSend e es => Env esSend
-sendEnv = let SendSite env _ = sendSite in env
-{-# INLINE sendEnv #-}
+esSend :: Handling esSend e es => Env esSend
+esSend = let SendSite env _ = sendSite in env
+{-# INLINE esSend #-}
 
 -- | Newtype wrapper for instantiating the 'Handling' typeclass locally, a la the reflection trick. We do not use
 -- the @reflection@ library directly so as not to expose this piece of implementation detail to the user.
@@ -155,9 +153,9 @@ type Translator e e' = ∀ esSend. e (Eff esSend) ~> e' (Eff esSend)
 
 -- | Transform a 'Handler' into an 'InternalHandler' given a pointer that is going to point to the 'InternalHandler'
 -- and the current 'Env'.
-mkInternalHandler :: MemPtr InternalHandler e -> Env es -> Handler e es -> InternalHandler e
-mkInternalHandler ptr es handle = InternalHandler \eff -> Eff \esSend ->
-  unEff (instHandling handle (SendSite esSend ptr) eff) (Mem.update esSend es)
+mkInternalHandler :: HandlerPtr e -> Env es -> Handler e es -> InternalHandler e
+mkInternalHandler ptr es handle = InternalHandler \e -> Eff \ess ->
+  unEff (instHandling handle (SendSite ess ptr) e) (updateEnv ess es)
 
 -- | Interpret an effect @e@ in terms of effects in the effect stack @es@ with an effect handler.
 interpret :: ∀ e es. Handler e es -> Eff (e ': es) ~> Eff es
@@ -178,8 +176,8 @@ reinterpret3 = reinterpretN @'[e', e'', e''']
 -- | Like 'reinterpret', but adds arbitrarily many new effects. This function requires @TypeApplications@.
 reinterpretN :: ∀ es' e es. KnownList es' => Handler e (es' ++ es) -> Eff (e ': es) ~> Eff (es' ++ es)
 reinterpretN handle m = Eff \es ->
-  let (# ptr, es' #) = Mem.alloca es
-  in unEff m $ Mem.append ptr (mkInternalHandler ptr es' handle) $ Mem.adjust (Env.drop @es') es'
+  let (# ptr, es' #) = allocaEnv es
+  in unEff m $ appendEnv ptr (mkInternalHandler ptr es' handle) $ adjustEnv (Rec.drop @es') es'
 {-# INLINE reinterpretN #-}
 
 -- | Respond to an effect while being able to leave it unhandled (i.e. you can resend the effects in the handler).
@@ -193,8 +191,8 @@ impose = imposeN @'[e']
 -- | Like 'impose', but allows introducing arbitrarily many effects. This requires @TypeApplications@.
 imposeN :: ∀ es' e es. (KnownList es', e :> es) => Handler e (es' ++ es) -> Eff es ~> Eff (es' ++ es)
 imposeN handle m = Eff \es ->
-  let (# ptr, es' #) = Mem.alloca es
-  in unEff m $ Mem.replace ptr (mkInternalHandler ptr es' handle) $ Mem.adjust (Env.drop @es') es'
+  let (# ptr, es' #) = allocaEnv es
+  in unEff m $ replaceEnv ptr (mkInternalHandler ptr es' handle) $ adjustEnv (Rec.drop @es') es'
 {-# INLINE imposeN #-}
 
 -- * Translating effects
@@ -233,7 +231,7 @@ translate trans = reinterpret (sendVia toEff . trans)
 --     ('toEff' . use)
 -- @
 toEff :: Handling esSend e es => Eff esSend ~> Eff es
-toEff m = Eff \es -> unEff m (Mem.update es sendEnv)
+toEff m = Eff \es -> unEff m (updateEnv es esSend)
 
 -- | Run a computation in the current effect stack, but handles the current effect inside the computation differently
 -- by providing a new 'Handler'. This is useful for interpreting effects with local contexts, like 'Cleff.Reader.Local':
@@ -251,10 +249,10 @@ toEffWith :: ∀ esSend e es. Handling esSend e es => Handler e es -> Eff esSend
 toEffWith handle m = Eff \es -> unEff m $
   -- The 'Handling' constraint of 'handle' will NOT be prematurely initialized here because that will make 'handle'
   -- monomorphic. Therefore this usage is safe.
-  Mem.write (hdlPtr @esSend) (mkInternalHandler (hdlPtr @esSend) es handle) $ Mem.update es sendEnv
+  writeEnv (hdlPtr @esSend) (mkInternalHandler (hdlPtr @esSend) es handle) $ updateEnv es esSend
 
 -- | Temporarily gain the ability to lift some @'Eff' es@ actions into @'Eff' esSend@. This is useful for dealing with
 -- effect operations with the monad type in the negative position, which means it's unlikely that you need to use this
 -- function in implementing your effects.
 withFromEff :: Handling esSend e es => ((Eff es ~> Eff esSend) -> Eff esSend a) -> Eff es a
-withFromEff f = Eff \es -> unEff (f \m -> Eff \esSend -> unEff m (Mem.update esSend es)) (Mem.update es sendEnv)
+withFromEff f = Eff \es -> unEff (f \m -> Eff \ess -> unEff m (updateEnv ess es)) (updateEnv es esSend)

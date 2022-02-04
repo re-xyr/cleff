@@ -43,9 +43,8 @@ library
       Cleff.Fail
       Cleff.Fresh
       Cleff.Input
+      Cleff.Internal.Any
       Cleff.Internal.Base
-      Cleff.Internal.Data.Any
-      Cleff.Internal.Data.Mem
       Cleff.Internal.Effect
       Cleff.Internal.Interpret
       Cleff.Internal.Monad

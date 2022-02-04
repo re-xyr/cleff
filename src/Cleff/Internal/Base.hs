@@ -27,7 +27,6 @@ module Cleff.Internal.Base
     withToIO, fromIO
   ) where
 
-import qualified Cleff.Internal.Data.Mem     as Mem
 import           Cleff.Internal.Effect
 import           Cleff.Internal.Interpret
 import           Cleff.Internal.Monad
@@ -146,7 +145,7 @@ thisIsPureTrustMe = interpret \case
 
 -- | Extract the 'IO' computation out of an 'Eff' given no effect remains on the stack.
 runEff :: Eff '[] a -> IO a
-runEff m = unEff m Mem.empty
+runEff m = unEff m emptyEnv
 {-# INLINE runEff #-}
 
 -- | Unwrap an 'Eff' computation with side effects into an 'IO' computation, given that all effects other than 'IOE' are
@@ -180,7 +179,7 @@ interpretIO f = interpret (liftIO . f)
 -- | Temporarily gain the ability to unlift an @'Eff' esSend@ computation into 'IO'. This is useful for dealing with
 -- higher-order effects that involves 'IO'.
 withToIO :: (Handling esSend e es, IOE :> es) => ((Eff esSend ~> IO) -> IO a) -> Eff es a
-withToIO f = Eff \es -> f \m -> unEff m (Mem.update es sendEnv)
+withToIO f = Eff \es -> f \m -> unEff m (updateEnv es esSend)
 
 -- | Lift an 'IO' computation into @'Eff' esSend@. This is useful for dealing with effect operations with the monad type in
 -- the negative position within 'Cleff.IOE', like 'UnliftIO.mask'ing.

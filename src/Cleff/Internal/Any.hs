@@ -9,7 +9,7 @@
 --
 -- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
 -- extra careful if you're to depend on this module.
-module Cleff.Internal.Data.Any (Any, fromAny, toAny) where
+module Cleff.Internal.Any (Any, fromAny, toAny) where
 
 import           GHC.Exts      (Any)
 import           Unsafe.Coerce (unsafeCoerce)

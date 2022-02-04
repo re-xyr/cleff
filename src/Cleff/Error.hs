@@ -17,12 +17,12 @@ module Cleff.Error
   ) where
 
 import           Cleff
+import           Cleff.Internal.Any
 import           Cleff.Internal.Base
-import           Cleff.Internal.Data.Any (Any, fromAny, toAny)
-import           Control.Exception       (Exception)
-import           Data.Bool               (bool)
-import           Data.Unique             (Unique, hashUnique, newUnique)
-import qualified UnliftIO.Exception      as Exc
+import           Control.Exception   (Exception)
+import           Data.Bool           (bool)
+import           Data.Unique         (Unique, hashUnique, newUnique)
+import qualified UnliftIO.Exception  as Exc
 
 -- * Effect
 
