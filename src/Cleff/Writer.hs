@@ -79,8 +79,10 @@ runWriter m = thisIsPureTrustMe do
 -- will produce either @"123456"@ or @"456123"@ with 'runWriterBatch', but may produce these digits in any order with
 -- 'runWriter'.
 --
--- This version of interpreter can be slightly faster than 'runWriter' in 'listen'-intense code. It is subject to all
--- caveats of 'runWriter'.
+-- This version of interpreter can be faster than 'runWriter' in 'listen'-intense code. It is subject to all caveats
+-- of 'runWriter'.
+--
+-- @since 0.2.0.0
 runWriterBatch :: ∀ w es a. Monoid w => Eff (Writer w ': es) a -> Eff es (a, w)
 runWriterBatch m = thisIsPureTrustMe do
   rw <- newIORef mempty

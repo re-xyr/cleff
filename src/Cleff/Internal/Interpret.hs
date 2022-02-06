@@ -53,7 +53,7 @@ raiseN = adjust (Rec.drop @es')
 -- @e' ':>' es => 'Eff' (e ': es) '~>` 'Eff' es@ into a reinterpreter @'Eff' (e ': es) '~>' 'Eff' (e' ': es)@:
 --
 -- @
--- myInterpreter :: 'Bar' ':>' es => 'Eff' (Foo ': es) '~>' 'Eff' es
+-- myInterpreter :: Bar ':>' es => 'Eff' (Foo ': es) '~>' 'Eff' es
 -- myInterpreter = ...
 --
 -- myReinterpreter :: 'Eff' (Foo ': es) '~>' 'Eff' (Bar ': es)

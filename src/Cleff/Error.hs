@@ -101,7 +101,7 @@ instance Exception ErrorExc
 instance Show ErrorExc where
   showsPrec _ (ErrorExc uid _) =
     ("Cleff.Error.runError: Escaped error (error UID hash: " <>) . shows (hashUnique uid) . ("). This is possibly due \
-    \to trying to 'throwError' in a forked thread, or trying to 'wait' on an error-throwing \'Async' computation out \
+    \to trying to 'throwError' in a forked thread, or trying to 'wait' on an error-throwing 'Async' computation out \
     \of the effect scope where it is created. Refer to the haddock of 'runError' for details on the caveats. If all \
     \those shenanigans mentioned or other similar ones seem unlikely, please report this as a bug." <>)
 
