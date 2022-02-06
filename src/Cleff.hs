@@ -57,6 +57,7 @@ module Cleff
 
 import           Cleff.Internal.Base
 import           Cleff.Internal.Effect
+import           Cleff.Internal.Instances ()
 import           Cleff.Internal.Interpret
 import           Cleff.Internal.Monad
 import           Cleff.Internal.TH

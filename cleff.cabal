@@ -46,6 +46,7 @@ library
       Cleff.Internal.Any
       Cleff.Internal.Base
       Cleff.Internal.Effect
+      Cleff.Internal.Instances
       Cleff.Internal.Interpret
       Cleff.Internal.Monad
       Cleff.Internal.TH
@@ -100,7 +101,6 @@ library
     , rec-smallarray ==0.1.*
     , template-haskell >=2.14 && <3
     , th-abstraction >=0.2.11 && <0.5
-    , transformers >=0.5 && <0.7
     , transformers-base >=0.4.5 && <0.5
     , unliftio >=0.2.8 && <0.3
   if flag(dynamic-ioe)
@@ -161,7 +161,6 @@ test-suite cleff-example
     , rec-smallarray ==0.1.*
     , template-haskell >=2.14 && <3
     , th-abstraction >=0.2.11 && <0.5
-    , transformers >=0.5 && <0.7
     , transformers-base >=0.4.5 && <0.5
     , unliftio >=0.2.8 && <0.3
   if flag(dynamic-ioe)
@@ -230,7 +229,6 @@ test-suite cleff-test
     , rec-smallarray ==0.1.*
     , template-haskell >=2.14 && <3
     , th-abstraction >=0.2.11 && <0.5
-    , transformers >=0.5 && <0.7
     , transformers-base >=0.4.5 && <0.5
     , unliftio >=0.2.8 && <0.3
   if flag(dynamic-ioe)

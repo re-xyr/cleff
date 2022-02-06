@@ -23,13 +23,12 @@ module Cleff.Internal.Monad
 
 import           Cleff.Internal.Any
 import           Cleff.Internal.Effect
-import           Control.Monad.Fix          (MonadFix)
-import           Control.Monad.Trans.Reader (ReaderT (ReaderT))
-import           Data.IntMap.Strict         (IntMap)
-import qualified Data.IntMap.Strict         as Map
-import           Data.Rec.SmallArray        (KnownList, Rec, Subset, pattern (:~:))
-import qualified Data.Rec.SmallArray        as Rec
-import           Type.Reflection            (Typeable, typeRep)
+import           Control.Applicative   (Applicative (liftA2))
+import           Control.Monad.Fix     (MonadFix (mfix))
+import           Data.IntMap.Strict    (IntMap)
+import qualified Data.IntMap.Strict    as Map
+import           Data.Rec.SmallArray   (KnownList, Rec, Subset, pattern (:~:))
+import qualified Data.Rec.SmallArray   as Rec
 
 -- * The 'Eff' monad
 
@@ -40,12 +39,6 @@ import           Type.Reflection            (Typeable, typeRep)
 -- this type.
 newtype InternalHandler e = InternalHandler
   { runHandler :: ∀ es. e (Eff es) ~> Eff es }
-
--- | @
--- 'show' (handler :: 'InternalHandler' E) == "Handler E"
--- @
-instance Typeable e => Show (InternalHandler e) where
-  showsPrec p _ = ("Handler " ++) . showsPrec p (typeRep @e)
 
 -- | The extensible effect monad. A monad @'Eff' es@ is capable of performing any effect in the /effect stack/ @es@,
 -- which is a type-level list that holds all effects available. However, most of the times, for flexibility, @es@
@@ -62,8 +55,34 @@ type role Eff nominal representational
 newtype Eff es a = Eff { unEff :: Env es -> IO a }
   -- ^ The effect monad receives an effect environment 'Env' that contains all effect handlers and produces an 'IO'
   -- action.
-  deriving newtype (Semigroup, Monoid)
-  deriving (Functor, Applicative, Monad, MonadFix) via (ReaderT (Env es) IO)
+
+instance Functor (Eff es) where
+  fmap f (Eff x) = Eff (fmap f . x)
+  {-# INLINE fmap #-}
+  x <$ Eff y = Eff \es -> x <$ y es
+  {-# INLINE (<$) #-}
+
+instance Applicative (Eff es) where
+  pure = Eff . const . pure
+  {-# INLINE pure #-}
+  Eff f <*> Eff x = Eff \es -> f es <*> x es
+  {-# INLINE (<*>) #-}
+  Eff x <*  Eff y = Eff \es -> x es <*  y es
+  {-# INLINE (<*) #-}
+  Eff x  *> Eff y = Eff \es -> x es  *> y es
+  {-# INLINE (*>) #-}
+  liftA2 f (Eff x) (Eff y) = Eff \es -> liftA2 f (x es) (y es)
+  {-# INLINE liftA2 #-}
+
+instance Monad (Eff es) where
+  Eff x >>= f = Eff \es -> x es >>= \x' -> unEff (f x') es
+  {-# INLINE (>>=) #-}
+  (>>) = (*>)
+  {-# INLINE (>>) #-}
+
+instance MonadFix (Eff es) where
+  mfix f = Eff \es -> mfix \x -> unEff (f x) es
+  {-# INLINE mfix #-}
 
 -- * Effect environment
 
@@ -81,10 +100,6 @@ data Env (es :: [Effect]) = Env
 -- | A pointer to 'InternalHandler' in an 'Env'.
 type role HandlerPtr nominal
 newtype HandlerPtr (e :: Effect) = HandlerPtr { unHandlerPtr :: Int }
-  deriving newtype
-    ( Eq  -- ^ Pointer equality.
-    , Ord -- ^ An arbitrary total order on the pointers.
-    )
 
 -- | Create an empty 'Env' with no address allocated.
 emptyEnv :: Env '[]
