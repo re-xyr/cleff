@@ -1,6 +1,6 @@
 # Changelog for `cleff`
 
-## Unreleased
+## 0.2.0.0 (2022-02-06)
 
 ### Changed
 
@@ -15,6 +15,6 @@
 - `raiseUnder`, `raiseNUnder`, `raiseUnderN`, `raiseNUnderN` for introducing effects under other effects in the effect stack
 - `runWriterBatch` as a more efficient `Writer` interpreter that writes `listen`ed values in batch instead of in real time
 
-## 0.1.0.0
+## 0.1.0.0 (2022-01-31)
 
 - Initial API
