@@ -69,21 +69,29 @@ raiseN = adjust (Rec.drop @es')
 -- However, note that this function is suited for transforming an existing interpreter into a reinterpreter; if you
 -- want to define a reinterpreter from scratch, you should still prefer 'reinterpret', which is both easier to use and
 -- more efficient.
+--
+-- @since 0.2.0.0
 raiseUnder :: ∀ e' e es. Eff (e ': es) ~> Eff (e ': e' ': es)
 raiseUnder = raiseNUnder @'[e']
 
 -- | Like 'raiseUnder', but allows introducing multiple effects. This function requires @TypeApplications@.
+--
+-- @since 0.2.0.0
 raiseNUnder :: ∀ es' e es. KnownList es' => Eff (e ': es) ~> Eff (e ': es' ++ es)
 raiseNUnder = raiseNUnderN @es' @'[e]
 
 -- | Like 'raiseUnder', but allows introducing the effect under multiple effects. This function requires
 -- @TypeApplications@.
+--
+-- @since 0.2.0.0
 raiseUnderN :: ∀ e es' es. KnownList es' => Eff (es' ++ es) ~> Eff (es' ++ e ': es)
 raiseUnderN = raiseNUnderN @'[e] @es' @es
 
 -- | A generalization of both 'raiseUnderN' and 'raiseNUnder', allowing introducing multiple effects under multiple
 -- effects. This function requires @TypeApplications@ and is subject to serious type ambiguity; you most likely will
 -- need to supply all three type variables explicitly.
+--
+-- @since 0.2.0.0
 raiseNUnderN :: ∀ es'' es' es. (KnownList es', KnownList es'') => Eff (es' ++ es) ~> Eff (es' ++ (es'' ++ es))
 raiseNUnderN = adjust \re -> Rec.concat
   (Rec.take @es' @(es'' ++ es) re) (Rec.drop @es'' @es (Rec.drop @es' @(es'' ++ es) re))

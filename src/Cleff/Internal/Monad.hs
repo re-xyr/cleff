@@ -155,5 +155,7 @@ send = sendVia id
 -- @
 -- 'send' = 'sendVia' 'id'
 -- @
+--
+-- @since 0.2.0.0
 sendVia :: e :> es' => (Eff es ~> Eff es') -> e (Eff es) ~> Eff es'
 sendVia f e = Eff \es -> unEff (f (runHandler (readEnv es) e)) es

@@ -18,10 +18,12 @@ import           Control.Applicative  (Applicative (liftA2))
 import           Control.Monad.Zip    (MonadZip (munzip, mzipWith))
 import           Data.String          (IsString (fromString))
 
+-- | @since 0.2.1.0
 instance Bounded a => Bounded (Eff es a) where
   minBound = pure minBound
   maxBound = pure maxBound
 
+-- | @since 0.2.1.0
 instance Num a => Num (Eff es a) where
   (+) = liftA2 (+)
   (-) = liftA2 (-)
@@ -31,11 +33,13 @@ instance Num a => Num (Eff es a) where
   signum = fmap signum
   fromInteger = pure . fromInteger
 
+-- | @since 0.2.1.0
 instance Fractional a => Fractional (Eff es a) where
   (/) = liftA2 (/)
   recip = fmap recip
   fromRational = pure . fromRational
 
+-- | @since 0.2.1.0
 instance Floating a => Floating (Eff es a) where
   pi = pure pi
   exp = fmap exp
@@ -56,16 +60,21 @@ instance Floating a => Floating (Eff es a) where
   acosh = fmap acosh
   atanh = fmap atanh
 
+-- | @since 0.2.1.0
 instance Semigroup a => Semigroup (Eff es a) where
   (<>) = liftA2 (<>)
 
+-- | @since 0.2.1.0
 instance Monoid a => Monoid (Eff es a) where
   mempty = pure mempty
 
+-- | @since 0.2.1.0
 instance IsString a => IsString (Eff es a) where
   fromString = pure . fromString
 
 -- | Compatibility instance for @MonadComprehensions@.
+--
+-- @since 0.2.1.0
 instance MonadZip (Eff es) where
   mzipWith = liftA2
   munzip x = (fst <$> x, snd <$> x)
