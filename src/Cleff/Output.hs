@@ -11,7 +11,7 @@ module Cleff.Output
   , -- * Operations
     output
   , -- * Interpretations
-    outputToListState, outputToWriter, ignoreOutput, runOutputEff
+    outputToListState, outputToWriter, ignoreOutput, runOutputEff, mapOutput, bindOutput
   ) where
 
 import           Cleff
@@ -30,7 +30,8 @@ makeEffect ''Output
 
 -- * Interpretations
 
--- | Run an 'Output' effect by accumulating a list.
+-- | Run an 'Output' effect by accumulating a list. Note that outputs are being prepended to the head of the list, so
+-- in many cases you would want to 'reverse' the result.
 outputToListState :: Eff (Output o ': es) ~> Eff (State [o] ': es)
 outputToListState = reinterpret \case
   Output x -> modify (x :)
@@ -53,3 +54,19 @@ runOutputEff :: (o -> Eff es ()) -> Eff (Output o ': es) ~> Eff es
 runOutputEff m = interpret \case
   Output x -> m x
 {-# INLINE runOutputEff #-}
+
+-- | Transform an 'Output' effect into another one already in the effect stack, by a pure function.
+--
+-- @since 0.2.1.0
+mapOutput :: Output o' :> es => (o -> o') -> Eff (Output o ': es) ~> Eff es
+mapOutput f = interpret \case
+  Output x -> output $ f x
+{-# INLINE mapOutput #-}
+
+-- | Transform an 'Input' effect into another one already in the effect stack, by an effectful computation.
+--
+-- @since 0.2.1.0
+bindOutput :: Output o' :> es => (o -> Eff es o') -> Eff (Output o ': es) ~> Eff es
+bindOutput f = interpret \case
+  Output x -> output =<< f x
+{-# INLINE bindOutput #-}

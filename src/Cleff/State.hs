@@ -11,15 +11,18 @@ module Cleff.State
   , -- * Operations
     get, put, state, gets, modify
   , -- * Interpretations
-    runState, zoom
+    runState, runStateIORef, runStateMVar, runStateTVar, zoom
   ) where
 
 import           Cleff
 import           Cleff.Internal.Base
+import           Control.Monad       (void)
 import           Data.Atomics        (atomicModifyIORefCAS)
 import           Data.Tuple          (swap)
 import           Lens.Micro          (Lens', (&), (.~), (^.))
-import           UnliftIO.IORef      (newIORef, readIORef, writeIORef)
+import           UnliftIO.IORef      (IORef, newIORef, readIORef, writeIORef)
+import           UnliftIO.MVar       (MVar, modifyMVar, readMVar, swapMVar)
+import           UnliftIO.STM        (TVar, atomically, readTVar, readTVarIO, writeTVar)
 
 -- * Effect
 
@@ -44,6 +47,13 @@ modify f = state (((), ) . f)
 
 -- * Interpretations
 
+handleIORef :: IOE :> es => IORef s -> Handler (State s) es
+handleIORef rs = \case
+  Get     -> readIORef rs
+  Put s'  -> writeIORef rs s'
+  State f -> liftIO $ atomicModifyIORefCAS rs (swap . f)
+{-# INLINE handleIORef #-}
+
 -- | Run the 'State' effect.
 --
 -- __Caveat__: The 'runState' interpreter is implemented with 'Data.IORef.IORef's and there is no way to do arbitrary
@@ -58,13 +68,41 @@ modify f = state (((), ) . f)
 runState :: s -> Eff (State s ': es) a -> Eff es (a, s)
 runState s m = thisIsPureTrustMe do
   rs <- newIORef s
-  x <- reinterpret (\case
-    Get     -> readIORef rs
-    Put s'  -> writeIORef rs s'
-    State f -> liftIO $ atomicModifyIORefCAS rs (swap . f)) m
+  x <- reinterpret (handleIORef rs) m
   s' <- readIORef rs
   pure (x, s')
 {-# INLINE runState #-}
+
+-- | Run the 'State' effect in terms of operations on a supplied 'IORef'. The 'state' operation is atomic.
+--
+-- @since 0.2.1.0
+runStateIORef :: IOE :> es => IORef s -> Eff (State s ': es) a -> Eff es a
+runStateIORef rs = interpret $ handleIORef rs
+{-# INLINE runStateIORef #-}
+
+-- | Run the 'State' effect in terms of operations on a supplied 'MVar'.
+--
+-- @since 0.2.1.0
+runStateMVar :: IOE :> es => MVar s -> Eff (State s ': es) a -> Eff es a
+runStateMVar rs = interpret \case
+  Get     -> readMVar rs
+  Put s'  -> void $ swapMVar rs s'
+  State f -> modifyMVar rs \s -> let (x, !s') = f s in pure (s', x)
+{-# INLINE runStateMVar #-}
+
+-- | Run the 'State' effect in terms of operations on a supplied 'TVar'.
+--
+-- @since 0.2.1.0
+runStateTVar :: IOE :> es => TVar s -> Eff (State s ': es) a -> Eff es a
+runStateTVar rs = interpret \case
+  Get -> readTVarIO rs
+  Put s' -> atomically $ writeTVar rs s'
+  State f -> atomically do
+    s <- readTVar rs
+    let (x, !s') = f s
+    writeTVar rs s'
+    pure x
+{-# INLINE runStateTVar #-}
 
 -- | Run a 'State' effect in terms of a larger 'State' via a 'Lens''.
 zoom :: State t :> es => Lens' t s -> Eff (State s ': es) ~> Eff es

@@ -2,15 +2,14 @@
 
 ## Unreleased
 
-### Changed
-
-- `Eff`'s instances are now handwritten instead of derived via `ReaderT`
-
 ### Added
 
-- `Eff` has convenience lifted instances for more classes, so that some operations can be automatically lifted.
-  These classes are: `Bounded`, `Num`, `Fractional`, `Floating` and `IsString`
-- `Eff` now has a `MonadZip` instance for the `MonadComprehensions` extension
+- Convenience lifted instances of `Bounded`, `Num`, `Fractional`, `Floating` and `IsString` for `Eff`
+- `MonadZip` instance from the `MonadComprehensions` extension for `Eff`
+- `freshEnumToState` and `runFreshAtomicCounter` for `Fresh`
+- `inputToReader`, `mapInput` and `bindInput` for `Input`
+- `mapOutput` and `bindOutput` for `Output`
+- `runStateIORef`, `runStateMVar` and `runStateTVar` for `State`
 
 ## 0.2.0.0 (2022-02-06)
 
