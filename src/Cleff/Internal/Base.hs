@@ -143,20 +143,15 @@ thisIsPureTrustMe = interpret \case
 #endif
 {-# INLINE thisIsPureTrustMe #-}
 
--- | Extract the 'IO' computation out of an 'Eff' given no effect remains on the stack.
-runEff :: Eff '[] a -> IO a
-runEff m = unEff m emptyEnv
-{-# INLINE runEff #-}
-
 -- | Unwrap an 'Eff' computation with side effects into an 'IO' computation, given that all effects other than 'IOE' are
 -- interpreted.
 runIOE :: Eff '[IOE] ~> IO
-runIOE = runEff . thisIsPureTrustMe
+runIOE m = unEff (thisIsPureTrustMe m) emptyEnv
 {-# INLINE runIOE #-}
 
 -- | Unwrap a pure 'Eff' computation into a pure value, given that all effects are interpreted.
 runPure :: Eff '[] a -> a
-runPure = unsafeDupablePerformIO . runEff
+runPure m = unsafeDupablePerformIO $ unEff m emptyEnv
 {-# NOINLINE runPure #-}
 
 -- * Effect interpretation
