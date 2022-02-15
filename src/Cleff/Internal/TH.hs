@@ -15,7 +15,6 @@
 -- extra careful if you're to depend on this module.
 module Cleff.Internal.TH (makeEffect, makeEffect_) where
 
-import           Cleff.Internal.Effect
 import           Cleff.Internal.Monad
 import           Control.Monad                (join)
 import           Data.Char                    (toLower)

@@ -27,7 +27,6 @@ module Cleff.Internal.Base
     withToIO, fromIO
   ) where
 
-import           Cleff.Internal.Effect
 import           Cleff.Internal.Interpret
 import           Cleff.Internal.Monad
 import           Control.Monad.Base          (MonadBase (liftBase))

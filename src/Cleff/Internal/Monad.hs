@@ -13,7 +13,9 @@
 -- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
 -- extra careful if you're to depend on this module.
 module Cleff.Internal.Monad
-  ( -- * The 'Eff' monad
+  ( -- * Basic types
+    Effect, type (:>), type (:>>), type (~>), type (++)
+  , -- * The 'Eff' monad
     InternalHandler (InternalHandler, runHandler), Eff (Eff, unEff)
   , -- * Effect environment
     Env, HandlerPtr, emptyEnv, adjustEnv, allocaEnv, readEnv, writeEnv, replaceEnv, appendEnv, updateEnv
@@ -22,13 +24,31 @@ module Cleff.Internal.Monad
   ) where
 
 import           Cleff.Internal.Any
-import           Cleff.Internal.Effect
-import           Control.Applicative   (Applicative (liftA2))
-import           Control.Monad.Fix     (MonadFix (mfix))
-import           Data.IntMap.Strict    (IntMap)
-import qualified Data.IntMap.Strict    as Map
-import           Data.Rec.SmallArray   (KnownList, Rec, Subset, pattern (:~:))
-import qualified Data.Rec.SmallArray   as Rec
+import           Control.Applicative (Applicative (liftA2))
+import           Control.Monad.Fix   (MonadFix (mfix))
+import           Data.IntMap.Strict  (IntMap)
+import qualified Data.IntMap.Strict  as Map
+import           Data.Kind           (Constraint, Type)
+import           Data.Rec.SmallArray (Elem, KnownList, Rec, Subset, pattern (:~:), type (++), type (~>))
+import qualified Data.Rec.SmallArray as Rec
+
+-- * Basic types
+
+-- | The type of effects. An effect @e m a@ takes an effect monad type @m :: 'Type' -> 'Type'@ and a result type
+-- @a :: 'Type'@.
+type Effect = (Type -> Type) -> Type -> Type
+
+-- | @e ':>' es@ means the effect @e@ is present in the effect stack @es@, and therefore can be used in an
+-- @'Cleff.Eff' es@ computation.
+type (:>) = Elem
+infix 0 :>
+
+-- | @xs ':>>' es@ means the list of effects @xs@ are all present in the effect stack @es@. This is a convenient type
+-- alias for @(e1 ':>' es, ..., en ':>' es)@.
+type family xs :>> es :: Constraint where
+  '[] :>> _ = ()
+  (x ': xs) :>> es = (x :> es, xs :>> es)
+infix 0 :>>
 
 -- * The 'Eff' monad
 

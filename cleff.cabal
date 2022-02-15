@@ -45,7 +45,6 @@ library
       Cleff.Input
       Cleff.Internal.Any
       Cleff.Internal.Base
-      Cleff.Internal.Effect
       Cleff.Internal.Instances
       Cleff.Internal.Interpret
       Cleff.Internal.Monad
