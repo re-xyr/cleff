@@ -23,17 +23,17 @@ description:         Please see the README on GitHub at <https://github.com/re-x
 
 dependencies:
 - atomic-primops >= 0.8 && < 0.9
-- base >= 4.12 && < 5
-- containers >= 0.6 && < 0.7
+- base >= 4.12 && < 4.17
+- containers >= 0.5 && < 0.7
 - exceptions >= 0.10 && < 0.11
-- microlens >= 0.4.9 && < 0.5
+- microlens >= 0.1 && < 0.5
 - monad-control >= 1 && < 1.1
 - primitive >= 0.6 && < 0.8
 - rec-smallarray >= 0.1 && < 0.2
-- template-haskell >= 2.14 && < 3
-- th-abstraction >= 0.2.11 && < 0.5
-- transformers-base >= 0.4.5 && < 0.5
-- unliftio >= 0.2.8 && < 0.3
+- template-haskell >= 2.14 && < 2.19
+- th-abstraction >= 0.2 && < 0.5
+- transformers-base >= 0.1 && < 0.5
+- unliftio >= 0.2.4 && < 0.3
 
 flags:
   dynamic-ioe:
@@ -65,19 +65,17 @@ default-extensions:
 - BlockArguments
 - ConstraintKinds
 - DataKinds
-- DerivingVia
+- DerivingStrategies
 - EmptyCase
 - FlexibleContexts
 - FlexibleInstances
 - FunctionalDependencies
 - GADTs
-- GeneralizedNewtypeDeriving
 - KindSignatures
 - LambdaCase
 - NoStarIsType
 - PatternSynonyms
 - PolyKinds
-- QuantifiedConstraints
 - RankNTypes
 - RoleAnnotations
 - ScopedTypeVariables
@@ -88,7 +86,6 @@ default-extensions:
 - TypeOperators
 - UndecidableInstances
 - UnicodeSyntax
-- ViewPatterns
 
 library:
   source-dirs: src
@@ -108,10 +105,8 @@ tests:
     - extra
     - hspec
     - lifted-base
-    - QuickCheck
     default-extensions:
     - DeriveAnyClass
-    - DeriveGeneric
 
   cleff-example:
     main:                Main.hs
