@@ -63,7 +63,7 @@ mapOutput f = interpret \case
   Output x -> output $ f x
 {-# INLINE mapOutput #-}
 
--- | Transform an 'Input' effect into another one already in the effect stack, by an effectful computation.
+-- | Transform an 'Output' effect into another one already in the effect stack, by an effectful computation.
 --
 -- @since 0.2.1.0
 bindOutput :: Output o' :> es => (o -> Eff es o') -> Eff (Output o ': es) ~> Eff es

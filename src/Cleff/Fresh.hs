@@ -11,7 +11,7 @@ module Cleff.Fresh
   , -- * Operations
     fresh
   , -- * Interpretations
-    freshIntToState, runFreshAtomicCounter, runFreshUnique
+    freshIntToState, freshEnumToState, runFreshAtomicCounter, runFreshUnique
   ) where
 
 import           Cleff

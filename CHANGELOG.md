@@ -1,12 +1,18 @@
 # Changelog for `cleff`
 
+## Unreleased
+
+### Added
+
+- `freshEnumToState` for `Fresh`
+
 ## 0.2.1.0 (2022-02-13)
 
 ### Added
 
 - Lifted convenience instances of `Bounded`, `Num`, `Fractional`, `Floating` and `IsString` for `Eff`
 - `MonadZip` instance from the `MonadComprehensions` extension for `Eff`
-- `freshEnumToState` and `runFreshAtomicCounter` for `Fresh`
+- `runFreshAtomicCounter` for `Fresh`
 - `inputToReader`, `mapInput` and `bindInput` for `Input`
 - `mapOutput` and `bindOutput` for `Output`
 - `runStateIORef`, `runStateMVar` and `runStateTVar` for `State`
