@@ -15,15 +15,37 @@
 -- extra careful if you're to depend on this module.
 module Cleff.Internal.Interpret
   ( -- * Trivial handling
-    adjust, raise, raiseN, inject, subsume, subsumeN, raiseUnder, raiseNUnder, raiseUnderN, raiseNUnderN
-  , -- * Handler types
-    Handling, esSend, Handler, Translator
-  , -- * Interpreting effects
-    interpret, reinterpret, reinterpret2, reinterpret3, reinterpretN, interpose, impose, imposeN
-  , -- * Translating effects
-    transform, translate
-  , -- * Combinators for interpreting higher effects
-    toEff, toEffWith, withFromEff
+    adjust
+  , raise
+  , raiseN
+  , inject
+  , subsume
+  , subsumeN
+  , raiseUnder
+  , raiseNUnder
+  , raiseUnderN
+  , raiseNUnderN
+    -- * Handler types
+  , Handling
+  , esSend
+  , Handler
+  , Translator
+    -- * Interpreting effects
+  , interpret
+  , reinterpret
+  , reinterpret2
+  , reinterpret3
+  , reinterpretN
+  , interpose
+  , impose
+  , imposeN
+    -- * Translating effects
+  , transform
+  , translate
+    -- * Combinators for interpreting higher effects
+  , toEff
+  , toEffWith
+  , withFromEff
   ) where
 
 import           Cleff.Internal.Monad

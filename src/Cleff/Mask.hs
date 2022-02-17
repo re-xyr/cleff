@@ -8,10 +8,18 @@
 module Cleff.Mask
   ( -- * Effect
     Mask (..)
-  , -- * Operations
-    mask, uninterruptibleMask, bracket, bracketOnError, mask_, uninterruptibleMask_, bracket_, finally, onError
-  , -- * Interpretations
-    runMask
+    -- * Operations
+  , mask
+  , uninterruptibleMask
+  , bracket
+  , bracketOnError
+  , mask_
+  , uninterruptibleMask_
+  , bracket_
+  , finally
+  , onError
+    -- * Interpretations
+  , runMask
   ) where
 
 import           Cleff

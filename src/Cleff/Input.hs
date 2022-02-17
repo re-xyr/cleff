@@ -8,10 +8,16 @@
 module Cleff.Input
   ( -- * Effect
     Input (..)
-  , -- * Operations
-    input, inputs
-  , -- * Interpretations
-    runInputConst, inputToListState, inputToReader, runInputEff, mapInput, bindInput
+    -- * Operations
+  , input
+  , inputs
+    -- * Interpretations
+  , runInputConst
+  , inputToListState
+  , inputToReader
+  , runInputEff
+  , mapInput
+  , bindInput
   ) where
 
 import           Cleff

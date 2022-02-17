@@ -8,10 +8,18 @@
 module Cleff.State
   ( -- * Effect
     State (..)
-  , -- * Operations
-    get, put, state, gets, modify
-  , -- * Interpretations
-    runState, runStateIORef, runStateMVar, runStateTVar, zoom
+    -- * Operations
+  , get
+  , put
+  , state
+  , gets
+  , modify
+    -- * Interpretations
+  , runState
+  , runStateIORef
+  , runStateMVar
+  , runStateTVar
+  , zoom
   ) where
 
 import           Cleff

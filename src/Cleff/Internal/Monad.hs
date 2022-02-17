@@ -14,13 +14,30 @@
 -- extra careful if you're to depend on this module.
 module Cleff.Internal.Monad
   ( -- * Basic types
-    Effect, type (:>), type (:>>), type (~>), type (++)
-  , -- * The 'Eff' monad
-    InternalHandler (InternalHandler, runHandler), Eff (Eff, unEff)
-  , -- * Effect environment
-    Env, HandlerPtr, emptyEnv, adjustEnv, allocaEnv, readEnv, writeEnv, replaceEnv, appendEnv, updateEnv
-  , -- * Performing effect operations
-    KnownList, Subset, send, sendVia
+    Effect
+  , type (:>)
+  , type (:>>)
+  , type (~>)
+  , type (++)
+    -- * The 'Eff' monad
+  , InternalHandler (InternalHandler, runHandler)
+  , Eff (Eff, unEff)
+    -- * Effect environment
+  , Env
+  , HandlerPtr
+  , emptyEnv
+  , adjustEnv
+  , allocaEnv
+  , readEnv
+  , writeEnv
+  , replaceEnv
+  , appendEnv
+  , updateEnv
+    -- * Performing effect operations
+  , KnownList
+  , Subset
+  , send
+  , sendVia
   ) where
 
 import           Cleff.Internal.Any
@@ -57,8 +74,7 @@ infix 0 :>>
 --
 -- In interpreting functions (see "Cleff.Internal.Interpret"), the user-facing 'Cleff.Handler' type is transformed into
 -- this type.
-newtype InternalHandler e = InternalHandler
-  { runHandler :: ∀ es. e (Eff es) ~> Eff es }
+newtype InternalHandler e = InternalHandler { runHandler :: forall es. e (Eff es) ~> Eff es }
 
 -- | The extensible effect monad. A monad @'Eff' es@ is capable of performing any effect in the /effect stack/ @es@,
 -- which is a type-level list that holds all effects available. However, most of the times, for flexibility, @es@
@@ -113,10 +129,7 @@ instance MonadFix (Eff es) where
 -- effect interpretation ('Cleff.reinterpretN') and the latter for local interpretation ('Cleff.toEffWith') in order to
 -- retain correct HO semantics. For more details on this see https://github.com/re-xyr/cleff/issues/5.
 type role Env nominal
-data Env (es :: [Effect]) = Env
-  {-# UNPACK #-} !Int -- ^ The next memory address to allocate.
-  {-# UNPACK #-} !(Rec HandlerPtr es) -- ^ The effect stack holding pointers to handlers.
-  !(IntMap Any) -- ^ The simulated memory.
+data Env (es :: [Effect]) = Env {-# UNPACK #-} !Int {-# UNPACK #-} !(Rec HandlerPtr es) !(IntMap Any)
 
 -- | A pointer to 'InternalHandler' in an 'Env'.
 type role HandlerPtr nominal

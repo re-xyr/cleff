@@ -17,14 +17,19 @@
 module Cleff.Internal.Base
   ( -- * The 'IOE' Effect
     IOE
-  , -- * Primitive 'IO' functions
-    primLiftIO, primUnliftIO
-  , -- * Unwrapping 'Eff'
-    thisIsPureTrustMe, runIOE, runPure
-  , -- * Effect interpretation
-    HandlerIO, interpretIO
-  , -- * Combinators for interpreting higher-order effects
-    withToIO, fromIO
+    -- * Primitive 'IO' functions
+  , primLiftIO
+  , primUnliftIO
+    -- * Unwrapping 'Eff'
+  , thisIsPureTrustMe
+  , runIOE
+  , runPure
+    -- * Effect interpretation
+  , HandlerIO
+  , interpretIO
+    -- * Combinators for interpreting higher-order effects
+  , withToIO
+  , fromIO
   ) where
 
 import           Cleff.Internal.Interpret

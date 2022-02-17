@@ -9,8 +9,9 @@
 module Cleff.Fail
   ( -- * Effect
     Fail (..)
-  , -- * Interpretations
-    runFail, runFailIO
+    -- * Interpretations
+  , runFail
+  , runFailIO
   ) where
 
 import           Cleff

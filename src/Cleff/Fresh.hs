@@ -8,10 +8,13 @@
 module Cleff.Fresh
   ( -- * Effect
     Fresh (..)
-  , -- * Operations
-    fresh
-  , -- * Interpretations
-    freshIntToState, freshEnumToState, runFreshAtomicCounter, runFreshUnique
+    -- * Operations
+  , fresh
+    -- * Interpretations
+  , freshIntToState
+  , freshEnumToState
+  , runFreshAtomicCounter
+  , runFreshUnique
   ) where
 
 import           Cleff

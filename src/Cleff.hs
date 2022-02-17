@@ -28,31 +28,66 @@
 --   easily.
 module Cleff
   ( -- * Using effects
-    Eff, (:>), (:>>), Effect, IOE
-  , -- ** Running effects
+    Eff
+  , (:>)
+  , (:>>)
+  , Effect
+  , IOE
+    -- ** Running effects
     -- $runningEffects
-    runPure, runIOE
-  , -- * Defining effects
+  , runPure
+  , runIOE
+    -- * Defining effects
     -- $definingEffects
-    send, sendVia, makeEffect, makeEffect_
-  , -- * Trivial effects handling
-    raise, raiseN, inject, subsume, subsumeN, KnownList, Subset
-  , -- * Interpreting effects
+  , send
+  , sendVia
+  , makeEffect
+  , makeEffect_
+    -- * Trivial effects handling
+  , raise
+  , raiseN
+  , inject
+  , subsume
+  , subsumeN
+  , KnownList
+  , Subset
+    -- * Interpreting effects
     -- $interpretingEffects
-    Handler, interpret, reinterpret, reinterpret2, reinterpret3, reinterpretN, interpose, impose, imposeN
-  , -- ** Interpreting in terms of 'IO'
-    HandlerIO, interpretIO
-  , -- ** Translating effects
-    Translator, transform, translate
-  , -- ** Transforming interpreters
-    raiseUnder, raiseNUnder, raiseUnderN, raiseNUnderN
-  , -- * Combinators for interpreting higher order effects
+  , Handler
+  , interpret
+  , reinterpret
+  , reinterpret2
+  , reinterpret3
+  , reinterpretN
+  , interpose
+  , impose
+  , imposeN
+    -- ** Interpreting in terms of 'IO'
+  , HandlerIO
+  , interpretIO
+    -- ** Translating effects
+  , Translator
+  , transform
+  , translate
+    -- ** Transforming interpreters
+  , raiseUnder
+  , raiseNUnder
+  , raiseUnderN
+  , raiseNUnderN
+    -- * Combinators for interpreting higher order effects
     -- $higherOrderEffects
-    Handling, toEff, toEffWith, withFromEff
-  , -- ** Interpreting 'IO'-related higher order effects
-    withToIO, fromIO
-  , -- * Miscellaneous
-    type (~>), type (++), MonadIO (..), MonadUnliftIO (..)
+  , Handling
+  , toEff
+  , toEffWith
+  , withFromEff
+    -- ** Interpreting 'IO'-related higher order effects
+  , withToIO
+  , fromIO
+    -- * Miscellaneous
+  , type (~>)
+  , type (++)
+  , MonadIO (..)
+  , MonadUnliftIO (..)
   ) where
 
 import           Cleff.Internal.Base

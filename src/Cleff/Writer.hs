@@ -8,10 +8,13 @@
 module Cleff.Writer
   ( -- * Effect
     Writer (..)
-  , -- * Operations
-    tell, listen, listens
-  , -- * Interpretations
-    runWriter, runWriterBatch
+    -- * Operations
+  , tell
+  , listen
+  , listens
+    -- * Interpretations
+  , runWriter
+  , runWriterBatch
   ) where
 
 import           Cleff

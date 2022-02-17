@@ -9,11 +9,25 @@
 module Cleff.Error
   ( -- * Effect
     Error (..)
-  , -- * Operations
-    throwError, catchError, fromEither, fromException, fromExceptionVia, fromExceptionEff, fromExceptionEffVia,
-    note, catchErrorJust, catchErrorIf, handleError, handleErrorJust, handleErrorIf, tryError, tryErrorJust
-  , -- * Interpretations
-    runError, mapError
+    -- * Operations
+  , throwError
+  , catchError
+  , fromEither
+  , fromException
+  , fromExceptionVia
+  , fromExceptionEff
+  , fromExceptionEffVia
+  , note
+  , catchErrorJust
+  , catchErrorIf
+  , handleError
+  , handleErrorJust
+  , handleErrorIf
+  , tryError
+  , tryErrorJust
+    -- * Interpretations
+  , runError
+  , mapError
   ) where
 
 import           Cleff

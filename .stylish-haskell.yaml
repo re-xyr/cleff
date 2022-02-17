@@ -1,4 +1,11 @@
 steps:
+  - module_header:
+      indent: 2
+      sort: false
+      separate_lists: true
+      break_where: inline
+      open_bracket: next_line
+
   - simple_align:
       cases: always
       top_level_patterns: always

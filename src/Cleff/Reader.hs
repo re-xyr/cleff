@@ -8,10 +8,13 @@
 module Cleff.Reader
   ( -- * Effect
     Reader (..)
-  , -- * Operations
-    ask, local, asks
-  , -- * Interpretations
-    runReader, magnify
+    -- * Operations
+  , ask
+  , local
+  , asks
+    -- * Interpretations
+  , runReader
+  , magnify
   ) where
 
 import           Cleff

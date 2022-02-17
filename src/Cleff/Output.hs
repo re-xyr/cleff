@@ -8,10 +8,15 @@
 module Cleff.Output
   ( -- * Effect
     Output (..)
-  , -- * Operations
-    output
-  , -- * Interpretations
-    outputToListState, outputToWriter, ignoreOutput, runOutputEff, mapOutput, bindOutput
+    -- * Operations
+  , output
+    -- * Interpretations
+  , outputToListState
+  , outputToWriter
+  , ignoreOutput
+  , runOutputEff
+  , mapOutput
+  , bindOutput
   ) where
 
 import           Cleff
