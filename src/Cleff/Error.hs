@@ -12,12 +12,14 @@ module Cleff.Error
     -- * Operations
   , throwError
   , catchError
+    -- ** Other ways of throwing errors
   , fromEither
   , fromException
   , fromExceptionVia
   , fromExceptionEff
   , fromExceptionEffVia
   , note
+    -- ** Other ways of handling errors
   , catchErrorJust
   , catchErrorIf
   , handleError
@@ -40,15 +42,25 @@ import qualified UnliftIO.Exception  as Exc
 
 -- * Effect
 
--- | An effect capable of breaking out of current control flow by raising an exceptional value @e@. This effect roughly
--- corresponds to the @MonadError@ typeclass and @ExceptT@ monad transformer in @mtl@.
+-- | An effect capable of breaking out of current control flow by throwing an error of type @e@, and handling the
+-- errors thrown from computations. This effect roughly corresponds to the @MonadError@ typeclass and @ExceptT@ monad
+-- transformer in @mtl@.
 data Error e :: Effect where
   ThrowError :: e -> Error e m a
   CatchError :: m a -> (e -> m a) -> Error e m a
 
 -- * Operations
 
-makeEffect ''Error
+makeEffect_ ''Error
+
+-- | Throw an error in the current computation.
+throwError :: Error e :> es => e -> Eff es a
+
+-- | Handle an error if one is thrown from a computation, and then return to normal control flow.
+catchError :: Error e :> es
+  => Eff es a -- ^ The computation that may throw errors
+  -> (e -> Eff es a) -- ^ The handler that is called when an error is thrown
+  -> Eff es a
 
 -- | Lift an 'Either' value into the 'Error' effect.
 fromEither :: Error e :> es => Either e a -> Eff es a
@@ -135,7 +147,9 @@ errorHandler eid = \case
 
 -- | Run an 'Error' effect.
 --
--- __Caveat__: 'runError' is implemented with 'Exc.Exception's therefore inherits some of its unexpected behaviors.
+-- === Caveats
+--
+-- 'runError' is implemented with 'Exc.Exception's therefore inherits some of its unexpected behaviors.
 -- Errors thrown in forked threads will /not/ be directly caught by 'catchError's in the parent thread. Instead it will
 -- incur an exception, and we won't be quite able to display the details of that exception properly at that point.
 -- Therefore please properly handle the errors in the forked threads separately.

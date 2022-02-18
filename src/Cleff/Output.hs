@@ -25,13 +25,16 @@ import           Cleff.Writer
 
 -- * Effect
 
--- | An effect that is capable of sending outputs, for example to a log file or an output stream.
+-- | An effect that is capable of producing outputs, for example writing to a log file or an output stream.
 data Output o :: Effect where
   Output :: o -> Output o m ()
 
 -- * Operations
 
-makeEffect ''Output
+makeEffect_ ''Output
+
+-- | Produce an output value.
+output :: Output o :> es => o -> Eff es ()
 
 -- * Interpretations
 

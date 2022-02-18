@@ -9,7 +9,7 @@
 -- This library implements an /extensible effects system/, where sets of monadic actions ("effects") are encoded as
 -- datatypes, tracked at the type level and can have multiple different implementations. This means you can swap out
 -- implementations of certain monadic actions in mock tests or in different environments. The notion of "effect" is
--- general here: it can be an 'IO'-performing side effect, or just obtaining the value of a static global environment.
+-- general here: it can be an 'IO'-performing side effect, or just reading the value of a static global environment.
 --
 -- In particular, this library consists of
 --
@@ -20,12 +20,12 @@
 -- * Combinators for defining new effects and interpreting them /on your own/. These effects can be translated in terms
 --   of other already existing effects, or into operations in the 'IO' monad.
 --
--- So, this library allows you to do two things:
+-- In terms of structuring your application, this library helps you to do two things:
 --
 -- * __Effect management:__ The 'Eff' monad tracks what effects are used explicitly at the type level, therefore you
---   are able to be certain about what effects are involved in each function.
--- * __Effect decoupling:__ You can decouple the implementation of the effects from your application and swap them
---   easily.
+--   are able to enforce what effects are involved in each function, and avoid accidentally introduced behaviors.
+-- * __Effect decoupling:__ You can swap between the implementations of the effects in your application easily,
+--   so you can refactor and test your applications with less clutter.
 module Cleff
   ( -- * Using effects
     Eff
@@ -98,21 +98,21 @@ import           Cleff.Internal.TH
 import           UnliftIO                 (MonadIO (liftIO), MonadUnliftIO (withRunInIO))
 
 -- $runningEffects
--- To run an effect @T@, we should use an /interpreter/ of @T@, which is a function that has type like this:
+-- To run an effect @T@, we should use an /interpreter/ of @T@, which is a function that has a type like this:
 --
 -- @
 -- runT :: 'Eff' (T ': es) a -> 'Eff' es a
 -- @
 --
 -- Such an interpreter provides an implementation of @T@ and eliminates @T@ from the effect stack. All builtin effects
--- in @cleff@ have interpreters coming together with them.
+-- in @cleff@ have interpreters out of the box in their respective modules.
 --
 -- By applying interpreters to an 'Eff' computation, you can eventually obtain an /end computation/, where there are no
--- more effects present on the effect stack. There are two kinds of end computations:
+-- more effects to be interpreted on the effect stack. There are two kinds of end computations:
 --
--- * A /pure computation/ with the type @'Eff' '[] a@, which you can obtain the value via 'Cleff.runPure'; or,
--- * An /impure computation/ with type @'Eff' '['Cleff.IOE'] a@ that can be transformed into an IO computation via
---   'Cleff.runIOE'.
+-- * A /pure computation/ with the type @'Eff' '[] a@, which you can obtain the value via 'runPure'; or,
+-- * An /impure computation/ with type @'Eff' '['IOE'] a@ that can be unwrapped into an IO computation via
+--   'runIOE'.
 
 -- $definingEffects
 -- An effect should be defined as a GADT and have the kind 'Effect'. Each operation in the effect is a constructor of

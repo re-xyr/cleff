@@ -32,7 +32,10 @@ data Input i :: Effect where
 
 -- * Operations
 
-makeEffect ''Input
+makeEffect_ ''Input
+
+-- | Read an input value from an input source.
+input :: Input i :> es => Eff es i
 
 -- | Apply a function to the result of 'input'.
 inputs :: Input i :> es => (i -> i') -> Eff es i'

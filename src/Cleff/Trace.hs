@@ -30,7 +30,10 @@ data Trace :: Effect where
 
 -- * Operations
 
-makeEffect ''Trace
+makeEffect_ ''Trace
+
+-- | Output a trace message.
+trace :: Trace :> es => String -> Eff es ()
 
 -- * Interpretations
 

@@ -25,8 +25,8 @@ import           UnliftIO.IORef      (IORef, newIORef, readIORef)
 
 -- * Effect
 
--- | An effect capable of accumulating outputs. This roughly corresponds to the @MonadWriter@ typeclass and @WriterT@
--- monad transformer in the @mtl@ approach.
+-- | An effect capable of accumulating monoidal outputs. This roughly corresponds to the @MonadWriter@ typeclass and
+-- @WriterT@ monad transformer in the @mtl@ library.
 --
 -- However, note that this does not have a @pass@ operation as we are not sure what its semantics should be. In fact,
 -- the @pass@ semantics in @mtl@ is also unclear and will change when handlers are put in different orders. To avoid
@@ -37,7 +37,13 @@ data Writer w :: Effect where
 
 -- * Operations
 
-makeEffect ''Writer
+makeEffect_ ''Writer
+
+-- | Produces an output that is appended to the accumulated value.
+tell :: Writer w :> es => w -> Eff es ()
+
+-- | Monitor the output of a computation, and return the output alongside the computation's result.
+listen :: Writer w :> es => Eff es a -> Eff es (a, w)
 
 -- | Apply a function to the accumulated output of 'listen'.
 listens :: Writer w :> es => (w -> x) -> Eff es a -> Eff es (a, x)
@@ -49,7 +55,9 @@ listens f m = do
 
 -- | Run a monoidal 'Writer' effect.
 --
--- __Caveat__: Both 'runWriter' and 'listen's under 'runWriter' will stop taking care of writer operations done on
+-- === Caveats
+--
+-- Both 'runWriter' and 'listen's under 'runWriter' will stop taking care of writer operations done on
 -- forked threads as soon as the main thread finishes its computation. Any writer operation done
 -- /before main thread finishes/ is still taken into account.
 runWriter :: ∀ w es a. Monoid w => Eff (Writer w ': es) a -> Eff es (a, w)

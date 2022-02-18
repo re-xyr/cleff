@@ -47,22 +47,24 @@ import qualified UnliftIO
 
 -- * The 'IOE' effect
 
--- | The effect for lifting and unlifting the 'IO' monad, allowing you to use 'MonadIO', 'MonadUnliftIO', 'PrimMonad',
--- 'MonadCatch', 'MonadThrow' and 'MonadMask' functionalities. This is the "final" effect that most effects eventually
--- are interpreted into. For example, you can do:
+-- | The effect capable of lifting and unlifting the 'IO' monad, allowing you to use 'MonadIO', 'MonadUnliftIO',
+-- 'PrimMonad', 'MonadCatch', 'MonadThrow' and 'MonadMask' functionalities. This is the "final" effect that most
+-- effects eventually are interpreted into. For example, you can do:
 --
 -- @
 -- log :: 'IOE' :> es => 'Eff' es ()
 -- log = 'liftIO' ('putStrLn' "Test logging")
 -- @
 --
--- It is not recommended to use this effect in application code, as it is too liberal and allows arbitrary IO. Ideally,
--- this is only used in interpreting more fine-grained effects.
+-- It is not recommended to use this effect directly in application code, as it is too liberal and allows arbitrary IO,
+-- therefore making it harder to do proper effect management. Ideally, this is only used in interpreting more
+-- fine-grained effects.
+--
+-- === Technical details
 --
 -- Note that this is /not/ a real effect and cannot be interpreted in any way besides 'thisIsPureTrustMe' and
--- 'runIOE'. It is similar to Polysemy's @Final@ effect which also cannot be interpreted. This is mainly for
--- performance concern, but also that there doesn't really exist reasonable interpretations other than the current one,
--- given the underlying implementation of the 'Eff' monad.
+-- 'runIOE'. This is mainly for performance concern, but also that there doesn't really exist reasonable
+-- interpretations other than the current one, given the underlying implementation of the 'Eff' monad.
 --
 -- 'IOE' can be a real effect though, and you can enable the @dynamic-ioe@ build flag to have that. However it is only
 -- for reference purposes and should not be used in production code.

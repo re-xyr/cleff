@@ -31,7 +31,10 @@ data Fresh u :: Effect where
 
 -- * Operations
 
-makeEffect ''Fresh
+makeEffect_ ''Fresh
+
+-- | Obtain a fresh unique value.
+fresh :: Fresh u :> es => Eff es u
 
 -- * Interpretations
 

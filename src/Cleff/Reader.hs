@@ -23,16 +23,25 @@ import           Lens.Micro (Lens', (%~), (&), (^.))
 -- * Effect
 
 -- | An effect capable of providing an immutable environment @r@ that can be read. This roughly corresponds to the
--- @MonadReader@ typeclass and @ReaderT@ monad transformer in the @mtl@ approach.
+-- @MonadReader@ typeclass and @ReaderT@ monad transformer in the @mtl@ library.
 data Reader r :: Effect where
   Ask :: Reader r m r
   Local :: (r -> r) -> m a -> Reader r m a
 
 -- * Operations
 
-makeEffect ''Reader
+makeEffect_ ''Reader
 
--- | Apply a function on the result of 'ask'.
+-- | Obtain the environment value.
+ask :: Reader r :> es => Eff es r
+
+-- | Modify the environment value temporarily for a computation.
+local :: Reader r :> es
+  => (r -> r) -- ^ The function that modifies the environment
+  -> Eff es a -- ^ The computation to run with the modified environment
+  -> Eff es a
+
+-- | Apply a function to the result of 'ask'.
 asks :: Reader r :> es => (r -> s) -> Eff es s
 asks = (<$> ask)
 

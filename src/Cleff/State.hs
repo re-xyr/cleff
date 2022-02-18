@@ -35,7 +35,7 @@ import           UnliftIO.STM        (TVar, atomically, readTVar, readTVarIO, wr
 -- * Effect
 
 -- | An effect capable of providing a mutable state @s@ that can be read and written. This roughly corresponds to the
--- @MonadState@ typeclass and @StateT@ monad transformer in the @mtl@ approach.
+-- @MonadState@ typeclass and @StateT@ monad transformer in the @mtl@ library.
 data State s :: Effect where
   Get :: State s m s
   Put :: s -> State s m ()
@@ -43,7 +43,18 @@ data State s :: Effect where
 
 -- * Operations
 
-makeEffect ''State
+makeEffect_ ''State
+
+-- | Read the current state.
+get :: State s :> es => Eff es s
+
+-- | Update the state with a new value.
+put :: State s :> es => s -> Eff es ()
+
+-- | Modify the state /and/ produce a value from the state via a function.
+state :: State s :> es
+  => (s -> (a, s)) -- ^ The function that takes the state and returns a result value together with a modified state
+  -> Eff es a
 
 -- | Apply a function to the result of 'get'.
 gets :: State s :> es => (s -> t) -> Eff es t
@@ -64,7 +75,9 @@ handleIORef rs = \case
 
 -- | Run the 'State' effect.
 --
--- __Caveat__: The 'runState' interpreter is implemented with 'Data.IORef.IORef's and there is no way to do arbitrary
+-- === Caveats
+--
+-- The 'runState' interpreter is implemented with 'Data.IORef.IORef's and there is no way to do arbitrary
 -- atomic transactions. The 'state' operation is atomic though and it is implemented with 'atomicModifyIORefCAS', which
 -- can be faster than @atomicModifyIORef@ in contention. For any more complicated cases of atomicity, please build your
 -- own effect that uses either @MVar@s or @TVar@s based on your need.

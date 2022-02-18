@@ -76,7 +76,7 @@ infix 0 :>>
 -- this type.
 newtype InternalHandler e = InternalHandler { runHandler :: forall es. e (Eff es) ~> Eff es }
 
--- | The extensible effect monad. A monad @'Eff' es@ is capable of performing any effect in the /effect stack/ @es@,
+-- | The extensible effects monad. The monad @'Eff' es@ is capable of performing any effect in the /effect stack/ @es@,
 -- which is a type-level list that holds all effects available. However, most of the times, for flexibility, @es@
 -- should be a polymorphic type variable, and you should use the '(:>)' and '(:>>)' operators in constraints to
 -- indicate what effects are in the stack. For example,
@@ -85,7 +85,7 @@ newtype InternalHandler e = InternalHandler { runHandler :: forall es. e (Eff es
 -- ('Cleff.Reader.Reader' 'String' ':>' es, 'Cleff.State.State' 'Bool' ':>' es) => 'Eff' es 'Integer'
 -- @
 --
--- allows you to perform operations of the @'Cleff.Reader.Reader' 'String'@ effect and the @'Cleff.State.State' 'Bool'@
+-- means you can perform operations of the @'Cleff.Reader.Reader' 'String'@ effect and the @'Cleff.State.State' 'Bool'@
 -- effect in a computation returning an 'Integer'.
 type role Eff nominal representational
 newtype Eff es a = Eff { unEff :: Env es -> IO a }
@@ -183,8 +183,8 @@ send :: e :> es => e (Eff es) ~> Eff es
 send = sendVia id
 
 -- | Perform an action in another effect stack via a transformation to that stack; in other words, this function "maps"
--- the effect operation from effect stack @es@ to @es'@. This is a generalization of 'send'; end users most likely
--- won't need to use this.
+-- the effect operation from effect stack @es@ to @es'@. This is a largely generalized version of 'send'; only use this
+-- if you are sure about what you're doing.
 --
 -- @
 -- 'send' = 'sendVia' 'id'
