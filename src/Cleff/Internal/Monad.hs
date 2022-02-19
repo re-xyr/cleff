@@ -74,7 +74,7 @@ infix 0 :>>
 --
 -- In interpreting functions (see "Cleff.Internal.Interpret"), the user-facing 'Cleff.Handler' type is transformed into
 -- this type.
-newtype InternalHandler e = InternalHandler { runHandler :: forall es. e (Eff es) ~> Eff es }
+newtype InternalHandler e = InternalHandler { runHandler :: ∀ es. e (Eff es) ~> Eff es }
 
 -- | The extensible effects monad. The monad @'Eff' es@ is capable of performing any effect in the /effect stack/ @es@,
 -- which is a type-level list that holds all effects available. However, most of the times, for flexibility, @es@

@@ -13,15 +13,14 @@
 -- extra careful if you're to depend on this module.
 module Cleff.Internal.Instances () where
 
-import           Cleff.Internal.Monad (Eff)
+import           Cleff.Internal.Monad (Eff (Eff))
 import           Control.Applicative  (Applicative (liftA2))
 import           Control.Monad.Zip    (MonadZip (munzip, mzipWith))
+import           Data.Monoid          (Ap (Ap))
 import           Data.String          (IsString (fromString))
 
 -- | @since 0.2.1.0
-instance Bounded a => Bounded (Eff es a) where
-  minBound = pure minBound
-  maxBound = pure maxBound
+deriving via (Ap (Eff es) a) instance Bounded a => Bounded (Eff es a)
 
 -- | @since 0.2.1.0
 instance Num a => Num (Eff es a) where
@@ -61,12 +60,10 @@ instance Floating a => Floating (Eff es a) where
   atanh = fmap atanh
 
 -- | @since 0.2.1.0
-instance Semigroup a => Semigroup (Eff es a) where
-  (<>) = liftA2 (<>)
+deriving newtype instance Semigroup a => Semigroup (Eff es a)
 
 -- | @since 0.2.1.0
-instance Monoid a => Monoid (Eff es a) where
-  mempty = pure mempty
+deriving newtype instance Monoid a => Monoid (Eff es a)
 
 -- | @since 0.2.1.0
 instance IsString a => IsString (Eff es a) where
