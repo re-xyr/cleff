@@ -6,6 +6,7 @@
 
 - **[BREAKING]** Introduces an `OnException` primitive for `Mask` that replaces `Bracket` and `BracketOnError`
   (note that this only affects the effect datatype; there is still `bracket` and `bracketOnError` *functions* with the same semantics)
+- `runError` and `mapError` are slightly (but observably) faster now
 
 ### Added
 

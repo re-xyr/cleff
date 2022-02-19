@@ -65,12 +65,15 @@ default-extensions:
 - BlockArguments
 - ConstraintKinds
 - DataKinds
+- DeriveAnyClass
 - DerivingStrategies
+- DerivingVia
 - EmptyCase
 - FlexibleContexts
 - FlexibleInstances
 - FunctionalDependencies
 - GADTs
+- GeneralizedNewtypeDeriving
 - KindSignatures
 - LambdaCase
 - NoStarIsType
@@ -79,6 +82,7 @@ default-extensions:
 - RankNTypes
 - RoleAnnotations
 - ScopedTypeVariables
+- StandaloneDeriving
 - TemplateHaskell
 - TupleSections
 - TypeApplications
@@ -105,8 +109,6 @@ tests:
     - extra
     - hspec
     - lifted-base
-    default-extensions:
-    - DeriveAnyClass
 
   cleff-example:
     main:                Main.hs
@@ -118,5 +120,3 @@ tests:
     dependencies:
     - cleff
     - extra
-    default-extensions:
-    - DeriveAnyClass

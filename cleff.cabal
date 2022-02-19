@@ -64,12 +64,15 @@ library
       BlockArguments
       ConstraintKinds
       DataKinds
+      DeriveAnyClass
       DerivingStrategies
+      DerivingVia
       EmptyCase
       FlexibleContexts
       FlexibleInstances
       FunctionalDependencies
       GADTs
+      GeneralizedNewtypeDeriving
       KindSignatures
       LambdaCase
       NoStarIsType
@@ -78,6 +81,7 @@ library
       RankNTypes
       RoleAnnotations
       ScopedTypeVariables
+      StandaloneDeriving
       TemplateHaskell
       TupleSections
       TypeApplications
@@ -118,12 +122,15 @@ test-suite cleff-example
       BlockArguments
       ConstraintKinds
       DataKinds
+      DeriveAnyClass
       DerivingStrategies
+      DerivingVia
       EmptyCase
       FlexibleContexts
       FlexibleInstances
       FunctionalDependencies
       GADTs
+      GeneralizedNewtypeDeriving
       KindSignatures
       LambdaCase
       NoStarIsType
@@ -132,6 +139,7 @@ test-suite cleff-example
       RankNTypes
       RoleAnnotations
       ScopedTypeVariables
+      StandaloneDeriving
       TemplateHaskell
       TupleSections
       TypeApplications
@@ -139,7 +147,6 @@ test-suite cleff-example
       TypeOperators
       UndecidableInstances
       UnicodeSyntax
-      DeriveAnyClass
   ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       atomic-primops ==0.8.*
@@ -179,12 +186,15 @@ test-suite cleff-test
       BlockArguments
       ConstraintKinds
       DataKinds
+      DeriveAnyClass
       DerivingStrategies
+      DerivingVia
       EmptyCase
       FlexibleContexts
       FlexibleInstances
       FunctionalDependencies
       GADTs
+      GeneralizedNewtypeDeriving
       KindSignatures
       LambdaCase
       NoStarIsType
@@ -193,6 +203,7 @@ test-suite cleff-test
       RankNTypes
       RoleAnnotations
       ScopedTypeVariables
+      StandaloneDeriving
       TemplateHaskell
       TupleSections
       TypeApplications
@@ -200,7 +211,6 @@ test-suite cleff-test
       TypeOperators
       UndecidableInstances
       UnicodeSyntax
-      DeriveAnyClass
   ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       atomic-primops ==0.8.*
