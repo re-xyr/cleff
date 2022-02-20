@@ -1,6 +1,6 @@
 # Changelog for `cleff`
 
-## Unreleased
+## 0.3.0.0 (2022-02-21)
 
 ### Changed
 
