@@ -1,11 +1,10 @@
-
 -- | This module is adapted from https://github.com/arybczak/effectful/blob/master/effectful/tests/ThEffectSpec.hs,
 -- originally BSD3 license, authors Andrzej Rybczak et al.
 module ThSpec where
 
 import           Cleff
 import           Data.Kind    (Type)
-import           GHC.TypeLits
+import           GHC.TypeLits (KnownNat, Nat, type (+))
 import           Test.Hspec
 
 spec :: Spec
@@ -70,8 +69,8 @@ data instance Family 'MMI m (_ m) where
   MMIC1 :: f m -> Family 'MMI m (f m)
   MMIC2 :: (∀ x. m x -> m (f m)) -> Family 'MMI m (f m)
 
--- TODO(daylily): This cannot produce desired result.
--- makeEffect 'MMIC1
+-- Generates correctly since 0.3.1.0
+makeEffect 'MMIC1
 
 data Complex m a where
   Mono            :: Int -> Complex m Bool
@@ -127,3 +126,9 @@ data ByField m a where
   ByFieldC :: { byFieldCF :: Int } -> ByField m Int
 
 makeEffect 'byFieldCF
+
+data PartialMonad m a where
+  ImpartialMonad :: Int -> PartialMonad m ()
+  PartialMonad :: IOE :> es => Int -> Eff es () -> PartialMonad (Eff es) ()
+
+makeEffect ''PartialMonad

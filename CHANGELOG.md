@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- `makeEffect` is now capable of generating sending functions for operations using concrete `Eff`s for the monad type
+
 ### Removed
 
 - Dependency on `rec-smallarray`

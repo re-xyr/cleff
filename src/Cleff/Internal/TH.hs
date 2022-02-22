@@ -32,18 +32,8 @@ import           Prelude                      hiding ((<>))
 -- lowercase or removing the @:@ symbol in the case of operator constructors. Also, this function will preserve any
 -- fixity declarations defined on the constructors.
 --
--- Because of the limitations of Template Haskell, all constructors of @T@ should be /polymorphic in the monad type/,
--- if they are to be used by 'makeEffect'. For example, this is not OK:
---
--- @
--- data Limited :: 'Effect' where
---   Noop :: Limited ('Eff' es) ()
--- @
---
--- because the monad type @'Eff' es@ is not a fully polymorphic type variable.
---
 -- This function is also "weaker" than @polysemy@'s @makeSem@, because this function cannot properly handle some
--- cases involving complex higher order effects. Those cases are rare, though. See the tests for more details.
+-- cases involving ambiguous types. Those cases are rare, though. See the @ThSpec@ test spec for more details.
 makeEffect :: Name -> Q [Dec]
 makeEffect = makeSmartCons True
 
@@ -66,67 +56,87 @@ makeEffect_ = makeSmartCons False
 -- | This is the function underlying 'makeEffect' and 'makeEffect_'. You can switch between the behavior of two by
 -- changing the 'Bool' parameter to 'True' (generating signatures) or 'False' (not generating signatures).
 makeSmartCons :: Bool -> Name -> Q [Dec]
-makeSmartCons makeSig effName = do
+makeSmartCons shouldMakeSig effName = do
   info <- reifyDatatype effName
-  join <$> traverse (makeCon makeSig) (constructorName <$> reverse (datatypeCons info))
+  join <$> traverse (makeCon shouldMakeSig) (constructorName <$> reverse (datatypeCons info))
 
 -- | Make a single function definition of a certain effect operation.
 makeCon :: Bool -> Name -> Q [Dec]
-makeCon makeSig name = do
+makeCon shouldMakeSig name = do
   fixity <- reifyFixity name
-  typ <- reify name >>= \case
-    DataConI _ typ _ -> pure typ
-    _ -> fail $ show
-      $ text "'" <> ppr name <> text "' is not a constructor"
+  ctorTy <- reify name >>= \case
+    DataConI _ ty _ -> pure ty
+    _               -> fail $ show $ text "'" <> ppr name <> text "' is not a constructor"
 
-  effVar <- VarT <$> newName "es"
+  operationCtx' <- extractCtx ctorTy
+  (operationParams', (effTy, effMonad, resTy')) <- extractParams ctorTy
 
-  let actionCtx = extractCtx typ
-  (actionPar, (effTy, monadVar, resTy)) <- extractPar typ
+  (esVar, maybeMndVar) <- case effMonad of
+    Right m -> do
+      fresh <- VarT <$> newName "es"
+      pure (fresh, Just m)
+    Left v -> pure (VarT v, Nothing)
+
+  let operationCtx = substMnd maybeMndVar esVar <$> operationCtx'
+  let operationParams = substMnd maybeMndVar esVar <$> operationParams'
+  let resTy = substMnd maybeMndVar esVar resTy'
 
   let fnName = mkName $ toSmartConName $ nameBase name
-  fnArgs <- traverse (const $ newName "x") actionPar
+  fnArgs <- traverse (const $ newName "x") operationParams
 
   let
     fnBody = VarE 'send `AppE` foldl' (\f -> AppE f . VarE) (ConE name) fnArgs
-    fnSig = ForallT [] (UInfixT effTy ''(:>) effVar : actionCtx)
-      (makeTyp actionPar effVar effTy monadVar resTy)
+    fnSig = ForallT [] (UInfixT effTy ''(:>) esVar : operationCtx)
+      (makeTyp operationParams esVar effTy resTy)
 
   pure $
     maybeToList ((`InfixD` name) <$> fixity) ++
-    [ SigD fnName fnSig | makeSig ] ++
+    [ SigD fnName fnSig | shouldMakeSig ] ++
     [ FunD fnName [Clause (VarP <$> fnArgs) (NormalB fnBody) []] ]
 
   where
+    -- Uncapitalize the first letter / remove the ':' in operator constructors
+    toSmartConName :: String -> String
     toSmartConName (':' : xs) = xs
     toSmartConName (x : xs)   = toLower x : xs
     toSmartConName _          = error "Cleff.makeEffect: Empty constructor name. Please report this as a bug."
 
-    extractCtx (ForallT _ ctx t) = ctx ++ extractCtx t
-    extractCtx _                 = []
+    -- Extract constraints for the constructor (the type is normalized so we don't need to extract recursively)
+    extractCtx :: Type -> Q Cxt
+    extractCtx (ForallT _ ctx _) = pure ctx
+    extractCtx ty = fail $ show $ text "The constructor with type'" <> ppr ty <> text "' does not construct an effect"
 
-    extractPar (ForallT _ _ t) = extractPar t
-    extractPar (SigT t _) = extractPar t
-    extractPar (ParensT t) = extractPar t
-    extractPar (ArrowT `AppT` a `AppT` t) = do
-      (args, ret) <- extractPar t
+    -- Extract (parameter types, (effect type, Eff es / m variable, return type))
+    extractParams :: Type -> Q ([Type], (Type, Either Name Name, Type))
+    extractParams (ForallT _ _ t) = extractParams t
+    extractParams (SigT t _) = extractParams t
+    extractParams (ParensT t) = extractParams t
+    extractParams (ArrowT `AppT` a `AppT` t) = do
+      (args, ret) <- extractParams t
       pure (a : args, ret)
 #if MIN_VERSION_template_haskell(2,17,0)
-    extractPar (MulArrowT `AppT` _ `AppT` a `AppT` t) = do
-      (args, ret) <- extractPar t
+    extractParams (MulArrowT `AppT` _ `AppT` a `AppT` t) = do
+      (args, ret) <- extractParams t
       pure (a : args, ret)
 #endif
-
-    extractPar (effTy `AppT` VarT monadVar `AppT` resTy) = pure ([], (effTy, monadVar, resTy))
-    extractPar ty@(_ `AppT` m `AppT` _) = fail $ show
+    extractParams (effTy `AppT` VarT mndVar `AppT` resTy) = pure ([], (effTy, Right mndVar, resTy))
+    extractParams (effTy `AppT` (ConT eff `AppT` VarT esVar) `AppT` resTy)
+      | eff == ''Eff = pure ([], (effTy, Left esVar, resTy))
+    extractParams ty@(_ `AppT` m `AppT` _) = fail $ show
       $ text "The effect monad argument '" <> ppr m
-      <> text "' in the effect '" <> ppr ty <> text "' is not a type variable"
-    extractPar t = fail $ show
+      <> text "' in the effect '" <> ppr ty <> text "' is not a type variable nor in shape 'Eff es'"
+    extractParams t = fail $ show
       $ text "The type '" <> ppr t
       <> text "' does not have the shape of an effect (i.e. has a polymorphic monad type and a result type)"
 
-    makeTyp [] effVar _ _ resTy = ConT ''Eff `AppT` effVar `AppT` resTy
-    makeTyp (parTy : pars) effVar effTy monadVar resTy =
-      ArrowT `AppT` substMnd monadVar effVar parTy `AppT` makeTyp pars effVar effTy monadVar resTy
+    -- Make the type of the smart constructor from params, effect row variable, effect type and result type
+    -- Example: a -> m b -> c -> MyEffect m d ==> a -> Eff es b -> c -> Eff es d
+    makeTyp :: [Type] -> Type -> Type -> Type -> Type
+    makeTyp [] esVar _ resTy = ConT ''Eff `AppT` esVar `AppT` resTy
+    makeTyp (parTy : pars) esVar effTy resTy =
+      ArrowT `AppT` parTy `AppT` makeTyp pars esVar effTy resTy
 
-    substMnd monadVar effVar = applySubstitution (Map.singleton monadVar $ ConT ''Eff `AppT` effVar)
+    -- Substitute in 'Eff es' for the 'm' variable
+    substMnd :: Maybe Name -> Type -> Type -> Type
+    substMnd Nothing _           = id
+    substMnd (Just mndVar) esVar = applySubstitution (Map.singleton mndVar $ ConT ''Eff `AppT` esVar)
