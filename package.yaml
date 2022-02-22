@@ -28,8 +28,7 @@ dependencies:
 - exceptions >= 0.10 && < 0.11
 - microlens >= 0.1 && < 0.5
 - monad-control >= 1 && < 1.1
-- primitive >= 0.6 && < 0.8
-- rec-smallarray >= 0.1 && < 0.2
+- primitive >= 0.6.4 && < 0.8
 - template-haskell >= 2.14 && < 2.19
 - th-abstraction >= 0.2 && < 0.5
 - transformers-base >= 0.1 && < 0.5
@@ -50,6 +49,7 @@ ghc-options:
 - -Wpartial-fields
 - -Wunused-type-patterns
 # - -ddump-simpl
+# - -ddump-hi
 # - -ddump-to-file
 # - -dsuppress-all
 # - -dsuppress-uniques

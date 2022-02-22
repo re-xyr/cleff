@@ -3,14 +3,7 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages:
-- completed:
-    hackage: rec-smallarray-0.1.0.0@sha256:41032cc3fd0be87a5f5ebd8a1b66fd1ca6b3aa65df610bc847b951aee035d90c,2723
-    pantry-tree:
-      size: 383
-      sha256: a75e525e878ac0b29fda1bd07cd1e1d1d703e50b2719304551b256b9b4a6422f
-  original:
-    hackage: rec-smallarray-0.1.0.0
+packages: []
 snapshots:
 - completed:
     size: 590102

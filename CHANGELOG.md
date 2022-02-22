@@ -1,5 +1,11 @@
 # Changelog for `cleff`
 
+## Unreleased
+
+### Removed
+
+- Dependency on `rec-smallarray`
+
 ## 0.3.0.1 (2022-02-21)
 
 Clarify changelog: new features that are listed "Unreleased" in 0.3.0.0 changelog are in fact *released*

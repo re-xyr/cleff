@@ -48,6 +48,7 @@ library
       Cleff.Internal.Instances
       Cleff.Internal.Interpret
       Cleff.Internal.Monad
+      Cleff.Internal.Rec
       Cleff.Internal.TH
       Cleff.Mask
       Cleff.Output
@@ -89,7 +90,7 @@ library
       TypeOperators
       UndecidableInstances
       UnicodeSyntax
-  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wpartial-fields -Wunused-type-patterns -Wmissing-export-lists
+  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wunused-type-patterns -Wmissing-export-lists
   build-depends:
       atomic-primops ==0.8.*
     , base >=4.12 && <4.17
@@ -97,14 +98,15 @@ library
     , exceptions ==0.10.*
     , microlens >=0.1 && <0.5
     , monad-control >=1 && <1.1
-    , primitive >=0.6 && <0.8
-    , rec-smallarray ==0.1.*
+    , primitive >=0.6.4 && <0.8
     , template-haskell >=2.14 && <2.19
     , th-abstraction >=0.2 && <0.5
     , transformers-base >=0.1 && <0.5
     , unliftio >=0.2.4 && <0.3
   if flag(dynamic-ioe)
     cpp-options: -DDYNAMIC_IOE
+  if impl(ghc >= 8.8)
+    ghc-options: -Wmissing-deriving-strategies
   default-language: Haskell2010
 
 test-suite cleff-example
@@ -147,7 +149,7 @@ test-suite cleff-example
       TypeOperators
       UndecidableInstances
       UnicodeSyntax
-  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       atomic-primops ==0.8.*
     , base >=4.12 && <4.17
@@ -157,14 +159,15 @@ test-suite cleff-example
     , extra
     , microlens >=0.1 && <0.5
     , monad-control >=1 && <1.1
-    , primitive >=0.6 && <0.8
-    , rec-smallarray ==0.1.*
+    , primitive >=0.6.4 && <0.8
     , template-haskell >=2.14 && <2.19
     , th-abstraction >=0.2 && <0.5
     , transformers-base >=0.1 && <0.5
     , unliftio >=0.2.4 && <0.3
   if flag(dynamic-ioe)
     cpp-options: -DDYNAMIC_IOE
+  if impl(ghc >= 8.8)
+    ghc-options: -Wmissing-deriving-strategies
   default-language: Haskell2010
 
 test-suite cleff-test
@@ -176,6 +179,7 @@ test-suite cleff-test
       HigherOrderSpec
       InterposeSpec
       MaskSpec
+      RecSpec
       StateSpec
       ThSpec
       Paths_cleff
@@ -211,7 +215,7 @@ test-suite cleff-test
       TypeOperators
       UndecidableInstances
       UnicodeSyntax
-  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       atomic-primops ==0.8.*
     , base >=4.12 && <4.17
@@ -223,12 +227,13 @@ test-suite cleff-test
     , lifted-base
     , microlens >=0.1 && <0.5
     , monad-control >=1 && <1.1
-    , primitive >=0.6 && <0.8
-    , rec-smallarray ==0.1.*
+    , primitive >=0.6.4 && <0.8
     , template-haskell >=2.14 && <2.19
     , th-abstraction >=0.2 && <0.5
     , transformers-base >=0.1 && <0.5
     , unliftio >=0.2.4 && <0.3
   if flag(dynamic-ioe)
     cpp-options: -DDYNAMIC_IOE
+  if impl(ghc >= 8.8)
+    ghc-options: -Wmissing-deriving-strategies
   default-language: Haskell2010

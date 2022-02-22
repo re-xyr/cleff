@@ -40,14 +40,14 @@ module Cleff.Internal.Monad
   , sendVia
   ) where
 
-import           Cleff.Internal.Any
+import           Cleff.Internal.Any  (Any, fromAny, toAny)
+import           Cleff.Internal.Rec  (Elem, KnownList, Rec, Subset, type (++))
+import qualified Cleff.Internal.Rec  as Rec
 import           Control.Applicative (Applicative (liftA2))
 import           Control.Monad.Fix   (MonadFix (mfix))
 import           Data.IntMap.Strict  (IntMap)
 import qualified Data.IntMap.Strict  as Map
 import           Data.Kind           (Constraint, Type)
-import           Data.Rec.SmallArray (Elem, KnownList, Rec, Subset, pattern (:~:), type (++), type (~>))
-import qualified Data.Rec.SmallArray as Rec
 
 -- * Basic types
 
@@ -66,6 +66,8 @@ type family xs :>> es :: Constraint where
   '[] :>> _ = ()
   (x ': xs) :>> es = (x :> es, xs :>> es)
 infix 0 :>>
+
+type f ~> g = ∀ a. f a -> g a
 
 -- * The 'Eff' monad
 
@@ -129,7 +131,10 @@ instance MonadFix (Eff es) where
 -- effect interpretation ('Cleff.reinterpretN') and the latter for local interpretation ('Cleff.toEffWith') in order to
 -- retain correct HO semantics. For more details on this see https://github.com/re-xyr/cleff/issues/5.
 type role Env nominal
-data Env (es :: [Effect]) = Env {-# UNPACK #-} !Int {-# UNPACK #-} !(Rec HandlerPtr es) !(IntMap Any)
+data Env (es :: [Effect]) = Env
+  {-# UNPACK #-} !Int
+  {-# UNPACK #-} !(Rec HandlerPtr es)
+  !(IntMap Any)
 
 -- | A pointer to 'InternalHandler' in an 'Env'.
 type role HandlerPtr nominal
@@ -167,7 +172,7 @@ replaceEnv (HandlerPtr m) x (Env n re mem) = Env n (Rec.update @e (HandlerPtr m)
 
 -- | Add a new effect to the stack with its corresponding handler pointer. \( O(n) \).
 appendEnv :: ∀ e es. HandlerPtr e -> InternalHandler e -> Env es -> Env (e ': es)
-appendEnv (HandlerPtr m) x (Env n re mem) = Env n (HandlerPtr m :~: re) (Map.insert m (toAny x) mem)
+appendEnv (HandlerPtr m) x (Env n re mem) = Env n (Rec.cons (HandlerPtr m) re) (Map.insert m (toAny x) mem)
 {-# INLINE appendEnv #-}
 
 -- | Use the state of LHS as a newer version for RHS. \( O(1) \).

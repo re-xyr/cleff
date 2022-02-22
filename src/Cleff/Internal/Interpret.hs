@@ -49,8 +49,8 @@ module Cleff.Internal.Interpret
   ) where
 
 import           Cleff.Internal.Monad
-import           Data.Rec.SmallArray  (Rec, pattern (:++:))
-import qualified Data.Rec.SmallArray  as Rec
+import           Cleff.Internal.Rec   (Rec)
+import qualified Cleff.Internal.Rec   as Rec
 import           Unsafe.Coerce        (unsafeCoerce)
 
 -- * Trivial handling
@@ -127,7 +127,7 @@ subsume = subsumeN @'[e]
 
 -- | Eliminate several duplicate effects from the top of the effect stack. This function requires @TypeApplications@.
 subsumeN :: ∀ es' es. Subset es' es => Eff (es' ++ es) ~> Eff es
-subsumeN = adjust \re -> Rec.pick @es' re :++: re
+subsumeN = adjust \re -> Rec.concat (Rec.pick @es' re) re
 
 -- * Handler types
 
