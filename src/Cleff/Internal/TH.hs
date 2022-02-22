@@ -28,9 +28,26 @@ import           Language.Haskell.TH.PprLib   (text, (<>))
 import           Prelude                      hiding ((<>))
 
 -- | For a datatype @T@ representing an effect, @'makeEffect' T@ generates functions defintions for performing the
--- operations of @T@ via 'send'. The naming rule is changing the first uppercase letter in the constructor name to
--- lowercase or removing the @:@ symbol in the case of operator constructors. Also, this function will preserve any
--- fixity declarations defined on the constructors.
+-- operations of @T@ via 'send'. For example,
+--
+-- @
+-- 'makeEffect' ''Filesystem
+-- @
+--
+-- generates the following definitions:
+--
+-- @
+-- readFile      :: Filesystem ':>' es => 'FilePath' -> 'Eff' es 'String'
+-- readFile  x   =  'send' (ReadFile x)
+-- writeFile     :: Filesystem ':>' es => 'FilePath' -> 'String' -> 'Eff' es ()
+-- writeFile x y =  'send' (WriteFile x y)
+-- @
+--
+-- The naming rule is changing the first uppercase letter in the constructor name to lowercase or removing the @:@
+-- symbol in the case of operator constructors. Also, this function will preserve any fixity declarations defined on
+-- the constructors.
+--
+-- === Technical details
 --
 -- This function is also "weaker" than @polysemy@'s @makeSem@, because this function cannot properly handle some
 -- cases involving ambiguous types. Those cases are rare, though. See the @ThSpec@ test spec for more details.

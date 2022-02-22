@@ -190,7 +190,7 @@ mkInternalHandler ptr es handle = InternalHandler \e -> Eff \ess ->
 interpret :: ∀ e es. Handler e es -> Eff (e ': es) ~> Eff es
 interpret = reinterpretN @'[]
 
--- | Like 'interpret', but adds a new effect @e'@ that can be used in the handler.
+-- | Like 'interpret', but adds a new effect @e'@ to the stack that can be used in the handler.
 reinterpret :: ∀ e' e es. Handler e (e' ': es) -> Eff (e ': es) ~> Eff (e' ': es)
 reinterpret = reinterpretN @'[e']
 
@@ -209,7 +209,9 @@ reinterpretN handle m = Eff \es ->
   in unEff m $ appendEnv ptr (mkInternalHandler ptr es' handle) $ adjustEnv (Rec.drop @es') es'
 {-# INLINE reinterpretN #-}
 
--- | Respond to an effect while being able to leave it unhandled (i.e. you can resend the effects in the handler).
+-- | Respond to an effect, but does not eliminate it from the stack. This means you can re-send the operations in the
+-- effect handler; it is often useful when you need to "intercept" operations so you can add extra behaviors like
+-- logging.
 interpose :: ∀ e es. e :> es => Handler e es -> Eff es ~> Eff es
 interpose = imposeN @'[]
 
@@ -244,17 +246,32 @@ translate trans = reinterpret (sendVia toEff . trans)
 
 -- * Combinators for interpreting higher effects
 
--- | Run a computation in the current effect stack. This is useful for interpreting higher-order effects, like a
--- bracketing effect:
+-- | Run a computation in the current effect stack; this is useful for interpreting higher-order effects. For example,
+-- if you want to interpret a bracketing effects in terms of 'IO':
 --
 -- @
 -- data Resource m a where
 --   Bracket :: m a -> (a -> m ()) -> (a -> m b) -> Resource m b
 -- @
 --
+-- You will not be able to simply write this for the effect:
+--
 -- @
--- Bracket alloc dealloc use ->
---   'UnliftIO.bracket'
+-- runBracket :: IOE ':>' es => 'Eff' (Resource ': es) a -> 'Eff' es a
+-- runBracket = 'interpret' \\case
+--   Bracket alloc dealloc use -> UnliftIO.'UnliftIO.bracket' alloc dealloc use
+-- @
+--
+-- This is because effects are sended from all kinds of stacks that has @Resource@ in it, so effect handlers received
+-- the effect as @Resource esSend a@, where @esSend@ is an arbitrary stack with @Resource@, instead of
+-- @Resource es a@. This means @alloc@, @dealloc@ and @use@ are of type @'Eff' esSend a@, while 'UnliftIO.bracket' can
+-- only take and return @'Eff' es a@. So we need to use 'toEff', which converts an @'Eff' esSend a@ into
+-- an @'Eff' es a@:
+--
+-- @
+-- runBracket :: IOE ':>' es => 'Eff' (Resource ': es) a -> 'Eff' es a
+-- runBracket = 'interpret' \\case
+--   Bracket alloc dealloc use -> UnliftIO.'UnliftIO.bracket'
 --     ('toEff' alloc)
 --     ('toEff' . dealloc)
 --     ('toEff' . use)
@@ -262,8 +279,9 @@ translate trans = reinterpret (sendVia toEff . trans)
 toEff :: Handling esSend e es => Eff esSend ~> Eff es
 toEff m = Eff \es -> unEff m (updateEnv es esSend)
 
--- | Run a computation in the current effect stack, but handles the current effect inside the computation differently
--- by providing a new 'Handler'. This is useful for interpreting effects with local contexts, like 'Cleff.Reader.Local':
+-- | Run a computation in the current effect stack, just like 'toEff', but takes a 'Handler' of the current effect
+-- being interpreted, so that inside the computation being ran, the effect is interpreted differently. This is useful
+-- for interpreting effects with local contexts, like 'Cleff.Reader.Local':
 --
 -- @
 -- runReader :: r -> 'Eff' ('Cleff.Reader.Reader' r ': es) '~>' 'Eff' es
@@ -280,8 +298,8 @@ toEffWith handle m = Eff \es -> unEff m $
   -- monomorphic. Therefore this usage is safe.
   writeEnv (hdlPtr @esSend) (mkInternalHandler (hdlPtr @esSend) es handle) $ updateEnv es esSend
 
--- | Temporarily gain the ability to lift some @'Eff' es@ actions into @'Eff' esSend@. This is useful for dealing with
--- effect operations with the monad type in the negative position, which means it's unlikely that you need to use this
--- function in implementing your effects.
+-- | Temporarily gain the ability to lift some @'Eff' es@ actions into @'Eff' esSend@. This is only useful for dealing
+-- with effect operations with the monad type in the negative position, which means it's unlikely that you need to use
+-- this function in implementing your effects.
 withFromEff :: Handling esSend e es => ((Eff es ~> Eff esSend) -> Eff esSend a) -> Eff es a
 withFromEff f = Eff \es -> unEff (f \m -> Eff \ess -> unEff m (updateEnv ess es)) (updateEnv es esSend)

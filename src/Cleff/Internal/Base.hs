@@ -177,12 +177,47 @@ interpretIO f = interpret (liftIO . f)
 
 -- * Combinators for interpreting higher-order effects
 
--- | Temporarily gain the ability to unlift an @'Eff' esSend@ computation into 'IO'. This is useful for dealing with
--- higher-order effects that involves 'IO'.
+-- | Temporarily gain the ability to unlift an @'Eff' esSend@ computation into 'IO'. This is analogous to
+-- 'withRunInIO', and is useful in dealing with higher-order effects that involves 'IO'. For example, the @Resource@
+-- effect that supports brecketing:
+--
+-- @
+-- data Resource m a where
+--   Bracket :: m a -> (a -> m ()) -> (a -> m b) -> Resource m b
+-- @
+--
+-- can be interpreted into 'Control.Exception.bracket' actions in 'IO', by converting all effect computations into
+-- 'IO' compucations via 'withToIO':
+--
+-- @
+-- runResource :: 'IOE' ':>' es => 'Eff' (Resource ': es) a -> 'Eff' es a
+-- runResource = 'interpret' \\case
+--   Bracket alloc dealloc use -> 'withToIO' $ \\toIO ->
+--     'Control.Exception.bracket' (toIO alloc) (toIO . dealloc) (toIO . use)
+-- @
 withToIO :: (Handling esSend e es, IOE :> es) => ((Eff esSend ~> IO) -> IO a) -> Eff es a
 withToIO f = Eff \es -> f \m -> unEff m (updateEnv es esSend)
 
--- | Lift an 'IO' computation into @'Eff' esSend@. This is useful for dealing with effect operations with the monad type in
--- the negative position within 'Cleff.IOE', like 'UnliftIO.mask'ing.
+-- | Lift an 'IO' computation into @'Eff' esSend@. This is analogous to 'liftIO', and is only useful in dealing with
+-- effect operations with the monad type in the negative position, for example 'Control.Exception.mask'ing:
+--
+-- @
+-- data Mask :: 'Effect' where
+--   Mask :: ((m '~>' m) -> m a) -> Mask m a
+--                  ^ this "m" is in negative position
+-- @
+--
+-- See how the @restore :: IO a -> IO a@ from 'Control.Exception.mask' is "wrapped" into
+-- @'Eff' esSend a -> 'Eff' esSend a@:
+--
+-- @
+-- runMask :: 'IOE' ':>' es => 'Eff' (Mask ': es) a -> 'Eff' es a
+-- runMask = 'interpret' \\case
+--   Mask f -> 'withToIO' $ \\toIO -> 'Control.Exception.mask' $
+--     \\restore -> f ('fromIO' . restore . toIO)
+-- @
+--
+-- Here, @toIO@ from 'withToIO' takes an @'Eff' esSend@ to 'IO', where it can be passed into the @restore@ function,
+-- and the returned 'IO' computation is recovered into 'Eff' with 'fromIO'.
 fromIO :: (Handling esSend e es, IOE :> es) => IO ~> Eff esSend
 fromIO = Eff . const

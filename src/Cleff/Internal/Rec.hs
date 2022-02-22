@@ -99,7 +99,8 @@ concat (Rec off len arr) (Rec off' len' arr') = Rec 0 (len + len') $ runSmallArr
 tail :: Rec f (e ': es) -> Rec f es
 tail (Rec off len arr) = Rec (off + 1) (len - 1) arr
 
--- | The list @es@ list is concrete, i.e. is of the form @'[a1, a2, ..., an]@, i.e. is not a type variable.
+-- | @'KnownList' es@ means the list @es@ is concrete, i.e. is of the form @'[a1, a2, ..., an]@ instead of a type
+-- variable.
 class KnownList (es :: [k]) where
   -- | Get the length of the list.
   reifyLen :: Int
@@ -131,6 +132,7 @@ class Elem (e :: k) (es :: [k]) where
   reifyIndex :: Int
   reifyIndex = unreifiable "Elem" "Cleff.Internal.Rec.reifyIndex" "the index of an element of a type-level list"
 
+-- | The element closer to the head takes priority.
 instance {-# OVERLAPPING #-} Elem e (e ': es) where
   reifyIndex = 0
 
@@ -147,7 +149,7 @@ instance TypeError (ElemNotFound e) => Elem e '[] where
 index :: ∀ e es f. Elem e es => Rec f es -> f e
 index (Rec off _ arr) = fromAny $ indexSmallArray arr (off + reifyIndex @_ @e @es)
 
--- | @es@ is a subset of @es'@.
+-- | @es@ is a subset of @es'@, i.e. all elements of @es@ are in @es'@.
 class KnownList es => Subset (es :: [k]) (es' :: [k]) where
   -- | Get a list of indices of the elements.
   reifyIndices :: [Int]

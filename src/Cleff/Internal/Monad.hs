@@ -67,6 +67,17 @@ type family xs :>> es :: Constraint where
   (x ': xs) :>> es = (x :> es, xs :>> es)
 infix 0 :>>
 
+-- | A natural transformation from @f@ to @g@. With this, instead of writing
+--
+-- @
+-- runSomeEffect :: 'Eff' (SomeEffect ': es) a -> 'Eff' es a
+-- @
+--
+-- you can write:
+--
+-- @
+-- runSomeEffect :: 'Eff' (SomeEffect ': es) ~> 'Eff' es
+-- @
 type f ~> g = ∀ a. f a -> g a
 
 -- * The 'Eff' monad
@@ -79,16 +90,21 @@ type f ~> g = ∀ a. f a -> g a
 newtype InternalHandler e = InternalHandler { runHandler :: ∀ es. e (Eff es) ~> Eff es }
 
 -- | The extensible effects monad. The monad @'Eff' es@ is capable of performing any effect in the /effect stack/ @es@,
--- which is a type-level list that holds all effects available. However, most of the times, for flexibility, @es@
--- should be a polymorphic type variable, and you should use the '(:>)' and '(:>>)' operators in constraints to
--- indicate what effects are in the stack. For example,
+-- which is a type-level list that holds all effects available.
+--
+-- The best practice is to always use a polymorphic type variable for the effect stack @es@, and then use the type
+-- operators '(:>)' and '(:>>)' in constraints to indicate what effects are available in the stack. For example,
 --
 -- @
 -- ('Cleff.Reader.Reader' 'String' ':>' es, 'Cleff.State.State' 'Bool' ':>' es) => 'Eff' es 'Integer'
 -- @
 --
 -- means you can perform operations of the @'Cleff.Reader.Reader' 'String'@ effect and the @'Cleff.State.State' 'Bool'@
--- effect in a computation returning an 'Integer'.
+-- effect in a computation returning an 'Integer'. The reason why you should always use a polymorphic effect stack as
+-- opposed to a concrete list of effects are that
+--
+-- * it can contain other effects that are used by computations other than the current one, and
+-- * it does not require you to run the effects in any particular order.
 type role Eff nominal representational
 newtype Eff es a = Eff { unEff :: Env es -> IO a }
   -- ^ The effect monad receives an effect environment 'Env' that contains all effect handlers and produces an 'IO'

@@ -116,7 +116,7 @@ import           UnliftIO                 (MonadIO (liftIO), MonadUnliftIO (with
 
 -- $definingEffects
 -- An effect should be defined as a GADT and have the kind 'Effect'. Each operation in the effect is a constructor of
--- the effect type. For example, an effect supporting reading/writing files can be as following:
+-- the effect type. For example, an effect supporting reading and writing files can be like this:
 --
 -- @
 -- data Filesystem :: 'Effect' where
@@ -124,32 +124,22 @@ import           UnliftIO                 (MonadIO (liftIO), MonadUnliftIO (with
 --   WriteFile :: 'FilePath' -> 'String' -> Filesystem m ()
 -- @
 --
+-- Here, @ReadFile@ is an operation that takes a 'FilePath' and returns a 'String', presumably the content of the file;
+-- @WriteFile@ is an operation that takes a 'FilePath' and a 'String' and returns @()@, meaning it only performs
+-- side effects - presumably writing the 'String' to the file specified.
+--
 -- Operations constructed with these constructors can be performed via the 'send' function. You can also use the
 -- Template Haskell function 'makeEffect' to automatically generate definitions of functions that perform the effects.
--- For example,
---
--- @
--- 'makeEffect' ''Filesystem
--- @
---
--- generates the following definitions:
---
--- @
--- readFile      :: Filesystem ':>' es => 'FilePath' -> 'Eff' es 'String'
--- readFile  x   =  'send' (ReadFile x)
--- writeFile     :: Filesystem ':>' es => 'FilePath' -> 'String' -> 'Eff' es ()
--- writeFile x y =  'send' (WriteFile x y)
--- @
 
 -- $interpretingEffects
--- An effect can be understood as the "grammar" (or /syntax/) of a small language; however we also need to define the
--- "meaning" (or /semantics/) of the language. In other words, we need to specify the implementation of effects.
+-- An effect can be understood as the /syntax/ of a tiny language; however we also need to define the /meaning/ (or
+-- /semantics/) of the language. In other words, we need to specify the implementations of effects.
 --
 -- In an extensible effects system, this is achieved by writing /effect handlers/, which are functions that transforms
 -- operations of one effect into other "more primitive" effects. These handlers can then be used to make interpreters
 -- with library functions that we'll now see.
 --
--- This is very easy to do. For example, for the @Filesystem@ effect
+-- For example, for the @Filesystem@ effect:
 --
 -- @
 -- data Filesystem :: 'Effect' where
@@ -167,20 +157,45 @@ import           UnliftIO                 (MonadIO (liftIO), MonadUnliftIO (with
 --   WriteFile path contents -> 'writeFile' path contents
 -- @
 --
--- Alternatively, we can also construct an in-memory filesystem in terms of the 'Cleff.State.State' effect via
--- the 'reinterpret' function.
+-- Specifically, a @ReadFile@ operation is mapped to a real 'readFile' IO computation, and similarly a @WriteFile@
+-- operation is mapped to a 'writeFile' computation.
+--
+-- An effect is a set of abstract operations, and naturally, they can have more than one interpretations. Therefore,
+-- here we can also construct an in-memory filesystem that reads from and writes into a 'Cleff.State.State' effect, via
+-- the 'reinterpret' function that adds another effect to the stack for the effect handler to use:
 --
 -- @
--- runFilesystemPure :: 'Cleff.Fail.Fail' ':>' es => 'Data.Map.Map' 'FilePath' 'String' -> 'Eff' (Filesystem ': es) a -> 'Eff' es a
--- runFilesystemPure fs = 'fmap' 'fst' '.' 'Cleff.State.runState' fs '.' 'reinterpret' \\case
+-- filesystemToState
+--   :: 'Cleff.Fail.Fail' ':>' es
+--   => 'Eff' (Filesystem ': es) a
+--   -> 'Eff' ('Cleff.State.State' ('Data.Map.Map' 'FilePath' 'String') ': es) a
+-- filesystemToState = 'reinterpret' \\case
 --   ReadFile path -> 'Cleff.State.gets' ('Data.Map.lookup' path) >>= \\case
 --     'Nothing'       -> 'fail' ("File not found: " ++ 'show' path)
 --     'Just' contents -> 'pure' contents
 --   WriteFile path contents -> 'Cleff.State.modify' ('Data.Map.insert' path contents)
 -- @
 --
--- These interpreters can then be applied to computations with the @Filesystem@ effect to give different implementations
--- to the effect.
+-- Here, we used the 'reinterpret' function to introduce a @'Cleff.State.State' (Data.Map.Map' 'FilePath' 'String')@ as
+-- the in-memory filesystem, making 'filesystemToState' a /reinterpreter/ that "maps" an effect into another effect.
+-- We also added a @'Cleff.Fail.Fail' ':>' es@ constraint to our reinterpreter so that we're able to report errors.
+-- To make an /interpreter/ out of this is simple, as we just need to interpret the remaining 'Cleff.State.State'
+-- effect:
+--
+-- @
+-- runFilesystemPure
+--   :: 'Cleff.Fail.Fail' ':>' es
+--   => 'Data.Map.Map' 'FilePath' 'String'
+--   -> 'Eff' (Filesystem ': es) a
+--   -> 'Eff' es a
+-- runFilesystemPure fs
+--   = 'fmap' 'fst'           -- runState returns (Eff es (a, s)), so we need to extract the first component to get (Eff es a)
+--   . 'Cleff.State.runState' fs        -- (State (Map FilePath String) ': es) ==> es
+--   . 'filesystemToState'  -- (Filesystem ': es) ==> (State (Map FilePath String) ': es)
+-- @
+--
+-- Both of these interpreters can then be applied to computations with the @Filesystem@ effect to give different
+-- implementations to the effect.
 
 -- $higherOrderEffects
 -- /Higher order effects/ are effects whose operations take other effect computations as arguments. For example, the
@@ -196,9 +211,9 @@ import           UnliftIO                 (MonadIO (liftIO), MonadUnliftIO (with
 -- More literally, an high order effect makes use of the monad type paramenter @m@, while a first order effect, like
 -- 'Cleff.State.State', does not.
 --
--- It is harder to write interpreters for higher order effects, because we need to transform computations from
--- arbitrary effect stacks into a specific stack that the effect is currently interpreted into. In other words, they
--- need to thread other effects through themselves. This is why Cleff also provides convenient combinators for doing so.
+-- It is harder to write interpreters for higher order effects, because the operations of these effects carry
+-- computations from arbitrary effect stacks, and we'll need to convert the to the current effect stack that the effect
+-- is being interpreted into. Fortunately, Cleff provides convenient combinators for doing so.
 --
 -- In a 'Handler', you can temporarily "unlift" a computation from an arbitrary effect stack into the current stack via
 -- 'toEff', explicitly change the current effect interpretation in the computation via 'toEffWith', or directly express
