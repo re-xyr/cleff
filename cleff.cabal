@@ -77,7 +77,6 @@ library
       KindSignatures
       LambdaCase
       NoStarIsType
-      PatternSynonyms
       PolyKinds
       RankNTypes
       RoleAnnotations
@@ -101,7 +100,7 @@ library
     , primitive >=0.6.4 && <0.8
     , template-haskell >=2.14 && <2.19
     , th-abstraction >=0.2 && <0.5
-    , transformers-base >=0.1 && <0.5
+    , transformers-base ==0.4.*
     , unliftio >=0.2.4 && <0.3
   if flag(dynamic-ioe)
     cpp-options: -DDYNAMIC_IOE
@@ -136,7 +135,6 @@ test-suite cleff-example
       KindSignatures
       LambdaCase
       NoStarIsType
-      PatternSynonyms
       PolyKinds
       RankNTypes
       RoleAnnotations
@@ -162,7 +160,7 @@ test-suite cleff-example
     , primitive >=0.6.4 && <0.8
     , template-haskell >=2.14 && <2.19
     , th-abstraction >=0.2 && <0.5
-    , transformers-base >=0.1 && <0.5
+    , transformers-base ==0.4.*
     , unliftio >=0.2.4 && <0.3
   if flag(dynamic-ioe)
     cpp-options: -DDYNAMIC_IOE
@@ -202,7 +200,6 @@ test-suite cleff-test
       KindSignatures
       LambdaCase
       NoStarIsType
-      PatternSynonyms
       PolyKinds
       RankNTypes
       RoleAnnotations
@@ -230,7 +227,7 @@ test-suite cleff-test
     , primitive >=0.6.4 && <0.8
     , template-haskell >=2.14 && <2.19
     , th-abstraction >=0.2 && <0.5
-    , transformers-base >=0.1 && <0.5
+    , transformers-base ==0.4.*
     , unliftio >=0.2.4 && <0.3
   if flag(dynamic-ioe)
     cpp-options: -DDYNAMIC_IOE
