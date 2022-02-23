@@ -179,7 +179,7 @@ interpretIO f = interpret (liftIO . f)
 
 -- | Temporarily gain the ability to unlift an @'Eff' esSend@ computation into 'IO'. This is analogous to
 -- 'withRunInIO', and is useful in dealing with higher-order effects that involves 'IO'. For example, the @Resource@
--- effect that supports brecketing:
+-- effect that supports bracketing:
 --
 -- @
 -- data Resource m a where
@@ -187,7 +187,7 @@ interpretIO f = interpret (liftIO . f)
 -- @
 --
 -- can be interpreted into 'Control.Exception.bracket' actions in 'IO', by converting all effect computations into
--- 'IO' compucations via 'withToIO':
+-- 'IO' computations via 'withToIO':
 --
 -- @
 -- runResource :: 'IOE' ':>' es => 'Eff' (Resource : es) a -> 'Eff' es a
