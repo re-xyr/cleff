@@ -30,7 +30,7 @@ newtype FsError = FsError String
   deriving anyclass (Exception)
 
 -- | Run the 'Filesystem' effect with actual file IO.
-runFilesystemIO :: '[IOE, Error FsError] :>> es => Eff (Filesystem ': es) a -> Eff es a
+runFilesystemIO :: '[IOE, Error FsError] :>> es => Eff (Filesystem : es) a -> Eff es a
 runFilesystemIO = interpret \case
   ReadFile path           -> adapt $ IO.readFile path
   WriteFile path contents -> adapt $ IO.writeFile path contents
@@ -38,7 +38,7 @@ runFilesystemIO = interpret \case
     adapt m = liftIO m `catch` \(e :: IOException) -> throwError $ FsError $ show e
 
 -- | Run the 'Filesystem' effect with a faked filesystem.
-runFilesystemPure :: Error FsError :> es => Map FilePath String -> Eff (Filesystem ': es) a -> Eff es a
+runFilesystemPure :: Error FsError :> es => Map FilePath String -> Eff (Filesystem : es) a -> Eff es a
 runFilesystemPure fs = fmap fst . runState fs . reinterpret \case
   ReadFile path -> maybeM (throwError $ FsError $ "File not found: " ++ show path) pure $ gets (M.lookup path)
   WriteFile path contents -> modify $ M.insert path contents

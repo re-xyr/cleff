@@ -101,7 +101,7 @@ import           UnliftIO                 (MonadIO (liftIO), MonadUnliftIO (with
 -- To run an effect @T@, we should use an /interpreter/ of @T@, which is a function that has a type like this:
 --
 -- @
--- runT :: 'Eff' (T ': es) a -> 'Eff' es a
+-- runT :: 'Eff' (T : es) a -> 'Eff' es a
 -- @
 --
 -- Such an interpreter provides an implementation of @T@ and eliminates @T@ from the effect stack. All builtin effects
@@ -151,7 +151,7 @@ import           UnliftIO                 (MonadIO (liftIO), MonadUnliftIO (with
 -- constructors:
 --
 -- @
--- runFilesystemIO :: 'IOE' ':>' es => 'Eff' (Filesystem ': es) a -> 'Eff' es a
+-- runFilesystemIO :: 'IOE' ':>' es => 'Eff' (Filesystem : es) a -> 'Eff' es a
 -- runFilesystemIO = 'interpretIO' \\case
 --   ReadFile path           -> 'readFile' path
 --   WriteFile path contents -> 'writeFile' path contents
@@ -167,8 +167,8 @@ import           UnliftIO                 (MonadIO (liftIO), MonadUnliftIO (with
 -- @
 -- filesystemToState
 --   :: 'Cleff.Fail.Fail' ':>' es
---   => 'Eff' (Filesystem ': es) a
---   -> 'Eff' ('Cleff.State.State' ('Data.Map.Map' 'FilePath' 'String') ': es) a
+--   => 'Eff' (Filesystem : es) a
+--   -> 'Eff' ('Cleff.State.State' ('Data.Map.Map' 'FilePath' 'String') : es) a
 -- filesystemToState = 'reinterpret' \\case
 --   ReadFile path -> 'Cleff.State.gets' ('Data.Map.lookup' path) >>= \\case
 --     'Nothing'       -> 'fail' ("File not found: " ++ 'show' path)
@@ -186,12 +186,12 @@ import           UnliftIO                 (MonadIO (liftIO), MonadUnliftIO (with
 -- runFilesystemPure
 --   :: 'Cleff.Fail.Fail' ':>' es
 --   => 'Data.Map.Map' 'FilePath' 'String'
---   -> 'Eff' (Filesystem ': es) a
+--   -> 'Eff' (Filesystem : es) a
 --   -> 'Eff' es a
 -- runFilesystemPure fs
 --   = 'fmap' 'fst'           -- runState returns (Eff es (a, s)), so we need to extract the first component to get (Eff es a)
---   . 'Cleff.State.runState' fs        -- (State (Map FilePath String) ': es) ==> es
---   . 'filesystemToState'  -- (Filesystem ': es) ==> (State (Map FilePath String) ': es)
+--   . 'Cleff.State.runState' fs        -- (State (Map FilePath String) : es) ==> es
+--   . 'filesystemToState'  -- (Filesystem : es) ==> (State (Map FilePath String) : es)
 -- @
 --
 -- Both of these interpreters can then be applied to computations with the @Filesystem@ effect to give different

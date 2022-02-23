@@ -135,7 +135,7 @@ finally m mz = (m `onError` mz) <* uninterruptibleMask_ mz
 -- * Interpretations
 
 -- | Interpret the 'Mask' effect in terms of primitive 'IO' actions.
-runMask :: Eff (Mask ': es) ~> Eff es
+runMask :: Eff (Mask : es) ~> Eff es
 runMask = thisIsPureTrustMe . reinterpret \case
   Mask f -> withToIO \toIO -> Exc.mask \restore -> toIO $ f (fromIO . restore . toIO)
   UninterruptibleMask f -> withToIO \toIO -> Exc.uninterruptibleMask \restore -> toIO $ f (fromIO . restore . toIO)

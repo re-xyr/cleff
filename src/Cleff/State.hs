@@ -86,7 +86,7 @@ handleIORef rs = \case
 --
 -- 'runState' will stop taking care of state operations done on forked threads as soon as the main thread finishes its
 -- computation. Any state operation done /before main thread finishes/ is still taken into account.
-runState :: s -> Eff (State s ': es) a -> Eff es (a, s)
+runState :: s -> Eff (State s : es) a -> Eff es (a, s)
 runState s m = thisIsPureTrustMe do
   rs <- newIORef s
   x <- reinterpret (handleIORef rs) m
@@ -97,14 +97,14 @@ runState s m = thisIsPureTrustMe do
 -- | Run the 'State' effect in terms of operations on a supplied 'IORef'. The 'state' operation is atomic.
 --
 -- @since 0.2.1.0
-runStateIORef :: IOE :> es => IORef s -> Eff (State s ': es) a -> Eff es a
+runStateIORef :: IOE :> es => IORef s -> Eff (State s : es) a -> Eff es a
 runStateIORef rs = interpret $ handleIORef rs
 {-# INLINE runStateIORef #-}
 
 -- | Run the 'State' effect in terms of operations on a supplied 'MVar'.
 --
 -- @since 0.2.1.0
-runStateMVar :: IOE :> es => MVar s -> Eff (State s ': es) a -> Eff es a
+runStateMVar :: IOE :> es => MVar s -> Eff (State s : es) a -> Eff es a
 runStateMVar rs = interpret \case
   Get     -> readMVar rs
   Put s'  -> void $ swapMVar rs s'
@@ -114,7 +114,7 @@ runStateMVar rs = interpret \case
 -- | Run the 'State' effect in terms of operations on a supplied 'TVar'.
 --
 -- @since 0.2.1.0
-runStateTVar :: IOE :> es => TVar s -> Eff (State s ': es) a -> Eff es a
+runStateTVar :: IOE :> es => TVar s -> Eff (State s : es) a -> Eff es a
 runStateTVar rs = interpret \case
   Get -> readTVarIO rs
   Put s' -> atomically $ writeTVar rs s'
@@ -126,7 +126,7 @@ runStateTVar rs = interpret \case
 {-# INLINE runStateTVar #-}
 
 -- | Run a 'State' effect in terms of a larger 'State' via a 'Lens''.
-zoom :: State t :> es => Lens' t s -> Eff (State s ': es) ~> Eff es
+zoom :: State t :> es => Lens' t s -> Eff (State s : es) ~> Eff es
 zoom field = interpret \case
   Get     -> gets (^. field)
   Put s   -> modify (& field .~ s)

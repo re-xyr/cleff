@@ -64,19 +64,19 @@ infix 0 :>
 -- alias for @(e1 ':>' es, ..., en ':>' es)@.
 type family xs :>> es :: Constraint where
   '[] :>> _ = ()
-  (x ': xs) :>> es = (x :> es, xs :>> es)
+  (x : xs) :>> es = (x :> es, xs :>> es)
 infix 0 :>>
 
 -- | A natural transformation from @f@ to @g@. With this, instead of writing
 --
 -- @
--- runSomeEffect :: 'Eff' (SomeEffect ': es) a -> 'Eff' es a
+-- runSomeEffect :: 'Eff' (SomeEffect : es) a -> 'Eff' es a
 -- @
 --
 -- you can write:
 --
 -- @
--- runSomeEffect :: 'Eff' (SomeEffect ': es) ~> 'Eff' es
+-- runSomeEffect :: 'Eff' (SomeEffect : es) ~> 'Eff' es
 -- @
 type f ~> g = ∀ a. f a -> g a
 
@@ -187,7 +187,7 @@ replaceEnv (HandlerPtr m) x (Env n re mem) = Env n (Rec.update @e (HandlerPtr m)
 {-# INLINE replaceEnv #-}
 
 -- | Add a new effect to the stack with its corresponding handler pointer. \( O(n) \).
-appendEnv :: ∀ e es. HandlerPtr e -> InternalHandler e -> Env es -> Env (e ': es)
+appendEnv :: ∀ e es. HandlerPtr e -> InternalHandler e -> Env es -> Env (e : es)
 appendEnv (HandlerPtr m) x (Env n re mem) = Env n (Rec.cons (HandlerPtr m) re) (Map.insert m (toAny x) mem)
 {-# INLINE appendEnv #-}
 

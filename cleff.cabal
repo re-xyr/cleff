@@ -89,7 +89,7 @@ library
       TypeOperators
       UndecidableInstances
       UnicodeSyntax
-  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wunused-type-patterns -Wmissing-export-lists
+  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wpartial-fields -Wunused-type-patterns -Wmissing-export-lists
   build-depends:
       atomic-primops ==0.8.*
     , base >=4.12 && <4.17
@@ -147,7 +147,7 @@ test-suite cleff-example
       TypeOperators
       UndecidableInstances
       UnicodeSyntax
-  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       atomic-primops ==0.8.*
     , base >=4.12 && <4.17
@@ -212,7 +212,7 @@ test-suite cleff-test
       TypeOperators
       UndecidableInstances
       UnicodeSyntax
-  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       atomic-primops ==0.8.*
     , base >=4.12 && <4.17

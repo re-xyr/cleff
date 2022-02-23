@@ -37,7 +37,7 @@ invariant = allAccessible . sizeInvariant
 singleton :: f e -> Rec f '[e]
 singleton x = x <:> Rec.empty
 
-(<:>) :: f e -> Rec f es -> Rec f (e ': es)
+(<:>) :: f e -> Rec f es -> Rec f (e : es)
 (<:>) = Rec.cons
 infixr 5 <:>
 
@@ -52,13 +52,13 @@ infixr 9 <//>
 instance Eq (Rec f '[]) where
   _ == _ = True
 
-instance (Eq (Rec f xs), Eq (f x)) => Eq (Rec f (x ': xs)) where
+instance (Eq (Rec f xs), Eq (f x)) => Eq (Rec f (x : xs)) where
   xs == ys = Rec.head xs == Rec.head ys && Rec.tail xs == Rec.tail ys
 
 instance Show (Rec f '[]) where
   show _ = "empty"
 
-instance (Show (f x), Show (Rec f xs)) => Show (Rec f (x ': xs)) where
+instance (Show (f x), Show (Rec f xs)) => Show (Rec f (x : xs)) where
   showsPrec p xs = showParen (p > consPrec) $
     showsPrec (consPrec + 1) (Rec.head xs) . showString " <:> " . showsPrec consPrec (Rec.tail xs)
     where consPrec = 5

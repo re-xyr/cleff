@@ -74,7 +74,7 @@ empty :: Rec f '[]
 empty = Rec 0 0 $ runSmallArray $ newArr 0
 
 -- | Prepend one entry to the record. \( O(n) \).
-cons :: f e -> Rec f es -> Rec f (e ': es)
+cons :: f e -> Rec f es -> Rec f (e : es)
 cons x (Rec off len arr) = Rec 0 (len + 1) $ runSmallArray do
   marr <- newArr (len + 1)
   writeSmallArray marr 0 (toAny x)
@@ -84,7 +84,7 @@ cons x (Rec off len arr) = Rec 0 (len + 1) $ runSmallArray do
 -- | Type level list concatenation.
 type family xs ++ ys where
   '[] ++ ys = ys
-  (x ': xs) ++ ys = x ': (xs ++ ys)
+  (x : xs) ++ ys = x : (xs ++ ys)
 infixr 5 ++
 
 -- | Concatenate two records. \( O(m+n) \).
@@ -96,7 +96,7 @@ concat (Rec off len arr) (Rec off' len' arr') = Rec 0 (len + len') $ runSmallArr
   pure marr
 
 -- | Slice off one entry from the top of the record. \( O(1) \).
-tail :: Rec f (e ': es) -> Rec f es
+tail :: Rec f (e : es) -> Rec f es
 tail (Rec off len arr) = Rec (off + 1) (len - 1) arr
 
 -- | @'KnownList' es@ means the list @es@ is concrete, i.e. is of the form @'[a1, a2, ..., an]@ instead of a type
@@ -109,7 +109,7 @@ class KnownList (es :: [k]) where
 instance KnownList '[] where
   reifyLen = 0
 
-instance KnownList es => KnownList (e ': es) where
+instance KnownList es => KnownList (e : es) where
   reifyLen = 1 + reifyLen @_ @es
 
 -- | Slice off several entries from the top of the record. \( O(1) \).
@@ -118,7 +118,7 @@ drop (Rec off len arr) = Rec (off + len') (len - len') arr
   where len' = reifyLen @_ @es
 
 -- | Get the head of the record. \( O(1) \).
-head :: Rec f (e ': es) -> f e
+head :: Rec f (e : es) -> f e
 head (Rec off _ arr) = fromAny $ indexSmallArray arr off
 
 -- | Take elements from the top of the record. \( O(m) \).
@@ -133,13 +133,13 @@ class Elem (e :: k) (es :: [k]) where
   reifyIndex = unreifiable "Elem" "Cleff.Internal.Rec.reifyIndex" "the index of an element of a type-level list"
 
 -- | The element closer to the head takes priority.
-instance {-# OVERLAPPING #-} Elem e (e ': es) where
+instance {-# OVERLAPPING #-} Elem e (e : es) where
   reifyIndex = 0
 
-instance Elem e es => Elem e (e' ': es) where
+instance Elem e es => Elem e (e' : es) where
   reifyIndex = 1 + reifyIndex @_ @e @es
 
-type ElemNotFound e = 'Text "The element '" ':<>: 'ShowType e ':<>: 'Text "' is not present in the constraint"
+type ElemNotFound e = Text "The element '" :<>: ShowType e :<>: Text "' is not present in the constraint"
 
 instance TypeError (ElemNotFound e) => Elem e '[] where
   reifyIndex = error
@@ -159,7 +159,7 @@ class KnownList es => Subset (es :: [k]) (es' :: [k]) where
 instance Subset '[] es where
   reifyIndices = []
 
-instance (Subset es es', Elem e es') => Subset (e ': es) es' where
+instance (Subset es es', Elem e es') => Subset (e : es) es' where
   reifyIndices = reifyIndex @_ @e @es' : reifyIndices @_ @es @es'
 
 -- | Get a subset of the record. Amortized \( O(m) \).

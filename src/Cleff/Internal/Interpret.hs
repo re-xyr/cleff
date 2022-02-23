@@ -62,7 +62,7 @@ adjust :: ∀ es es'. (∀ f. Rec f es' -> Rec f es) -> Eff es ~> Eff es'
 adjust f m = Eff (unEff m . adjustEnv f)
 
 -- | Lift a computation into a bigger effect stack with one more effect. For a more general version see 'raiseN'.
-raise :: ∀ e es. Eff es ~> Eff (e ': es)
+raise :: ∀ e es. Eff es ~> Eff (e : es)
 raise = raiseN @'[e]
 
 -- | Lift a computation into a bigger effect stack with arbitrarily more effects. This function requires
@@ -71,13 +71,13 @@ raiseN :: ∀ es' es. KnownList es' => Eff es ~> Eff (es' ++ es)
 raiseN = adjust (Rec.drop @es')
 
 -- | Like 'raise', but adds the new effect under the top effect. This is useful for transforming an interpreter
--- @e' ':>' es => 'Eff' (e ': es) '~>` 'Eff' es@ into a reinterpreter @'Eff' (e ': es) '~>' 'Eff' (e' ': es)@:
+-- @e' ':>' es => 'Eff' (e : es) '~>` 'Eff' es@ into a reinterpreter @'Eff' (e : es) '~>' 'Eff' (e' : es)@:
 --
 -- @
--- myInterpreter :: Bar ':>' es => 'Eff' (Foo ': es) '~>' 'Eff' es
+-- myInterpreter :: Bar ':>' es => 'Eff' (Foo : es) '~>' 'Eff' es
 -- myInterpreter = ...
 --
--- myReinterpreter :: 'Eff' (Foo ': es) '~>' 'Eff' (Bar ': es)
+-- myReinterpreter :: 'Eff' (Foo : es) '~>' 'Eff' (Bar : es)
 -- myReinterpreter = myInterpreter '.' 'raiseUnder'
 -- @
 --
@@ -92,20 +92,20 @@ raiseN = adjust (Rec.drop @es')
 -- more efficient.
 --
 -- @since 0.2.0.0
-raiseUnder :: ∀ e' e es. Eff (e ': es) ~> Eff (e ': e' ': es)
+raiseUnder :: ∀ e' e es. Eff (e : es) ~> Eff (e : e' : es)
 raiseUnder = raiseNUnder @'[e']
 
 -- | Like 'raiseUnder', but allows introducing multiple effects. This function requires @TypeApplications@.
 --
 -- @since 0.2.0.0
-raiseNUnder :: ∀ es' e es. KnownList es' => Eff (e ': es) ~> Eff (e ': es' ++ es)
+raiseNUnder :: ∀ es' e es. KnownList es' => Eff (e : es) ~> Eff (e : es' ++ es)
 raiseNUnder = raiseNUnderN @es' @'[e]
 
 -- | Like 'raiseUnder', but allows introducing the effect under multiple effects. This function requires
 -- @TypeApplications@.
 --
 -- @since 0.2.0.0
-raiseUnderN :: ∀ e es' es. KnownList es' => Eff (es' ++ es) ~> Eff (es' ++ e ': es)
+raiseUnderN :: ∀ e es' es. KnownList es' => Eff (es' ++ es) ~> Eff (es' ++ e : es)
 raiseUnderN = raiseNUnderN @'[e] @es' @es
 
 -- | A generalization of both 'raiseUnderN' and 'raiseNUnder', allowing introducing multiple effects under multiple
@@ -122,7 +122,7 @@ inject :: ∀ es' es. Subset es' es => Eff es' ~> Eff es
 inject = adjust (Rec.pick @es')
 
 -- | Eliminate a duplicate effect from the top of the effect stack. For a more general version see 'subsumeN'.
-subsume :: ∀ e es. e :> es => Eff (e ': es) ~> Eff es
+subsume :: ∀ e es. e :> es => Eff (e : es) ~> Eff es
 subsume = subsumeN @'[e]
 
 -- | Eliminate several duplicate effects from the top of the effect stack. This function requires @TypeApplications@.
@@ -187,23 +187,23 @@ mkInternalHandler ptr es handle = InternalHandler \e -> Eff \ess ->
   unEff (instHandling handle (SendSite ess ptr) e) (updateEnv ess es)
 
 -- | Interpret an effect @e@ in terms of effects in the effect stack @es@ with an effect handler.
-interpret :: ∀ e es. Handler e es -> Eff (e ': es) ~> Eff es
+interpret :: ∀ e es. Handler e es -> Eff (e : es) ~> Eff es
 interpret = reinterpretN @'[]
 
 -- | Like 'interpret', but adds a new effect @e'@ to the stack that can be used in the handler.
-reinterpret :: ∀ e' e es. Handler e (e' ': es) -> Eff (e ': es) ~> Eff (e' ': es)
+reinterpret :: ∀ e' e es. Handler e (e' : es) -> Eff (e : es) ~> Eff (e' : es)
 reinterpret = reinterpretN @'[e']
 
 -- | Like 'reinterpret', but adds two new effects.
-reinterpret2 :: ∀ e' e'' e es. Handler e (e' ': e'' ': es) -> Eff (e ': es) ~> Eff (e' ': e'' ': es)
+reinterpret2 :: ∀ e' e'' e es. Handler e (e' : e'' : es) -> Eff (e : es) ~> Eff (e' : e'' : es)
 reinterpret2 = reinterpretN @'[e', e'']
 
 -- | Like 'reinterpret', but adds three new effects.
-reinterpret3 :: ∀ e' e'' e''' e es. Handler e (e' ': e'' ': e''' ': es) -> Eff (e ': es) ~> Eff (e' ': e'' ': e''' ': es)
+reinterpret3 :: ∀ e' e'' e''' e es. Handler e (e' : e'' : e''' : es) -> Eff (e : es) ~> Eff (e' : e'' : e''' : es)
 reinterpret3 = reinterpretN @'[e', e'', e''']
 
 -- | Like 'reinterpret', but adds arbitrarily many new effects. This function requires @TypeApplications@.
-reinterpretN :: ∀ es' e es. KnownList es' => Handler e (es' ++ es) -> Eff (e ': es) ~> Eff (es' ++ es)
+reinterpretN :: ∀ es' e es. KnownList es' => Handler e (es' ++ es) -> Eff (e : es) ~> Eff (es' ++ es)
 reinterpretN handle m = Eff \es ->
   let (# ptr, es' #) = allocaEnv es
   in unEff m $ appendEnv ptr (mkInternalHandler ptr es' handle) $ adjustEnv (Rec.drop @es') es'
@@ -216,7 +216,7 @@ interpose :: ∀ e es. e :> es => Handler e es -> Eff es ~> Eff es
 interpose = imposeN @'[]
 
 -- | Like 'interpose', but allows to introduce one new effect to use in the handler.
-impose :: ∀ e' e es. e :> es => Handler e (e' ': es) -> Eff es ~> Eff (e' ': es)
+impose :: ∀ e' e es. e :> es => Handler e (e' : es) -> Eff es ~> Eff (e' : es)
 impose = imposeN @'[e']
 
 -- | Like 'impose', but allows introducing arbitrarily many effects. This requires @TypeApplications@.
@@ -233,7 +233,7 @@ imposeN handle m = Eff \es ->
 -- @
 -- 'transform' trans = 'interpret' ('sendVia' 'toEff' '.' trans)
 -- @
-transform :: ∀ e e' es. e' :> es => Translator e e' -> Eff (e ': es) ~> Eff es
+transform :: ∀ e e' es. e' :> es => Translator e e' -> Eff (e : es) ~> Eff es
 transform trans = interpret (sendVia toEff . trans)
 
 -- | Like 'transform', but instead of using an effect in stack, add a new one to the top of it.
@@ -241,7 +241,7 @@ transform trans = interpret (sendVia toEff . trans)
 -- @
 -- 'translate' trans = 'reinterpret' ('sendVia' 'toEff' '.' trans)
 -- @
-translate :: ∀ e e' es. Translator e e' -> Eff (e ': es) ~> Eff (e' ': es)
+translate :: ∀ e e' es. Translator e e' -> Eff (e : es) ~> Eff (e' : es)
 translate trans = reinterpret (sendVia toEff . trans)
 
 -- * Combinators for interpreting higher effects
@@ -257,7 +257,7 @@ translate trans = reinterpret (sendVia toEff . trans)
 -- You will not be able to simply write this for the effect:
 --
 -- @
--- runBracket :: IOE ':>' es => 'Eff' (Resource ': es) a -> 'Eff' es a
+-- runBracket :: IOE ':>' es => 'Eff' (Resource : es) a -> 'Eff' es a
 -- runBracket = 'interpret' \\case
 --   Bracket alloc dealloc use -> UnliftIO.'UnliftIO.bracket' alloc dealloc use
 -- @
@@ -269,7 +269,7 @@ translate trans = reinterpret (sendVia toEff . trans)
 -- an @'Eff' es a@:
 --
 -- @
--- runBracket :: IOE ':>' es => 'Eff' (Resource ': es) a -> 'Eff' es a
+-- runBracket :: IOE ':>' es => 'Eff' (Resource : es) a -> 'Eff' es a
 -- runBracket = 'interpret' \\case
 --   Bracket alloc dealloc use -> UnliftIO.'UnliftIO.bracket'
 --     ('toEff' alloc)
@@ -284,7 +284,7 @@ toEff m = Eff \es -> unEff m (updateEnv es esSend)
 -- for interpreting effects with local contexts, like 'Cleff.Reader.Local':
 --
 -- @
--- runReader :: r -> 'Eff' ('Cleff.Reader.Reader' r ': es) '~>' 'Eff' es
+-- runReader :: r -> 'Eff' ('Cleff.Reader.Reader' r : es) '~>' 'Eff' es
 -- runReader x = 'interpret' (handle x)
 --   where
 --     handle :: r -> 'Handler' ('Cleff.Reader.Reader' r) es

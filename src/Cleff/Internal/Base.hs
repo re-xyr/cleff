@@ -141,7 +141,7 @@ instance IOE :> es => PrimMonad (Eff es) where
 -- | Unsafely eliminate an 'IOE' effect from the top of the effect stack. This is mainly for implementing effects that
 -- uses 'IO' but does not do anything really /impure/ (i.e. can be safely used 'unsafeDupablePerformIO' on), such as a
 -- State effect.
-thisIsPureTrustMe :: Eff (IOE ': es) ~> Eff es
+thisIsPureTrustMe :: Eff (IOE : es) ~> Eff es
 thisIsPureTrustMe = interpret \case
 #ifdef DYNAMIC_IOE
   Lift m   -> primLiftIO m
@@ -171,7 +171,7 @@ type HandlerIO e es = ∀ esSend. Handling esSend e es => e (Eff esSend) ~> IO
 -- @
 -- 'interpretIO' f = 'interpret' ('liftIO' '.' f)
 -- @
-interpretIO :: IOE :> es => HandlerIO e es -> Eff (e ': es) ~> Eff es
+interpretIO :: IOE :> es => HandlerIO e es -> Eff (e : es) ~> Eff es
 interpretIO f = interpret (liftIO . f)
 {-# INLINE interpretIO #-}
 
@@ -190,7 +190,7 @@ interpretIO f = interpret (liftIO . f)
 -- 'IO' compucations via 'withToIO':
 --
 -- @
--- runResource :: 'IOE' ':>' es => 'Eff' (Resource ': es) a -> 'Eff' es a
+-- runResource :: 'IOE' ':>' es => 'Eff' (Resource : es) a -> 'Eff' es a
 -- runResource = 'interpret' \\case
 --   Bracket alloc dealloc use -> 'withToIO' $ \\toIO ->
 --     'Control.Exception.bracket' (toIO alloc) (toIO . dealloc) (toIO . use)
@@ -211,7 +211,7 @@ withToIO f = Eff \es -> f \m -> unEff m (updateEnv es esSend)
 -- @'Eff' esSend a -> 'Eff' esSend a@:
 --
 -- @
--- runMask :: 'IOE' ':>' es => 'Eff' (Mask ': es) a -> 'Eff' es a
+-- runMask :: 'IOE' ':>' es => 'Eff' (Mask : es) a -> 'Eff' es a
 -- runMask = 'interpret' \\case
 --   Mask f -> 'withToIO' $ \\toIO -> 'Control.Exception.mask' $
 --     \\restore -> f ('fromIO' . restore . toIO)

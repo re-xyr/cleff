@@ -48,7 +48,7 @@ asks = (<$> ask)
 -- * Interpretations
 
 -- | Run a 'Reader' effect with a given environment value.
-runReader :: r -> Eff (Reader r ': es) ~> Eff es
+runReader :: r -> Eff (Reader r : es) ~> Eff es
 runReader x = interpret (h x)
   where
     h :: r -> Handler (Reader r) es
@@ -58,7 +58,7 @@ runReader x = interpret (h x)
 {-# INLINE runReader #-}
 
 -- | Run a 'Reader' effect in terms of a larger 'Reader' via a 'Lens''.
-magnify :: Reader t :> es => Lens' t r -> Eff (Reader r ': es) ~> Eff es
+magnify :: Reader t :> es => Lens' t r -> Eff (Reader r : es) ~> Eff es
 magnify field = interpret \case
   Ask       -> asks (^. field)
   Local f m -> local (& field %~ f) $ toEff m

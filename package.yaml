@@ -46,6 +46,7 @@ ghc-options:
 - -Widentities
 - -Wincomplete-record-updates
 - -Wincomplete-uni-patterns
+- -Wno-unticked-promoted-constructors
 - -Wpartial-fields
 - -Wunused-type-patterns
 # - -ddump-simpl

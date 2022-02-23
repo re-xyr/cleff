@@ -42,14 +42,14 @@ fresh :: Fresh u :> es => Eff es u
 -- value.
 --
 -- @since 0.2.1.0
-freshEnumToState :: Enum a => Eff (Fresh a ': es) ~> Eff (State a ': es)
+freshEnumToState :: Enum a => Eff (Fresh a : es) ~> Eff (State a : es)
 freshEnumToState = reinterpret \case
   Fresh -> state \s -> (s, succ s)
 {-# INLINE freshEnumToState #-}
 
 -- | Interpret a @'Fresh' 'Int'@ effect in terms of @'State' 'Int'@. This is a specialized version of
 -- 'freshEnumToState'.
-freshIntToState :: Eff (Fresh Int ': es) ~> Eff (State Int ': es)
+freshIntToState :: Eff (Fresh Int : es) ~> Eff (State Int : es)
 freshIntToState = freshEnumToState
 {-# INLINE freshIntToState #-}
 
@@ -57,7 +57,7 @@ freshIntToState = freshEnumToState
 -- than 'runFreshUnique'.
 --
 -- @since 0.2.1.0
-runFreshAtomicCounter :: Eff (Fresh Int ': es) ~> Eff es
+runFreshAtomicCounter :: Eff (Fresh Int : es) ~> Eff es
 runFreshAtomicCounter m = thisIsPureTrustMe do
   counter <- liftIO $ newCounter minBound
   reinterpret (\case
@@ -66,7 +66,7 @@ runFreshAtomicCounter m = thisIsPureTrustMe do
 
 -- | Interpret a @'Fresh' 'Unique'@ effect in terms of IO actions. This is slower than 'runFreshAtomicCounter', but it
 -- won't overflow on @'maxBound' :: 'Int'@.
-runFreshUnique :: IOE :> es => Eff (Fresh Unique ': es) ~> Eff es
+runFreshUnique :: IOE :> es => Eff (Fresh Unique : es) ~> Eff es
 runFreshUnique = interpret \case
   Fresh -> liftIO newUnique
 {-# INLINE runFreshUnique #-}

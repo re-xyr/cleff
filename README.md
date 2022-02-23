@@ -49,13 +49,13 @@ data Teletype :: Effect where
 makeEffect ''Teletype
 
 -- Effect Interpretation via IO
-runTeletypeIO :: IOE :> es => Eff (Teletype ': es) a -> Eff es a
+runTeletypeIO :: IOE :> es => Eff (Teletype : es) a -> Eff es a
 runTeletypeIO = interpretIO \case
   ReadTTY    -> getLine
   WriteTTY s -> putStrLn s
 
 -- Effect interpretation via other pure effects
-runTeletypePure :: [String] -> Eff (Teletype ': es) w -> Eff es [String]
+runTeletypePure :: [String] -> Eff (Teletype : es) w -> Eff es [String]
 runTeletypePure tty = fmap (reverse . snd)
   . runState [] . outputToListState
   . runState tty . inputToListState

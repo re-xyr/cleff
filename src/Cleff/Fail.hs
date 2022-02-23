@@ -30,13 +30,13 @@ instance Fail :> es => Fail.MonadFail (Eff es) where
 -- * Interpretations
 
 -- | Run a 'Fail' effect in terms of 'Error'.
-runFail :: Eff (Fail ': es) a -> Eff es (Either String a)
+runFail :: Eff (Fail : es) a -> Eff es (Either String a)
 runFail = runError . reinterpret \case
   Fail msg -> throwError msg
 {-# INLINE runFail #-}
 
 -- | Run a 'Fail' effect in terms of throwing exceptions in 'IO'.
-runFailIO :: IOE :> es => Eff (Fail ': es) ~> Eff es
+runFailIO :: IOE :> es => Eff (Fail : es) ~> Eff es
 runFailIO = interpret \case
   Fail msg -> liftIO $ Fail.fail msg
 {-# INLINE runFailIO #-}

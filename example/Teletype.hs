@@ -26,13 +26,13 @@ makeEffect ''Teletype
 -- * Interpretations
 
 -- | Run 'Teletype' via stdio.
-runTeletypeIO :: IOE :> es => Eff (Teletype ': es) a -> Eff es a
+runTeletypeIO :: IOE :> es => Eff (Teletype : es) a -> Eff es a
 runTeletypeIO = interpretIO \case
   ReadTTY    -> getLine
   WriteTTY s -> putStrLn s
 
 -- | Run 'Teletype' from a fixed input list.
-runTeletypePure :: [String] -> Eff (Teletype ': es) w -> Eff es [String]
+runTeletypePure :: [String] -> Eff (Teletype : es) w -> Eff es [String]
 runTeletypePure tty = fmap (reverse . snd)
   . runState [] . outputToListState
   . runState tty . inputToListState

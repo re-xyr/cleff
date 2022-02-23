@@ -150,7 +150,7 @@ newExcUid :: IO ExcUid
 newExcUid = incrCounter 1 excUidSource
 {-# INLINE newExcUid #-}
 
-errorHandler :: ExcUid -> Handler (Error e) (IOE ': es)
+errorHandler :: ExcUid -> Handler (Error e) (IOE : es)
 errorHandler eid = \case
   ThrowError e     -> Exc.throwIO $ ErrorExc eid (toAny e)
   CatchError m' h' -> withToIO \toIO -> liftIO $ catch' eid (toIO m') (toIO . h')
@@ -169,14 +169,14 @@ errorHandler eid = \case
 -- the same 'runError' handler), the error /will/ be caught in the parent thread even if you don't deal with it in the
 -- forked thread. But if you passed the @Async@ value out of the effect scope and @wait@ed for it elsewhere, the error
 -- will again not be caught. The best choice is /not to pass @Async@ values around randomly/.
-runError :: ∀ e es a. Eff (Error e ': es) a -> Eff es (Either e a)
+runError :: ∀ e es a. Eff (Error e : es) a -> Eff es (Either e a)
 runError m = thisIsPureTrustMe do
   eid <- liftIO newExcUid
   try' eid $ reinterpret (errorHandler eid) m
 {-# INLINE runError #-}
 
 -- | Transform an 'Error' into another. This is useful for aggregating multiple errors into one type.
-mapError :: ∀ e e' es. Error e' :> es => (e -> e') -> Eff (Error e ': es) ~> Eff es
+mapError :: ∀ e e' es. Error e' :> es => (e -> e') -> Eff (Error e : es) ~> Eff es
 mapError f = thisIsPureTrustMe . reinterpret \case
   ThrowError e   -> throwError $ f e
   CatchError m h -> do

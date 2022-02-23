@@ -60,14 +60,14 @@ listens f m = do
 -- Both 'runWriter' and 'listen's under 'runWriter' will stop taking care of writer operations done on
 -- forked threads as soon as the main thread finishes its computation. Any writer operation done
 -- /before main thread finishes/ is still taken into account.
-runWriter :: ∀ w es a. Monoid w => Eff (Writer w ': es) a -> Eff es (a, w)
+runWriter :: ∀ w es a. Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
 runWriter m = thisIsPureTrustMe do
   rw <- newIORef mempty
   x <- reinterpret (h [rw]) m
   w' <- readIORef rw
   pure (x, w')
   where
-    h :: [IORef w] -> Handler (Writer w) (IOE ': es)
+    h :: [IORef w] -> Handler (Writer w) (IOE : es)
     h rws = \case
       Tell w' -> traverse_ (\rw -> liftIO $ atomicModifyIORefCAS_ rw (<> w')) rws
       Listen m' -> do
@@ -94,14 +94,14 @@ runWriter m = thisIsPureTrustMe do
 -- of 'runWriter'.
 --
 -- @since 0.2.0.0
-runWriterBatch :: ∀ w es a. Monoid w => Eff (Writer w ': es) a -> Eff es (a, w)
+runWriterBatch :: ∀ w es a. Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
 runWriterBatch m = thisIsPureTrustMe do
   rw <- newIORef mempty
   x <- reinterpret (h rw) m
   w' <- readIORef rw
   pure (x, w')
   where
-    h :: IORef w -> Handler (Writer w) (IOE ': es)
+    h :: IORef w -> Handler (Writer w) (IOE : es)
     h rw = \case
       Tell w' -> liftIO $ atomicModifyIORefCAS_ rw (<> w')
       Listen m' -> do
