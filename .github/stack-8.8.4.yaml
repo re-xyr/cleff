@@ -2,6 +2,19 @@ resolver: lts-16.31
 
 packages:
 - .
+- ./cleff-plugin
 
 ghc-options:
   "$everything": -haddock
+
+extra-deps:
+- github: arybczak/effectful
+  commit: a757b8ffd0d01d3b38f34371d53b84565dc2dfff
+  subdirs:
+  - effectful
+  - effectful-core
+  - effectful-th
+
+flags:
+  cleff-plugin:
+    effectful: false

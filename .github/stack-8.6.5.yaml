@@ -2,6 +2,7 @@ resolver: lts-14.27
 
 packages:
 - .
+- ./cleff-plugin
 
 ghc-options:
   "$everything": -haddock

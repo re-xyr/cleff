@@ -1,0 +1,118 @@
+name:                cleff-plugin
+version:             0.1.0.0
+github:              "re-xyr/cleff"
+license:             BSD3
+author:              "Xy Ren"
+maintainer:          "xy.r@outlook.com"
+copyright:           "2022 Xy Ren"
+
+tested-with:
+- GHC == 8.6.5
+- GHC == 8.8.4
+- GHC == 8.10.7
+- GHC == 9.0.2
+
+synopsis:            Fake fundeps for extensible effects
+category:            Control, Effect, Language
+
+description:         Please see the README on GitHub at <https://github.com/re-xyr/cleff#readme>
+
+dependencies:
+- base >= 4.12 && < 4.17
+- cleff >= 0.3 && < 0.4
+- ghc >= 8.6 && < 9.3
+- ghc-tcplugins-extra >= 0.3 && < 0.5
+- containers >= 0.5 && < 0.7
+
+flags:
+  cleff:
+    description: |
+      Make the plugin work with the @cleff@ library.
+    manual: true
+    default: true
+  effectful:
+    description: |
+      Make the plugin work with the @effectful@ library.
+    manual: true
+    default: true
+
+ghc-options:
+- -Wall
+- -Widentities
+- -Wincomplete-record-updates
+- -Wincomplete-uni-patterns
+- -Wno-unticked-promoted-constructors
+- -Wpartial-fields
+- -Wunused-type-patterns
+# - -ddump-simpl
+# - -ddump-hi
+# - -ddump-to-file
+# - -dsuppress-all
+# - -dsuppress-uniques
+
+when:
+- condition: impl(ghc >= 8.8)
+  ghc-options:
+  - -Wmissing-deriving-strategies
+- condition: flag(cleff)
+  cpp-options:
+  - -DCLEFF_PLUGIN_cleff
+- condition: flag(effectful) && impl(ghc >= 8.8)
+  cpp-options:
+  - -DCLEFF_PLUGIN_effectful
+
+default-extensions:
+- BangPatterns
+- BlockArguments
+- DerivingStrategies
+- EmptyCase
+- FlexibleContexts
+- FlexibleInstances
+- LambdaCase
+- NoStarIsType
+- PolyKinds
+- ScopedTypeVariables
+- TupleSections
+- UnicodeSyntax
+
+library:
+  source-dirs: src
+  ghc-options:
+  - -Wmissing-export-lists
+
+tests:
+  cleff-plugin-test:
+    main:                Main.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -fplugin=Cleff.Plugin
+    dependencies:
+    - cleff
+    - cleff-plugin
+    when:
+    - condition: flag(cleff)
+      dependencies:
+      - cleff
+      other-modules:
+      - CleffSpec
+    - condition: flag(effectful) && impl(ghc >= 8.8)
+      dependencies:
+      - effectful-core
+      - effectful-th
+      other-modules:
+      - EffectfulSpec
+    default-extensions:
+    - DataKinds
+    - FunctionalDependencies
+    - TemplateHaskell
+    - GADTs
+    - GeneralizedNewtypeDeriving
+    - KindSignatures
+    - RankNTypes
+    - TypeApplications
+    - TypeFamilies
+    - TypeOperators
+    - UndecidableInstances

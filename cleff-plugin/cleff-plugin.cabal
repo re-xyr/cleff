@@ -1,0 +1,132 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           cleff-plugin
+version:        0.1.0.0
+synopsis:       Fake fundeps for extensible effects
+description:    Please see the README on GitHub at <https://github.com/re-xyr/cleff#readme>
+category:       Control, Effect, Language
+homepage:       https://github.com/re-xyr/cleff#readme
+bug-reports:    https://github.com/re-xyr/cleff/issues
+author:         Xy Ren
+maintainer:     xy.r@outlook.com
+copyright:      2022 Xy Ren
+license:        BSD3
+build-type:     Simple
+tested-with:
+    GHC == 8.6.5
+  , GHC == 8.8.4
+  , GHC == 8.10.7
+  , GHC == 9.0.2
+
+source-repository head
+  type: git
+  location: https://github.com/re-xyr/cleff
+
+flag cleff
+  description: Make the plugin work with the @cleff@ library.
+
+  manual: True
+  default: True
+
+flag effectful
+  description: Make the plugin work with the @effectful@ library.
+
+  manual: True
+  default: True
+
+library
+  exposed-modules:
+      Cleff.Plugin
+  other-modules:
+      Paths_cleff_plugin
+  hs-source-dirs:
+      src
+  default-extensions:
+      BangPatterns
+      BlockArguments
+      DerivingStrategies
+      EmptyCase
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
+      NoStarIsType
+      PolyKinds
+      ScopedTypeVariables
+      TupleSections
+      UnicodeSyntax
+  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wpartial-fields -Wunused-type-patterns -Wmissing-export-lists
+  build-depends:
+      base >=4.12 && <4.17
+    , cleff ==0.3.*
+    , containers >=0.5 && <0.7
+    , ghc >=8.6 && <9.3
+    , ghc-tcplugins-extra >=0.3 && <0.5
+  if impl(ghc >= 8.8)
+    ghc-options: -Wmissing-deriving-strategies
+  if flag(cleff)
+    cpp-options: -DCLEFF_PLUGIN_cleff
+  if flag(effectful) && impl(ghc >= 8.8)
+    cpp-options: -DCLEFF_PLUGIN_effectful
+  default-language: Haskell2010
+
+test-suite cleff-plugin-test
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Paths_cleff_plugin
+  hs-source-dirs:
+      test
+  default-extensions:
+      BangPatterns
+      BlockArguments
+      DerivingStrategies
+      EmptyCase
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
+      NoStarIsType
+      PolyKinds
+      ScopedTypeVariables
+      TupleSections
+      UnicodeSyntax
+      DataKinds
+      FunctionalDependencies
+      TemplateHaskell
+      GADTs
+      GeneralizedNewtypeDeriving
+      KindSignatures
+      RankNTypes
+      TypeApplications
+      TypeFamilies
+      TypeOperators
+      UndecidableInstances
+  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N -fplugin=Cleff.Plugin
+  build-depends:
+      base >=4.12 && <4.17
+    , cleff
+    , cleff-plugin
+    , containers >=0.5 && <0.7
+    , ghc >=8.6 && <9.3
+    , ghc-tcplugins-extra >=0.3 && <0.5
+  if impl(ghc >= 8.8)
+    ghc-options: -Wmissing-deriving-strategies
+  if flag(cleff)
+    cpp-options: -DCLEFF_PLUGIN_cleff
+  if flag(effectful) && impl(ghc >= 8.8)
+    cpp-options: -DCLEFF_PLUGIN_effectful
+  if flag(cleff)
+    other-modules:
+        CleffSpec
+    build-depends:
+        cleff
+  if flag(effectful) && impl(ghc >= 8.8)
+    other-modules:
+        EffectfulSpec
+    build-depends:
+        effectful-core
+      , effectful-th
+  default-language: Haskell2010
