@@ -4,10 +4,9 @@
 {-# HLINT ignore "Use list literal" #-}
 module Cleff.Plugin (plugin) where
 
-import           Control.Monad           (filterM)
 import           Data.Function           (on)
 import           Data.IORef              (IORef, modifyIORef, newIORef, readIORef)
-import           Data.Maybe              (catMaybes, isNothing, mapMaybe)
+import           Data.Maybe              (isNothing, mapMaybe)
 import           Data.Set                (Set)
 import qualified Data.Set                as Set
 import           Data.Traversable        (for)
@@ -15,7 +14,7 @@ import           GHC.TcPluginM.Extra     (lookupModule, lookupName)
 
 #if __GLASGOW_HASKELL__ >= 900
 import           GHC.Core.Class          (Class)
-import           GHC.Core.InstEnv        (lookupInstEnv)
+import           GHC.Core.InstEnv        (InstEnvs, lookupInstEnv)
 import           GHC.Core.Unify          (tcUnifyTy)
 import           GHC.Plugins             (Outputable (ppr), Plugin (pluginRecompile, tcPlugin), PredType,
                                           Role (Nominal), TCvSubst, Type, defaultPlugin, eqType, fsLit, mkModuleName,
@@ -38,7 +37,7 @@ import           GhcPlugins              (Outputable (ppr), Plugin (pluginRecomp
                                           Role (Nominal), TCvSubst, Type, defaultPlugin, eqType, fsLit, mkModuleName,
                                           mkTcOcc, nonDetCmpType, purePlugin, showSDocUnsafe, splitAppTys, substTys,
                                           tyConClass_maybe)
-import           InstEnv                 (lookupInstEnv)
+import           InstEnv                 (InstEnvs, lookupInstEnv)
 import           TcEnv                   (tcGetInstEnvs)
 import           TcPluginM               (tcLookupClass, tcPluginIO)
 import           TcRnTypes
@@ -60,17 +59,11 @@ fakedep = TcPlugin
   , tcPluginStop = const $ pure ()
   }
 
-type SolnPair = (OrdType, OrdType)
-type VisitedSet = Set SolnPair
-
 liftTc :: TcM a -> TcPluginM a
 liftTc = unsafeTcPluginTcM
 
 liftIo :: IO a -> TcPluginM a
 liftIo = tcPluginIO
-
-forMaybe :: Applicative f => [a] -> (a -> f (Maybe b)) -> f [b]
-forMaybe xs f = catMaybes <$> traverse f xs
 
 elemClassesNames :: [(String, String, String)]
 elemClassesNames =
@@ -81,6 +74,8 @@ elemClassesNames =
   ("effectful", "Effectful.Internal.Effect", ":>") :
 #endif
   []
+
+type VisitedSet = Set (OrdType, OrdType)
 
 initFakedep :: TcPluginM ([Class], IORef VisitedSet)
 initFakedep = do
@@ -131,8 +126,8 @@ solveFakedep (elemCls, visitedRef) allGivens allWanteds = do
     -- constraints out of the 'allGivens' and 'allWanted's.
     givens = mapMaybe relevantGiven allGivens
     wanteds = mapMaybe relevantWanted allWanteds
-    -- We store a set of the types of all given constraints, which will be useful later.
-    allGivenTypes = Set.fromList $ OrdType . ctPred <$> allGivens
+    -- We store a list of the types of all given constraints, which will be useful later.
+    allGivenTypes = ctPred <$> allGivens
     -- We also store a list of wanted constraints that are /not/ 'Elem e es' for later use.
     extraWanteds = ctPred <$> filter irrelevant allWanteds
 
@@ -141,7 +136,8 @@ solveFakedep (elemCls, visitedRef) allGivens allWanteds = do
 
   -- For each 'Elem e es' we /want/ to solve (the "goal"), we need to eventually correspond it to another unique
   -- /given/ 'Elem e es' that will make the program typecheck (the "solution").
-  solns <- forMaybe wanteds \goal -> solve goal givens allGivenTypes extraWanteds
+  globals <- liftTc tcGetInstEnvs -- Get the global instances environment for later use
+  let solns = mapMaybe (solve globals allGivenTypes extraWanteds givens) wanteds
 
   -- Now we need to tell GHC the solutions. The way we do this is to generate a new equality constraint, like
   -- 'Elem (State e) es ~ Elem (State Int) es', so that GHC's constraint solver will know that 'e' must be 'Int'.
@@ -161,32 +157,32 @@ solveFakedep (elemCls, visitedRef) allGivens allWanteds = do
   where
 
     -- Determine if there is a unique solution to a goal from a set of candidates.
-    solve :: FakedepWanted -> [FakedepGiven] -> Set OrdType -> [PredType] -> TcPluginM (Maybe (FakedepWanted, FakedepGiven))
-    solve goal@(FakedepWanted (FakedepGiven _ _ goalEs) _) givens allGivenTypes extraWanteds = do
-      -- Apart from 'Elem' constraints in the context, the effects already hardwired into the effect stack type,
-      -- like those in 'A : B : C : es', also need to be considered. So here we extract that for them to be considered
-      -- simultaneously with regular 'Elem' constraints.
-      let cands = extractExtraGivens goalEs goalEs <> givens
-      -- The first criteria is that the candidate constraint must /unify/ with the goal. This means that the type
-      -- variables in the goal can be instantiated in a way so that the goal becomes equal to the candidate.
-      -- For example, the candidates 'Elem (State Int) es' and 'Elem (State String) es' both unify with the goal
-      -- 'Elem (State s) es'.
-      let unifiableCands = mapMaybe (unifiableWith goal) cands
-      case unifiableCands of
+    solve :: InstEnvs -> [PredType] -> [PredType] -> [FakedepGiven] -> FakedepWanted -> Maybe (FakedepWanted, FakedepGiven)
+    solve globals allGivenTypes extraWanteds givens goal@(FakedepWanted (FakedepGiven _ _ goalEs) _) =
+      let
+        -- Apart from 'Elem' constraints in the context, the effects already hardwired into the effect stack type,
+        -- like those in 'A : B : C : es', also need to be considered. So here we extract that for them to be considered
+        -- simultaneously with regular 'Elem' constraints.
+        cands = extractExtraGivens goalEs goalEs <> givens
+        -- The first criteria is that the candidate constraint must /unify/ with the goal. This means that the type
+        -- variables in the goal can be instantiated in a way so that the goal becomes equal to the candidate.
+        -- For example, the candidates 'Elem (State Int) es' and 'Elem (State String) es' both unify with the goal
+        -- 'Elem (State s) es'.
+        unifiableCands = mapMaybe (unifiableWith goal) cands
+      in case unifiableCands of
         -- If there's already only one unique solution, commit to it; in the worst case where it doesn't actually match,
         -- we get a cleaner error message like "Unable to match (State String) to (State Int)" instead of a type
         -- ambiguity error.
-        [(soln, _)] -> pure $ Just (goal, soln)
-        _ -> do
+        [(soln, _)] -> Just (goal, soln)
+        _ ->
           -- Otherwise, the second criteria comes in: the candidate must satisfy all other constraints we /want/ to solve.
           -- For example, when we want to solve '(Elem (State a) es, Num a)`, the candidate 'Elem (State Int) es' will do
           -- the job, because it satisfied 'Num a'; however 'Elem (State String) es' will be excluded.
-          satisfiableCands <- filterM (satisfiable allGivenTypes extraWanteds) unifiableCands
-          -- traceM $ "Viable candidates for " <> show goal <> ": " <> show (fst <$> satisfiableCands)
+          let satisfiableCands = filter (satisfiable globals allGivenTypes extraWanteds) unifiableCands
           -- Finally, if there is a unique candidate remaining, we use it as the solution; otherwise we don't solve anything.
-          case satisfiableCands of
-            [(soln, _)] -> pure $ Just (goal, soln)
-            _           -> pure Nothing
+          in case satisfiableCands of
+            [(soln, _)] -> Just (goal, soln)
+            _           -> Nothing
 
     -- Extract the heads of a type like 'A : B : C : es' into 'FakedepGiven's.
     extractExtraGivens :: Type -> Type -> [FakedepGiven]
@@ -226,13 +222,14 @@ solveFakedep (elemCls, visitedRef) allGivens allWanteds = do
         else Nothing
 
     -- Check whether a candidate can satisfy all tthe wanted constraints.
-    satisfiable :: Set OrdType -> [PredType] -> (FakedepGiven, TCvSubst) -> TcPluginM Bool
-    satisfiable given wanted (_, subst) = do
-      instEnv <- liftTc tcGetInstEnvs -- Get the global instances environment.
-      let wantedInst = substTys subst wanted
-      pure $ flip all wantedInst \want ->
-        if Set.member (OrdType want) given then True -- Can we find this constraint in our local context?
+    satisfiable :: InstEnvs -> [PredType] -> [PredType] -> (FakedepGiven, TCvSubst) -> Bool
+    satisfiable globals givens wanteds (_, subst) =
+      let
+        wantedsInst = substTys subst wanteds -- The wanteds after unification.
+        givensInst = Set.fromList $ OrdType <$> substTys subst givens -- The local given context after unification.
+      in flip all wantedsInst \want ->
+        if Set.member (OrdType want) givensInst then True -- Can we find this constraint in our local context?
         else let (con, args) = tcSplitTyConApp want
         in case tyConClass_maybe con of -- If not, lookup the global environment.
           Nothing  -> False
-          Just cls -> let (res, _, _) = lookupInstEnv False instEnv cls args in not $ null res
+          Just cls -> let (res, _, _) = lookupInstEnv False globals cls args in not $ null res

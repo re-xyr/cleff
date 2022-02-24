@@ -71,6 +71,14 @@ jankyState = Janky $ put True -- The plugin disambiguates effects for concrete r
 unsafeUnjank :: Janky -> Eff '[State Bool] ()
 unsafeUnjank (Janky m) = unsafeCoerce m
 
+data MoreJanky = forall y. MoreJanky (MPTC Bool y => Eff '[State (Bool, y), State (Char, y)] ())
+
+mptcGet :: MPTC x Bool => x
+mptcGet = undefined
+
+moreJankyState :: MoreJanky
+moreJankyState = MoreJanky $ put (mptcGet, True)
+
 data TaggedState k s m a where
   TaggedGet :: forall k s m. TaggedState k s m s
   TaggedPut :: forall k s m. s -> TaggedState k s m ()
