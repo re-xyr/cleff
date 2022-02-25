@@ -5,6 +5,13 @@
 
 packages:
 - completed:
+    hackage: polysemy-1.7.1.0@sha256:3ead7a332abd70b202920ed3bf2e36866de163f821e643adfdcc9d39867b8033,5977
+    pantry-tree:
+      size: 4577
+      sha256: 22f540602a4d5565d4d90bc6084eb4e578f1ed934917a4efd6b01f5b90f49fea
+  original:
+    hackage: polysemy-1.7.1.0
+- completed:
     size: 64349
     subdir: effectful
     url: https://github.com/arybczak/effectful/archive/a757b8ffd0d01d3b38f34371d53b84565dc2dfff.tar.gz

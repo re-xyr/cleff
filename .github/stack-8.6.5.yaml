@@ -6,3 +6,8 @@ packages:
 
 ghc-options:
   "$everything": -haddock
+
+flags:
+  cleff-plugin:
+    effectful: false
+    polysemy: false

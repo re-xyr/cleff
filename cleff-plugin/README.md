@@ -2,7 +2,20 @@
 
 This GHC typechecking plugin disambiguates obvious usages of effects for extensible effect frameworks like `cleff` and `effectful`.
 
-## The problem
+## Usage
+
+This plugin works with GHC 8.6 through 9.2. To use the plugin, add it as your package's dependency and then add the following option to GHC:
+
+```
+-fplugin=Cleff.Plugin
+```
+
+By default `cleff-plugin` works with `cleff >= 0.3.1.0`.
+
+- If you're using `effectful >= 0.1`, then disable the `cleff` flag and enable the `effectful` flag for `cleff-plugin`.
+- If you're using `polysemy >= 1.7.0.0`, then disable the `cleff` flag and enable the `polysemy` flag for `cleff-plugin`.
+
+## What it does
 
 When using `cleff`, the following code would not compile:
 

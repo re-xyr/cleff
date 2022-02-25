@@ -73,6 +73,9 @@ elemClassesNames =
 #ifdef CLEFF_PLUGIN_effectful
   ("effectful", "Effectful.Internal.Effect", ":>") :
 #endif
+#ifdef CLEFF_PLUGIN_polysemy
+  ("polysemy", "Polysemy.Internal.Union", "Member") :
+#endif
   []
 
 type VisitedSet = Set (OrdType, OrdType)

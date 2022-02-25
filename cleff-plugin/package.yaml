@@ -39,6 +39,11 @@ flags:
       Make the plugin work with the @effectful@ library.
     manual: true
     default: true
+  polysemy:
+    description: |
+      Make the plugin work with the @polysemy@ library.
+    manual: true
+    default: true
 
 ghc-options:
 - -Wall
@@ -61,10 +66,18 @@ when:
 - condition: flag(cleff)
   cpp-options:
   - -DCLEFF_PLUGIN_cleff
+  dependencies:
+  - cleff >= 0.3.1 && < 0.4
 - condition: flag(effectful) && impl(ghc >= 8.8)
   cpp-options:
   - -DCLEFF_PLUGIN_effectful
-
+  dependencies:
+  - effectful-core >= 0.1 && < 0.2
+- condition: flag(polysemy)
+  cpp-options:
+  - -DCLEFF_PLUGIN_polysemy
+  dependencies:
+  - polysemy >= 1.7 && < 1.8
 default-extensions:
 - BangPatterns
 - BlockArguments
@@ -98,16 +111,16 @@ tests:
     - cleff-plugin
     when:
     - condition: flag(cleff)
-      dependencies:
-      - cleff
       other-modules:
       - CleffSpec
     - condition: flag(effectful) && impl(ghc >= 8.8)
       dependencies:
-      - effectful-core
       - effectful-th
       other-modules:
       - EffectfulSpec
+    - condition: flag(polysemy)
+      other-modules:
+      - PolysemySpec
     default-extensions:
     - DataKinds
     - FunctionalDependencies
