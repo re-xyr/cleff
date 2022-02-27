@@ -3,56 +3,10 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages:
-- completed:
-    hackage: polysemy-1.7.1.0@sha256:3ead7a332abd70b202920ed3bf2e36866de163f821e643adfdcc9d39867b8033,5977
-    pantry-tree:
-      size: 4577
-      sha256: 22f540602a4d5565d4d90bc6084eb4e578f1ed934917a4efd6b01f5b90f49fea
-  original:
-    hackage: polysemy-1.7.1.0
-- completed:
-    size: 64349
-    subdir: effectful
-    url: https://github.com/arybczak/effectful/archive/a757b8ffd0d01d3b38f34371d53b84565dc2dfff.tar.gz
-    name: effectful
-    version: '0.1'
-    sha256: 26ced980e3a36477d7ee8a2e87fdd1f11b277da408a76eb40793be454f9e8908
-    pantry-tree:
-      size: 2232
-      sha256: 01b0950187070b467ad75cef843e0f21b1d240d165b9aea3167f7fadebbe39e9
-  original:
-    subdir: effectful
-    url: https://github.com/arybczak/effectful/archive/a757b8ffd0d01d3b38f34371d53b84565dc2dfff.tar.gz
-- completed:
-    size: 64349
-    subdir: effectful-core
-    url: https://github.com/arybczak/effectful/archive/a757b8ffd0d01d3b38f34371d53b84565dc2dfff.tar.gz
-    name: effectful-core
-    version: '0.1'
-    sha256: 26ced980e3a36477d7ee8a2e87fdd1f11b277da408a76eb40793be454f9e8908
-    pantry-tree:
-      size: 1804
-      sha256: 14499cf054da446ee3102b38b60e1b360e3af417e6a0229aed724cd86ea7b87c
-  original:
-    subdir: effectful-core
-    url: https://github.com/arybczak/effectful/archive/a757b8ffd0d01d3b38f34371d53b84565dc2dfff.tar.gz
-- completed:
-    size: 64349
-    subdir: effectful-th
-    url: https://github.com/arybczak/effectful/archive/a757b8ffd0d01d3b38f34371d53b84565dc2dfff.tar.gz
-    name: effectful-th
-    version: '0.1'
-    sha256: 26ced980e3a36477d7ee8a2e87fdd1f11b277da408a76eb40793be454f9e8908
-    pantry-tree:
-      size: 278
-      sha256: 8228143f5d320dfcdfec66bb05204b0dea91cf4b0157338719c4ff11e555bd7d
-  original:
-    subdir: effectful-th
-    url: https://github.com/arybczak/effectful/archive/a757b8ffd0d01d3b38f34371d53b84565dc2dfff.tar.gz
+packages: []
 snapshots:
 - completed:
     size: 590102
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/26.yaml
-    sha256: e76d109964d9335abb412e22139c5bce3078be290ac6d90b8ecea6cc009bb198
-  original: lts-18.26
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/27.yaml
+    sha256: 79a786674930a89301b0e908fad2822a48882f3d01486117693c377b8edffdbe
+  original: lts-18.27

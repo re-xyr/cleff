@@ -23,27 +23,10 @@ description:         Please see the README on GitHub at <https://github.com/re-x
 
 dependencies:
 - base >= 4.12 && < 4.17
-- cleff >= 0.3 && < 0.4
+- cleff >= 0.3.1 && < 0.4
 - ghc >= 8.6 && < 9.3
 - ghc-tcplugins-extra >= 0.3 && < 0.5
 - containers >= 0.5 && < 0.7
-
-flags:
-  cleff:
-    description: |
-      Make the plugin work with the @cleff@ library.
-    manual: true
-    default: true
-  effectful:
-    description: |
-      Make the plugin work with the @effectful@ library.
-    manual: true
-    default: true
-  polysemy:
-    description: |
-      Make the plugin work with the @polysemy@ library.
-    manual: true
-    default: true
 
 ghc-options:
 - -Wall
@@ -63,21 +46,7 @@ when:
 - condition: impl(ghc >= 8.8)
   ghc-options:
   - -Wmissing-deriving-strategies
-- condition: flag(cleff)
-  cpp-options:
-  - -DCLEFF_PLUGIN_cleff
-  dependencies:
-  - cleff >= 0.3.1 && < 0.4
-- condition: flag(effectful) && impl(ghc >= 8.8)
-  cpp-options:
-  - -DCLEFF_PLUGIN_effectful
-  dependencies:
-  - effectful-core >= 0.1 && < 0.2
-- condition: flag(polysemy)
-  cpp-options:
-  - -DCLEFF_PLUGIN_polysemy
-  dependencies:
-  - polysemy >= 1.7 && < 1.8
+
 default-extensions:
 - BangPatterns
 - BlockArguments
@@ -105,22 +74,9 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    - -fplugin=Cleff.Plugin
     dependencies:
     - cleff
     - cleff-plugin
-    when:
-    - condition: flag(cleff)
-      other-modules:
-      - CleffSpec
-    - condition: flag(effectful) && impl(ghc >= 8.8)
-      dependencies:
-      - effectful-th
-      other-modules:
-      - EffectfulSpec
-    - condition: flag(polysemy)
-      other-modules:
-      - PolysemySpec
     default-extensions:
     - DataKinds
     - FunctionalDependencies

@@ -2,7 +2,7 @@
 -- (c) 2019 Sandy Maguire, licensed under BSD-3-Clause
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE OverloadedStrings   #-}
-{-# OPTIONS_GHC -Wno-unused-foralls #-}
+{-# OPTIONS_GHC -Wno-unused-foralls -fplugin=Cleff.Plugin #-}
 module CleffSpec where
 
 import           Cleff
