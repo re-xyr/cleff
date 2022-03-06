@@ -1,7 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant if" #-}
-{-# HLINT ignore "Use list literal" #-}
 module Cleff.Plugin.Internal (Plugin, makePlugin) where
 
 import           Data.Function           (on)
@@ -185,17 +184,17 @@ solveFakedep (elemCls, visitedRef) allGivens allWanteds = do
 
     -- Determine whether a given constraint is of form 'Elem e es'.
     relevantGiven :: Ct -> Maybe FakedepGiven
-    relevantGiven (CDictCan _ cls [_kind, eff, es] _)
+    relevantGiven (CDictCan _ cls [_kind, eff, es] _) -- (:>) before 0.3.2
       | cls == elemCls = Just $ FakedepGiven (fst $ splitAppTys eff) eff es
-    relevantGiven (CDictCan _ cls [eff, es] _)
+    relevantGiven (CDictCan _ cls [eff, es] _) -- (:>) after 0.3.2
       | cls == elemCls = Just $ FakedepGiven (fst $ splitAppTys eff) eff es
     relevantGiven _ = Nothing
 
     -- Determine whether a wanted constraint is of form 'Elem e es'.
     relevantWanted :: Ct -> Maybe FakedepWanted
-    relevantWanted (CDictCan (CtWanted _ _ _ loc) cls [_kind, eff, es] _) -- cleff's (:>) is polymorphic
+    relevantWanted (CDictCan (CtWanted _ _ _ loc) cls [_kind, eff, es] _) -- (:>) before 0.3.2
       | cls == elemCls = Just $ FakedepWanted (FakedepGiven (fst $ splitAppTys eff) eff es) loc
-    relevantWanted (CDictCan (CtWanted _ _ _ loc) cls [eff, es] _) -- effectful's (:>) is monomorphic
+    relevantWanted (CDictCan (CtWanted _ _ _ loc) cls [eff, es] _) -- (:>) after 0.3.2
       | cls == elemCls = Just $ FakedepWanted (FakedepGiven (fst $ splitAppTys eff) eff es) loc
     relevantWanted _ = Nothing
 

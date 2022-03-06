@@ -1,4 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE MagicHash           #-}
+{-# LANGUAGE UnboxedTuples       #-}
 {-# OPTIONS_HADDOCK not-home #-}
 -- |
 -- Copyright: (c) 2021 Xy Ren
@@ -19,6 +21,8 @@
 -- extra careful if you're to depend on this module.
 module Cleff.Internal.Rec
   ( Rec (Rec)
+  , HandlerPtr (HandlerPtr, unHandlerPtr)
+  , Effect
   , type (++)
     -- * Construction
   , empty
@@ -36,32 +40,31 @@ module Cleff.Internal.Rec
   , index
   , pick
   , update
-    -- * Helpers
-  , newArr
   ) where
 
-import           Cleff.Internal.Any        (Any, fromAny, toAny)
-import           Control.Monad.ST          (ST)
-import           Data.Kind                 (Type)
-import           Data.Primitive.SmallArray (SmallArray, SmallMutableArray, cloneSmallArray, copySmallArray,
-                                            indexSmallArray, newSmallArray, runSmallArray, thawSmallArray,
-                                            writeSmallArray)
-import           GHC.TypeLits              (ErrorMessage (ShowType, Text, (:<>:)), TypeError)
-import           Prelude                   hiding (all, any, concat, drop, head, length, tail, take, zipWith)
+import           Data.Kind                (Type)
+import           Data.Primitive.PrimArray (MutablePrimArray (MutablePrimArray), PrimArray (PrimArray), copyPrimArray,
+                                           indexPrimArray, newPrimArray, writePrimArray)
+import           GHC.Exts                 (runRW#, unsafeFreezeByteArray#)
+import           GHC.ST                   (ST (ST))
+import           GHC.TypeLits             (ErrorMessage (ShowType, Text, (:<>:)), TypeError)
+import           Prelude                  hiding (concat, drop, head, tail, take)
 
--- | Extensible record type supporting efficient \( O(1) \) reads. The underlying implementation is 'SmallArray'
--- slices, therefore suits small numbers of entries (/i.e./ less than 128).
-type role Rec representational nominal
-data Rec (f :: k -> Type) (es :: [k]) = Rec
+-- | The type of effects. An effect @e m a@ takes an effect monad type @m :: 'Type' -> 'Type'@ and a result type
+-- @a :: 'Type'@.
+type Effect = (Type -> Type) -> Type -> Type
+
+-- | A pointer to an effect handler.
+type role HandlerPtr nominal
+newtype HandlerPtr (e :: Effect) = HandlerPtr { unHandlerPtr :: Int }
+
+-- | Extensible record type supporting efficient \( O(1) \) reads. The underlying implementation is 'PrimArray'
+-- slices.
+type role Rec nominal
+data Rec (es :: [Effect]) = Rec
   {-# UNPACK #-} !Int -- ^ The offset.
   {-# UNPACK #-} !Int -- ^ The length.
-  {-# UNPACK #-} !(SmallArray Any) -- ^ The array content.
-
--- | Create a new 'SmallMutableArray' with no contents.
-newArr :: Int -> ST s (SmallMutableArray s Any)
-newArr len = newSmallArray len $ error
-  "Cleff.Internal.Rec.newArr: Attempting to read an element of the underlying array of a 'Rec'. Please report this \
-  \as a bug."
+  {-# UNPACK #-} !(PrimArray Int) -- ^ The array content.
 
 unreifiable :: String -> String -> String -> a
 unreifiable clsName funName comp = error $
@@ -69,16 +72,23 @@ unreifiable clsName funName comp = error $
   \to define an instance for the '" <> clsName <> "' typeclass, which you should not be doing whatsoever. If that or \
   \other shenanigans seem unlikely, please report this as a bug."
 
+runPrimArray :: (∀ s. ST s (MutablePrimArray s a)) -> PrimArray a
+runPrimArray (ST f) = let
+  !(# _, ba# #) = runRW# \s1 ->
+    let !(# s2, MutablePrimArray mba# #) = f s1
+    in unsafeFreezeByteArray# mba# s2
+  in PrimArray ba#
+
 -- | Create an empty record. \( O(1) \).
-empty :: Rec f '[]
-empty = Rec 0 0 $ runSmallArray $ newArr 0
+empty :: Rec '[]
+empty = Rec 0 0 $ runPrimArray $ newPrimArray 0
 
 -- | Prepend one entry to the record. \( O(n) \).
-cons :: f e -> Rec f es -> Rec f (e : es)
-cons x (Rec off len arr) = Rec 0 (len + 1) $ runSmallArray do
-  marr <- newArr (len + 1)
-  writeSmallArray marr 0 (toAny x)
-  copySmallArray marr 1 arr off len
+cons :: HandlerPtr e -> Rec es -> Rec (e : es)
+cons x (Rec off len arr) = Rec 0 (len + 1) $ runPrimArray do
+  marr <- newPrimArray (len + 1)
+  writePrimArray marr 0 (unHandlerPtr x)
+  copyPrimArray marr 1 arr off len
   pure marr
 
 -- | Type level list concatenation.
@@ -88,20 +98,20 @@ type family xs ++ ys where
 infixr 5 ++
 
 -- | Concatenate two records. \( O(m+n) \).
-concat :: Rec f es -> Rec f es' -> Rec f (es ++ es')
-concat (Rec off len arr) (Rec off' len' arr') = Rec 0 (len + len') $ runSmallArray do
-  marr <- newArr (len + len')
-  copySmallArray marr 0 arr off len
-  copySmallArray marr len arr' off' len'
+concat :: Rec es -> Rec es' -> Rec (es ++ es')
+concat (Rec off len arr) (Rec off' len' arr') = Rec 0 (len + len') $ runPrimArray do
+  marr <- newPrimArray (len + len')
+  copyPrimArray marr 0 arr off len
+  copyPrimArray marr len arr' off' len'
   pure marr
 
 -- | Slice off one entry from the top of the record. \( O(1) \).
-tail :: Rec f (e : es) -> Rec f es
+tail :: Rec (e : es) -> Rec es
 tail (Rec off len arr) = Rec (off + 1) (len - 1) arr
 
 -- | @'KnownList' es@ means the list @es@ is concrete, i.e. is of the form @'[a1, a2, ..., an]@ instead of a type
 -- variable.
-class KnownList (es :: [k]) where
+class KnownList (es :: [Effect]) where
   -- | Get the length of the list.
   reifyLen :: Int
   reifyLen = unreifiable "KnownList" "Cleff.Internal.Rec.reifyLen" "the length of a type-level list"
@@ -110,24 +120,27 @@ instance KnownList '[] where
   reifyLen = 0
 
 instance KnownList es => KnownList (e : es) where
-  reifyLen = 1 + reifyLen @_ @es
+  reifyLen = 1 + reifyLen @es
 
 -- | Slice off several entries from the top of the record. \( O(1) \).
-drop :: ∀ es es' f. KnownList es => Rec f (es ++ es') -> Rec f es'
+drop :: ∀ es es'. KnownList es => Rec (es ++ es') -> Rec es'
 drop (Rec off len arr) = Rec (off + len') (len - len') arr
-  where len' = reifyLen @_ @es
+  where len' = reifyLen @es
 
 -- | Get the head of the record. \( O(1) \).
-head :: Rec f (e : es) -> f e
-head (Rec off _ arr) = fromAny $ indexSmallArray arr off
+head :: Rec (e : es) -> HandlerPtr e
+head (Rec off _ arr) = HandlerPtr $ indexPrimArray arr off
 
 -- | Take elements from the top of the record. \( O(m) \).
-take :: ∀ es es' f. KnownList es => Rec f (es ++ es') -> Rec f es
-take (Rec off _ arr) = Rec 0 len $ cloneSmallArray arr off len
-  where len = reifyLen @_ @es
+take :: ∀ es es'. KnownList es => Rec (es ++ es') -> Rec es
+take (Rec off _ arr) = Rec 0 len $ runPrimArray do
+  marr <- newPrimArray len
+  copyPrimArray marr 0 arr off len
+  pure marr
+  where len = reifyLen @es
 
 -- | The element @e@ is present in the list @es@.
-class Elem (e :: k) (es :: [k]) where
+class Elem (e :: Effect) (es :: [Effect]) where
   -- | Get the index of the element.
   reifyIndex :: Int
   reifyIndex = unreifiable "Elem" "Cleff.Internal.Rec.reifyIndex" "the index of an element of a type-level list"
@@ -137,20 +150,20 @@ instance {-# OVERLAPPING #-} Elem e (e : es) where
   reifyIndex = 0
 
 instance Elem e es => Elem e (e' : es) where
-  reifyIndex = 1 + reifyIndex @_ @e @es
+  reifyIndex = 1 + reifyIndex @e @es
 
 type ElemNotFound e = Text "The element '" :<>: ShowType e :<>: Text "' is not present in the constraint"
 
 instance TypeError (ElemNotFound e) => Elem e '[] where
   reifyIndex = error
-    "Cleff.Internal.Rec.reifyIndex: Attempting to refer to a nonexistent member. Please report this as a bug."
+    "Cleff.Internal.reifyIndex: Attempting to refer to a nonexistent member. Please report this as a bug."
 
 -- | Get an element in the record. Amortized \( O(1) \).
-index :: ∀ e es f. Elem e es => Rec f es -> f e
-index (Rec off _ arr) = fromAny $ indexSmallArray arr (off + reifyIndex @_ @e @es)
+index :: ∀ e es. Elem e es => Rec es -> HandlerPtr e
+index (Rec off _ arr) = HandlerPtr $ indexPrimArray arr (off + reifyIndex @e @es)
 
 -- | @es@ is a subset of @es'@, i.e. all elements of @es@ are in @es'@.
-class KnownList es => Subset (es :: [k]) (es' :: [k]) where
+class KnownList es => Subset (es :: [Effect]) (es' :: [Effect]) where
   -- | Get a list of indices of the elements.
   reifyIndices :: [Int]
   reifyIndices = unreifiable
@@ -160,24 +173,25 @@ instance Subset '[] es where
   reifyIndices = []
 
 instance (Subset es es', Elem e es') => Subset (e : es) es' where
-  reifyIndices = reifyIndex @_ @e @es' : reifyIndices @_ @es @es'
+  reifyIndices = reifyIndex @e @es' : reifyIndices @es @es'
 
 -- | Get a subset of the record. Amortized \( O(m) \).
-pick :: ∀ es es' f. Subset es es' => Rec f es' -> Rec f es
-pick (Rec off _ arr) = Rec 0 (reifyLen @_ @es) $ runSmallArray do
-  marr <- newArr (reifyLen @_ @es)
-  go marr 0 (reifyIndices @_ @es @es')
+pick :: ∀ es es'. Subset es es' => Rec es' -> Rec es
+pick (Rec off _ arr) = Rec 0 (reifyLen @es) $ runPrimArray do
+  marr <- newPrimArray (reifyLen @es)
+  go marr 0 (reifyIndices @es @es')
   pure marr
   where
-    go :: SmallMutableArray s Any -> Int -> [Int] -> ST s ()
+    go :: MutablePrimArray s Int -> Int -> [Int] -> ST s ()
     go _ _ [] = pure ()
     go marr newIx (ix : ixs) = do
-      writeSmallArray marr newIx $ indexSmallArray arr (off + ix)
+      writePrimArray marr newIx $ indexPrimArray arr (off + ix)
       go marr (newIx + 1) ixs
 
 -- | Update an entry in the record. \( O(n) \).
-update :: ∀ e es f. Elem e es => f e -> Rec f es -> Rec f es
-update x (Rec off len arr) = Rec 0 len $ runSmallArray do
-  marr <- thawSmallArray arr off len
-  writeSmallArray marr (reifyIndex @_ @e @es) (toAny x)
+update :: ∀ e es. Elem e es => HandlerPtr e -> Rec es -> Rec es
+update x (Rec off len arr) = Rec 0 len $ runPrimArray do
+  marr <- newPrimArray len
+  copyPrimArray marr 0 arr off len
+  writePrimArray marr (reifyIndex @e @es) (unHandlerPtr x)
   pure marr

@@ -177,7 +177,6 @@ test-suite cleff-test
       HigherOrderSpec
       InterposeSpec
       MaskSpec
-      RecSpec
       StateSpec
       ThSpec
       Paths_cleff

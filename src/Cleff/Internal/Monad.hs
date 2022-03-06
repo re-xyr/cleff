@@ -41,19 +41,16 @@ module Cleff.Internal.Monad
   ) where
 
 import           Cleff.Internal.Any  (Any, fromAny, toAny)
-import           Cleff.Internal.Rec  (Elem, KnownList, Rec, Subset, type (++))
+import           Cleff.Internal.Rec  (Effect, Elem, HandlerPtr (HandlerPtr, unHandlerPtr), KnownList, Rec, Subset,
+                                      type (++))
 import qualified Cleff.Internal.Rec  as Rec
 import           Control.Applicative (Applicative (liftA2))
 import           Control.Monad.Fix   (MonadFix (mfix))
 import           Data.IntMap.Strict  (IntMap)
 import qualified Data.IntMap.Strict  as Map
-import           Data.Kind           (Constraint, Type)
+import           Data.Kind           (Constraint)
 
 -- * Basic types
-
--- | The type of effects. An effect @e m a@ takes an effect monad type @m :: 'Type' -> 'Type'@ and a result type
--- @a :: 'Type'@.
-type Effect = (Type -> Type) -> Type -> Type
 
 -- | @e ':>' es@ means the effect @e@ is present in the effect stack @es@, and therefore can be used in an
 -- @'Cleff.Eff' es@ computation.
@@ -148,13 +145,9 @@ instance MonadFix (Eff es) where
 -- retain correct HO semantics. For more details on this see https://github.com/re-xyr/cleff/issues/5.
 type role Env nominal
 data Env (es :: [Effect]) = Env
-  {-# UNPACK #-} !Int
-  {-# UNPACK #-} !(Rec HandlerPtr es)
-  !(IntMap Any)
-
--- | A pointer to 'InternalHandler' in an 'Env'.
-type role HandlerPtr nominal
-newtype HandlerPtr (e :: Effect) = HandlerPtr { unHandlerPtr :: Int }
+  {-# UNPACK #-} !Int -- ^ The next address to allocate.
+  {-# UNPACK #-} !(Rec es) -- ^ The effect stack storing pointers to handlers.
+  !(IntMap Any) -- ^ The map that corresponds pointers to handlers.
 
 -- | Create an empty 'Env' with no address allocated.
 emptyEnv :: Env '[]
@@ -162,7 +155,7 @@ emptyEnv = Env 0 Rec.empty Map.empty
 {-# INLINE emptyEnv #-}
 
 -- | Adjust the effect stack via an function over 'Rec'.
-adjustEnv :: ∀ es' es. (Rec HandlerPtr es -> Rec HandlerPtr es') -> Env es -> Env es'
+adjustEnv :: ∀ es' es. (Rec es -> Rec es') -> Env es -> Env es'
 adjustEnv f (Env n re mem) = Env n (f re) mem
 {-# INLINE adjustEnv #-}
 
@@ -172,7 +165,7 @@ allocaEnv (Env n re mem) = (# HandlerPtr n, Env (n + 1) re mem #)
 {-# INLINE allocaEnv #-}
 
 -- | Read the handler a pointer points to. \( O(1) \).
-readEnv :: ∀ e es. Rec.Elem e es => Env es -> InternalHandler e
+readEnv :: ∀ e es. Elem e es => Env es -> InternalHandler e
 readEnv (Env _ re mem) = fromAny $ mem Map.! unHandlerPtr (Rec.index @e re)
 {-# INLINE readEnv #-}
 
@@ -182,7 +175,7 @@ writeEnv (HandlerPtr m) x (Env n re mem) = Env n re (Map.insert m (toAny x) mem)
 {-# INLINE writeEnv #-}
 
 -- | Replace the handler pointer of an effect in the stack. \( O(n) \).
-replaceEnv :: ∀ e es. Rec.Elem e es => HandlerPtr e -> InternalHandler e -> Env es -> Env es
+replaceEnv :: ∀ e es. Elem e es => HandlerPtr e -> InternalHandler e -> Env es -> Env es
 replaceEnv (HandlerPtr m) x (Env n re mem) = Env n (Rec.update @e (HandlerPtr m) re) (Map.insert m (toAny x) mem)
 {-# INLINE replaceEnv #-}
 

@@ -58,7 +58,7 @@ import           Unsafe.Coerce        (unsafeCoerce)
 -- | Adjust the effect stack by a contravariant transformation function over the stack. This function reveals the
 -- profunctorial nature of 'Eff'; in particular, 'Eff' is a profunctor @['Effect'] -> 'Data.Kind.Type'@, @lmap@ is
 -- 'adjust', and @rmap@ is 'fmap'.
-adjust :: ∀ es es'. (∀ f. Rec f es' -> Rec f es) -> Eff es ~> Eff es'
+adjust :: ∀ es es'. (Rec es' -> Rec es) -> Eff es ~> Eff es'
 adjust f m = Eff (unEff m . adjustEnv f)
 
 -- | Lift a computation into a bigger effect stack with one more effect. For a more general version see 'raiseN'.
