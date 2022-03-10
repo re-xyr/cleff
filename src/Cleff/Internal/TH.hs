@@ -58,7 +58,7 @@ makeEffect = makeSmartCons True
 -- documentation to the function signature, /e.g./:
 --
 -- @
--- data Identity :: 'Effect' where
+-- data Identity :: 'Cleff.Effect' where
 --   Noop :: Identity m ()
 -- 'makeEffect_' ''Identity
 --

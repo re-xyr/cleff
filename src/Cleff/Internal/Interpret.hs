@@ -48,6 +48,7 @@ module Cleff.Internal.Interpret
   , withFromEff
   ) where
 
+import           Cleff.Internal
 import           Cleff.Internal.Monad
 import           Cleff.Internal.Rec   (Rec)
 import qualified Cleff.Internal.Rec   as Rec

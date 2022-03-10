@@ -5,6 +5,7 @@
 ### Changed
 
 - Slight performance improvements
+- `(:>)` is now a typeclass by itself instead of a type synonym
 
 ## 0.3.1.0 (2022-02-28)
 

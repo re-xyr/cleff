@@ -32,6 +32,7 @@ module Cleff.Internal.Base
   , fromIO
   ) where
 
+import           Cleff.Internal
 import           Cleff.Internal.Interpret
 import           Cleff.Internal.Monad
 import           Control.Monad.Base          (MonadBase (liftBase))

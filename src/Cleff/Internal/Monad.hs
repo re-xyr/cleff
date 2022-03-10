@@ -13,14 +13,8 @@
 -- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
 -- extra careful if you're to depend on this module.
 module Cleff.Internal.Monad
-  ( -- * Basic types
-    Effect
-  , type (:>)
-  , type (:>>)
-  , type (~>)
-  , type (++)
-    -- * The 'Eff' monad
-  , InternalHandler (InternalHandler, runHandler)
+  ( -- * The 'Eff' monad
+    InternalHandler (InternalHandler, runHandler)
   , Eff (Eff, unEff)
     -- * Effect environment
   , Env
@@ -33,49 +27,24 @@ module Cleff.Internal.Monad
   , replaceEnv
   , appendEnv
   , updateEnv
-    -- * Performing effect operations
+    -- * Constraints on effect stacks
+  , (:>)
+  , (:>>)
   , KnownList
   , Subset
+    -- * Performing effect operations
   , send
   , sendVia
   ) where
 
-import           Cleff.Internal.Any  (Any, fromAny, toAny)
-import           Cleff.Internal.Rec  (Effect, Elem, HandlerPtr (HandlerPtr, unHandlerPtr), KnownList, Rec, Subset,
-                                      type (++))
+import           Cleff.Internal
+import           Cleff.Internal.Rec  (HandlerPtr (HandlerPtr, unHandlerPtr), KnownList, Rec, Subset, type (:>))
 import qualified Cleff.Internal.Rec  as Rec
 import           Control.Applicative (Applicative (liftA2))
 import           Control.Monad.Fix   (MonadFix (mfix))
 import           Data.IntMap.Strict  (IntMap)
 import qualified Data.IntMap.Strict  as Map
 import           Data.Kind           (Constraint)
-
--- * Basic types
-
--- | @e ':>' es@ means the effect @e@ is present in the effect stack @es@, and therefore can be used in an
--- @'Cleff.Eff' es@ computation.
-type (:>) = Elem
-infix 0 :>
-
--- | @xs ':>>' es@ means the list of effects @xs@ are all present in the effect stack @es@. This is a convenient type
--- alias for @(e1 ':>' es, ..., en ':>' es)@.
-type family xs :>> es :: Constraint where
-  '[] :>> _ = ()
-  (x : xs) :>> es = (x :> es, xs :>> es)
-infix 0 :>>
-
--- | A natural transformation from @f@ to @g@. With this, instead of writing
---
--- @
--- runSomeEffect :: 'Eff' (SomeEffect : es) a -> 'Eff' es a
--- @
---
--- you can write:
---
--- @
--- runSomeEffect :: 'Eff' (SomeEffect : es) ~> 'Eff' es
--- @
-type f ~> g = ∀ a. f a -> g a
 
 -- * The 'Eff' monad
 
@@ -165,7 +134,7 @@ allocaEnv (Env n re mem) = (# HandlerPtr n, Env (n + 1) re mem #)
 {-# INLINE allocaEnv #-}
 
 -- | Read the handler a pointer points to. \( O(1) \).
-readEnv :: ∀ e es. Elem e es => Env es -> InternalHandler e
+readEnv :: ∀ e es. e :> es => Env es -> InternalHandler e
 readEnv (Env _ re mem) = fromAny $ mem Map.! unHandlerPtr (Rec.index @e re)
 {-# INLINE readEnv #-}
 
@@ -175,7 +144,7 @@ writeEnv (HandlerPtr m) x (Env n re mem) = Env n re (Map.insert m (toAny x) mem)
 {-# INLINE writeEnv #-}
 
 -- | Replace the handler pointer of an effect in the stack. \( O(n) \).
-replaceEnv :: ∀ e es. Elem e es => HandlerPtr e -> InternalHandler e -> Env es -> Env es
+replaceEnv :: ∀ e es. e :> es => HandlerPtr e -> InternalHandler e -> Env es -> Env es
 replaceEnv (HandlerPtr m) x (Env n re mem) = Env n (Rec.update @e (HandlerPtr m) re) (Map.insert m (toAny x) mem)
 {-# INLINE replaceEnv #-}
 
@@ -190,6 +159,13 @@ updateEnv (Env n _ mem) (Env _ re' _) = Env n re' mem
 {-# INLINE updateEnv #-}
 
 -- * Performing effect operations
+
+-- | @xs ':>>' es@ means the list of effects @xs@ are all present in the effect stack @es@. This is a convenient type
+-- alias for @(e1 ':>' es, ..., en ':>' es)@.
+type family xs :>> es :: Constraint where
+  '[] :>> _ = ()
+  (x : xs) :>> es = (x :> es, xs :>> es)
+infix 0 :>>
 
 -- | Perform an effect operation, /i.e./ a value of an effect type @e :: 'Effect'@. This requires @e@ to be in the
 -- effect stack.

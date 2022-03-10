@@ -20,9 +20,8 @@
 -- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
 -- extra careful if you're to depend on this module.
 module Cleff.Internal.Rec
-  ( Rec (Rec)
-  , HandlerPtr (HandlerPtr, unHandlerPtr)
-  , Effect
+  ( HandlerPtr (HandlerPtr, unHandlerPtr)
+  , Rec
   , type (++)
     -- * Construction
   , empty
@@ -35,24 +34,20 @@ module Cleff.Internal.Rec
   , tail
   , drop
     -- * Retrieval and updating
-  , Elem
+  , (:>)
   , Subset
   , index
   , pick
   , update
   ) where
 
-import           Data.Kind                (Type)
+import           Cleff.Internal
 import           Data.Primitive.PrimArray (MutablePrimArray (MutablePrimArray), PrimArray (PrimArray), copyPrimArray,
                                            indexPrimArray, newPrimArray, writePrimArray)
 import           GHC.Exts                 (runRW#, unsafeFreezeByteArray#)
 import           GHC.ST                   (ST (ST))
 import           GHC.TypeLits             (ErrorMessage (ShowType, Text, (:<>:)), TypeError)
 import           Prelude                  hiding (concat, drop, head, tail, take)
-
--- | The type of effects. An effect @e m a@ takes an effect monad type @m :: 'Type' -> 'Type'@ and a result type
--- @a :: 'Type'@.
-type Effect = (Type -> Type) -> Type -> Type
 
 -- | A pointer to an effect handler.
 type role HandlerPtr nominal
@@ -90,12 +85,6 @@ cons x (Rec off len arr) = Rec 0 (len + 1) $ runPrimArray do
   writePrimArray marr 0 (unHandlerPtr x)
   copyPrimArray marr 1 arr off len
   pure marr
-
--- | Type level list concatenation.
-type family xs ++ ys where
-  '[] ++ ys = ys
-  (x : xs) ++ ys = x : (xs ++ ys)
-infixr 5 ++
 
 -- | Concatenate two records. \( O(m+n) \).
 concat :: Rec es -> Rec es' -> Rec (es ++ es')
@@ -140,26 +129,27 @@ take (Rec off _ arr) = Rec 0 len $ runPrimArray do
   where len = reifyLen @es
 
 -- | The element @e@ is present in the list @es@.
-class Elem (e :: Effect) (es :: [Effect]) where
+class (e :: Effect) :> (es :: [Effect]) where
   -- | Get the index of the element.
   reifyIndex :: Int
   reifyIndex = unreifiable "Elem" "Cleff.Internal.Rec.reifyIndex" "the index of an element of a type-level list"
+infix 0 :>
 
 -- | The element closer to the head takes priority.
-instance {-# OVERLAPPING #-} Elem e (e : es) where
+instance {-# OVERLAPPING #-} e :> e : es where
   reifyIndex = 0
 
-instance Elem e es => Elem e (e' : es) where
+instance e :> es => e :> e' : es where
   reifyIndex = 1 + reifyIndex @e @es
 
 type ElemNotFound e = Text "The element '" :<>: ShowType e :<>: Text "' is not present in the constraint"
 
-instance TypeError (ElemNotFound e) => Elem e '[] where
+instance TypeError (ElemNotFound e) => e :> '[] where
   reifyIndex = error
     "Cleff.Internal.reifyIndex: Attempting to refer to a nonexistent member. Please report this as a bug."
 
 -- | Get an element in the record. Amortized \( O(1) \).
-index :: ∀ e es. Elem e es => Rec es -> HandlerPtr e
+index :: ∀ e es. e :> es => Rec es -> HandlerPtr e
 index (Rec off _ arr) = HandlerPtr $ indexPrimArray arr (off + reifyIndex @e @es)
 
 -- | @es@ is a subset of @es'@, i.e. all elements of @es@ are in @es'@.
@@ -172,7 +162,7 @@ class KnownList es => Subset (es :: [Effect]) (es' :: [Effect]) where
 instance Subset '[] es where
   reifyIndices = []
 
-instance (Subset es es', Elem e es') => Subset (e : es) es' where
+instance (Subset es es', e :> es') => Subset (e : es) es' where
   reifyIndices = reifyIndex @e @es' : reifyIndices @es @es'
 
 -- | Get a subset of the record. Amortized \( O(m) \).
@@ -189,7 +179,7 @@ pick (Rec off _ arr) = Rec 0 (reifyLen @es) $ runPrimArray do
       go marr (newIx + 1) ixs
 
 -- | Update an entry in the record. \( O(n) \).
-update :: ∀ e es. Elem e es => HandlerPtr e -> Rec es -> Rec es
+update :: ∀ e es. e :> es => HandlerPtr e -> Rec es -> Rec es
 update x (Rec off len arr) = Rec 0 len $ runPrimArray do
   marr <- newPrimArray len
   copyPrimArray marr 0 arr off len

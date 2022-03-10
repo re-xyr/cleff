@@ -33,7 +33,7 @@ module Cleff.Error
   ) where
 
 import           Cleff
-import           Cleff.Internal.Any
+import           Cleff.Internal
 import           Cleff.Internal.Base
 import           Control.Exception    (Exception)
 import           Data.Atomics.Counter (AtomicCounter, incrCounter, newCounter)

@@ -1,5 +1,5 @@
 name:                cleff
-version:             0.3.1.0
+version:             0.3.2.0
 github:              "re-xyr/cleff"
 license:             BSD3
 author:              "Xy Ren"
@@ -49,8 +49,9 @@ ghc-options:
 - -Wno-unticked-promoted-constructors
 - -Wpartial-fields
 - -Wunused-type-patterns
-# - -ddump-simpl
 # - -ddump-hi
+# - -ddump-simpl
+# - -ddump-stg-final
 # - -ddump-to-file
 # - -dsuppress-all
 # - -dsuppress-uniques

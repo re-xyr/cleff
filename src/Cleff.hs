@@ -90,6 +90,7 @@ module Cleff
   , MonadUnliftIO (..)
   ) where
 
+import           Cleff.Internal
 import           Cleff.Internal.Base
 import           Cleff.Internal.Instances ()
 import           Cleff.Internal.Interpret
@@ -191,7 +192,7 @@ import           UnliftIO                 (MonadIO (liftIO), MonadUnliftIO (with
 -- runFilesystemPure fs
 --   = 'fmap' 'fst'           -- runState returns (Eff es (a, s)), so we need to extract the first component to get (Eff es a)
 --   . 'Cleff.State.runState' fs        -- (State (Map FilePath String) : es) ==> es
---   . 'filesystemToState'  -- (Filesystem : es) ==> (State (Map FilePath String) : es)
+--   . filesystemToState  -- (Filesystem : es) ==> (State (Map FilePath String) : es)
 -- @
 --
 -- Both of these interpreters can then be applied to computations with the @Filesystem@ effect to give different
