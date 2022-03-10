@@ -23,7 +23,7 @@ description:         Please see the README on GitHub at <https://github.com/re-x
 
 dependencies:
 - base >= 4.12 && < 4.17
-- cleff >= 0.3.1 && < 0.4
+- cleff >= 0.1 && < 0.4
 - ghc >= 8.6 && < 9.3
 - ghc-tcplugins-extra >= 0.3 && < 0.5
 - containers >= 0.5 && < 0.7

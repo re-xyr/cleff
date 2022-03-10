@@ -1,7 +1,12 @@
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant if" #-}
-module Cleff.Plugin.Internal (Plugin, makePlugin) where
+-- | Copyright: (c) 2022 Xy Ren
+-- License: BSD3
+-- Maintainer: xy.r@outlook.com
+-- Stability: unstable
+-- Portability: non-portable (GHC only)
+module Cleff.Plugin.Internal (Plugin, Names, makePlugin) where
 
 import           Data.Function           (on)
 import           Data.IORef              (IORef, modifyIORef, newIORef, readIORef)
@@ -45,8 +50,22 @@ import           TcType                  (tcSplitTyConApp)
 import           Unify                   (tcUnifyTy)
 #endif
 
+-- | A list of unique, unambiguous Haskell names in the format of @(packageName, moduleName, identifier)@.
 type Names = [(String, String, String)]
 
+-- | Make a @polysemy-plugin@-style effect disambiguation plugin that applies to all the "element-of" typeclasses
+-- passed in. Each of the names passed in should have type @k -> [k] -> 'Data.Kind.Type'@ where @k@ can be either
+-- polymorphic or monomorphic.
+--
+-- Some examples include:
+--
+-- @
+-- (\"cleff\", \"Cleff.Internal.Rec\", \":>\")
+-- (\"polysemy\", \"Polysemy.Internal.Union\", \"Member\")
+-- (\"effectful\", \"Effectful.Internal.Effect\", \":>\")
+-- @
+--
+-- You can see the source code for notes on the implementation of the plugin.
 makePlugin :: Names -> Plugin
 makePlugin names = defaultPlugin
   { tcPlugin = const (Just $ fakedep names)
@@ -184,17 +203,17 @@ solveFakedep (elemCls, visitedRef) allGivens allWanteds = do
 
     -- Determine whether a given constraint is of form 'Elem e es'.
     relevantGiven :: Ct -> Maybe FakedepGiven
-    relevantGiven (CDictCan _ cls [_kind, eff, es] _) -- (:>) before 0.3.2
+    relevantGiven (CDictCan _ cls [_kind, eff, es] _) -- Polymorphic case
       | cls == elemCls = Just $ FakedepGiven (fst $ splitAppTys eff) eff es
-    relevantGiven (CDictCan _ cls [eff, es] _) -- (:>) after 0.3.2
+    relevantGiven (CDictCan _ cls [eff, es] _) -- Monomorphic case
       | cls == elemCls = Just $ FakedepGiven (fst $ splitAppTys eff) eff es
     relevantGiven _ = Nothing
 
     -- Determine whether a wanted constraint is of form 'Elem e es'.
     relevantWanted :: Ct -> Maybe FakedepWanted
-    relevantWanted (CDictCan (CtWanted _ _ _ loc) cls [_kind, eff, es] _) -- (:>) before 0.3.2
+    relevantWanted (CDictCan (CtWanted _ _ _ loc) cls [_kind, eff, es] _) -- Polymorphic case
       | cls == elemCls = Just $ FakedepWanted (FakedepGiven (fst $ splitAppTys eff) eff es) loc
-    relevantWanted (CDictCan (CtWanted _ _ _ loc) cls [eff, es] _) -- (:>) after 0.3.2
+    relevantWanted (CDictCan (CtWanted _ _ _ loc) cls [eff, es] _) -- Monomorphic case
       | cls == elemCls = Just $ FakedepWanted (FakedepGiven (fst $ splitAppTys eff) eff es) loc
     relevantWanted _ = Nothing
 

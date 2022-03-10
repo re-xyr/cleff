@@ -4,7 +4,7 @@ This GHC typechecking plugin disambiguates obvious usages of effects for the ext
 
 ## Usage
 
-This plugin works with GHC 8.6 through 9.2 and `cleff ^>= 0.3.1`. To use the plugin:
+This plugin works with GHC 8.6 through 9.2 and `cleff >= 0.1 && < 0.4`. To use the plugin:
 
 1. Add this plugin as your package's dependency.
     - If you use `stack`, then you also need to add these lines your `stack.yaml`:
