@@ -48,7 +48,7 @@ data Mask :: Effect where
 
 makeEffect_ ''Mask
 
--- | Prevents a computation from receiving asynchronous exceptions, i.e. being interrupted by another thread. Also
+-- | Prevents a computation from receiving asynchronous exceptions, /i.e./ being interrupted by another thread. Also
 -- provides a function to restore receiving async exceptions for a computation.
 --
 -- However, some potentially blocking actions like @takeMVar@ can still be interrupted, and for them also not to be

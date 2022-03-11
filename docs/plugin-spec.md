@@ -12,7 +12,7 @@
 - Take the set of constraints of form `E {x1 ... xn} :> {es}` separately from *Given* and *Wanted*, call them respectively *RelevantGiven* and *RelevantWanted*.
 - Take the set of constraints *not* of form `E {x1 ... xn} :> {es}` from *Wanted*, call it *ExtraWanted*.
 - For each constraint in *RelevantWanted* `E {x1 ... xn} :> {es}`:
-  - If `{es}` is of form `E1 {...} : E2 {...} : ... : es`, i.e. has concrete elements on its head:
+  - If `{es}` is of form `E1 {...} : E2 {...} : ... : es`, *i.e.* has concrete elements on its head:
     - Extract them as constraints in the form of `E1 ... :> {es}`, `E2 ... :> {es}` etc, then merge this set with *RelevantGiven* into a new set *Candidate*.
     - Otherwise, *Candidate* is the same as *RelevantGiven*.
   - For each constraint in the set *Candidate* `E' {b1 ... bn} :> {es'}`, if the following criteria are all met, add it to a new set *UnifiableCandidate*:

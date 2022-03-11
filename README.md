@@ -5,35 +5,37 @@
 
 `cleff` is an extensible effects library for Haskell, with a focus on the balance of performance, expressiveness and ease of use. It provides a set of predefined effects that you can conveniently reuse in your program, as well as low-boilerplate mechanisms for defining and interpreting new domain-specific effects on your own.
 
-## Overview
+In essence, `cleff` offers:
 
-Different from [many](`polysemy`) [previous](`fused-effects`) [libraries](`freer-simple`), `cleff` does not use techniques like Freer monads or monad transformers. Instead, the `Eff` monad is essentially a `ReaderT IO`, which provides predictable semantics and reliable performance. The only caveat is that `cleff` does not support nondeterminism and continuations in the `Eff` monad - but after all, [most effects libraries has broken nondeterminism support](https://github.com/polysemy-research/polysemy/issues/246), and we encourage users to wrap another monad transformer with support of nondeterminism (e.g. `ListT`) over the main `Eff` monad in such cases.
+- **Performance**:
 
-### Performance
+  `cleff` does not use techniques like Freer monads or monad transformers. Instead, `cleff`'s `Eff` monad is essentially implemented as a `ReaderT IO`. This concrete formulation [allows more GHC optimizations to fire][alexis-talk], and has lower performance overhead. [In microbenchmarks](#benchmarks), `cleff` outperforms [`polysemy`] and even `mtl`.
 
-`cleff`'s `Eff` monad is essentially implemented as a `ReaderT IO`. This concrete formulation [allows more GHC optimizations to fire][alexis-talk], and brings lower performance overhead. This is first done by [`eff`], and then [`effectful`]; it proved to work, so we followed this path.
+  The only caveat is that `cleff` does not support nondeterminism and continuations in the `Eff` monad - but after all, [most effects libraries has broken nondeterminism support](https://github.com/polysemy-research/polysemy/issues/246), and we encourage users to wrap another monad transformer with support of nondeterminism (*e.g.* `ListT`) over the main `Eff` monad in such cases.
 
-[In microbenchmarks](#benchmarks), `cleff` outperforms [`polysemy`], and is slightly behind [`effectful`]. However, note that `effectful` and `cleff` have very different design principles. While `effectful` prioritizes performance over anything else (by [providing static dispatch](https://github.com/arybczak/effectful/blob/master/effectful-core/src/Effectful/Reader/Static.hs)), `cleff` focuses on balancing expressivity and performance. If you would like minimal performance overhead, consider [`effectful`].
+- **Low boilerplate**:
 
-### Low-boilerplate
+  `cleff` supports user-defined effects and provides simple yet flexible API for implementing them. Implementations of effects are simply case-splitting functions, and users familiar with [`polysemy`] or [`freer-simple`] will find it very easy to get along with `cleff`. [Take a look at the examples](#example).
 
-`cleff` supports user-defined effects and provides simple yet flexible API for that. Users familiar with [`polysemy`], [`freer-simple`] or [`effectful`] will find it very easy to get along with `cleff`. `cleff`'s effect interpretation API include:
+- **Interoperability**:
 
-- Arbitrary lifting and subsumption of effects
-- Interpreting and reinterpreting, without needing to distinguish first-order and higher-order interpreters like `polysemy`
-- *Translation* of effects, i.e. handling an effect in terms of a simple transformation into another effect, as seen in `polysemy`'s `rewrite` and `freer-simple`'s `translate`
+  `cleff`'s simple underlying structure allows us to implement near-seamless interop with the current ecosystem, mainly classes like `MonadUnliftIO`, `MonadCatch` and `MonadBaseControl`. In other words, you can directly use libraries like `unliftio`, `exceptions` and `lifted-async` in `cleff` without writing any "adapter" code.
 
-### Predictable semantics
+- **Predictable semantics**:
 
-Traditional effect libraries have many surprising behaviors, such as [`mtl` reverts state when an error is thrown][alexis-talk-2], and [more so when interacting with `IO`][readert]. By implementing `State` and `Writer` as `IORef` operations, and `Error` as `Exceptions`, `cleff` is able to interact well with `IO` and provide semantics that are predictable in the presence of concurrency and exceptions. Moreover, any potentially surprising behavior is carefully documented for each effect.
+  Traditional effect libraries have many surprising behaviors. For example, `mtl` reverts the state when an error is thrown, and has [a lot more subtleties when interacting with `IO`][readert]. `cleff` implements `State` and `Writer` as `IORef` operations, and `Error` as `Exceptions`, so it is able to interact well with `IO` and provide semantics that are predictable in the presence of concurrency and exceptions. Moreover, any potentially surprising behavior is carefully documented for each effect.
 
-### Higher-order effects
+- **Higher-order effects**:
 
-*Higher-order* effects are effects that take monadic computations. They are often useful in real world applications, as examples of higher-order effect operations include `local`, `catchError` and `mask`. Implementing higher-order effects is often tedious, or even not supported in some effect libraries. `polysemy` is the first library that aims to provide easy higher-order effects mechanism with its [`Tactics`](https://hackage.haskell.org/package/polysemy-1.7.1.0/docs/Polysemy.html#g:16) API. Following its path, `cleff` provides a set of combinators that can be used to implement higher-order effects. These combinators are as expressive as `polysemy`'s, and are also easier to use correctly.
+  *Higher-order* effects are effects that "wraps" monadic computations, like `local`, `catchError` and `mask`. Implementing higher-order effects is often tedious, or outright not supported in most effect libraries. `polysemy` is the first library that aims to provide easy higher-order effects mechanism with its `Tactics` API. Following its path, `cleff` provides a set of combinators that can be used to implement higher-order effects. These combinators are as expressive as `polysemy`'s, and are also easier to use correctly.
+
+- **Ergonomics without sacrificing flexibility**:
+
+  Unlike `mtl`, `cleff` doesn't have functional dependencies on effects, so you can have *e.g.* multiple `State` effects. As a side effect, GHC will sometimes ask you to provide which effect you're operating on via `TypeApplications`, or otherwise the effect usage will be ambiguous. This can be verbose at times, and we have a solution for that: [`cleff-plugin`](https://github.com/re-xyr/cleff/tree/master/cleff-plugin) is a GHC plugin that works like `mtl`'s functional dependencies, and can resolve most type ambiguities involving effects for you.
 
 ## Example
 
-This is the code that defines `Teletype` effect. It only takes 20 lines to define the effect and two interpretations, one using stdio and another reading from and writing to a list:
+This is the code that defines the classic `Teletype` effect. It only takes 20 lines to define the effect and two interpretations, one using stdio and another reading from and writing to a list:
 
 ```haskell
 import Cleff
@@ -88,6 +90,10 @@ These are the results of the [effect-zoo](https://github.com/ocharles/effect-zoo
 - `countdown`: ![countdown benchmark result](https://raw.githubusercontent.com/re-xyr/cleff/master/docs/img/effect-zoo-countdown.png)
 - `file-sizes`: ![file-sizes benchmark result](https://raw.githubusercontent.com/re-xyr/cleff/master/docs/img/effect-zoo-file-sizes.png)
 - `reinterpretation`: ![reinterpretation benchmark result](https://raw.githubusercontent.com/re-xyr/cleff/master/docs/img/effect-zoo-reinterpretation.png)
+
+### Differences from `effectful`
+
+If you know about [`effectful`], you may notice that `cleff` and `effectful` seem to make many similar claims and have a similar underlying implementation. In microbenchmarks, `cleff` is slightly behind `effectful`. This may make you confused about the differences between the two libraries. To put it simply, `cleff` has a more versatile and expressive effect interpretation mechanism, and a lighter weight API. In contrast, `effectful` gains its performance advantage by providing static dispatch for some internal effects, which means they cannot have multiple interpretations.
 
 ## References
 

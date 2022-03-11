@@ -27,7 +27,7 @@ import           Language.Haskell.TH.Datatype (ConstructorInfo (constructorName)
 import           Language.Haskell.TH.PprLib   (text, (<>))
 import           Prelude                      hiding ((<>))
 
--- | For a datatype @T@ representing an effect, @'makeEffect' T@ generates functions defintions for performing the
+-- | For a datatype @T@ representing an effect, @'makeEffect' T@ generates function defintions for performing the
 -- operations of @T@ via 'send'. For example,
 --
 -- @

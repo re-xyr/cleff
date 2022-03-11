@@ -166,7 +166,7 @@ esSend = let SendSite env _ = sendSite in env
 -- the @reflection@ library directly so as not to expose this piece of implementation detail to the user.
 newtype InstHandling esSend e es a = InstHandling (Handling esSend e es => a)
 
--- | Instantiate an 'Handling' typeclass, i.e. pass an implicit send-site environment in. This function shouldn't
+-- | Instantiate an 'Handling' typeclass, /i.e./ pass an implicit send-site environment in. This function shouldn't
 -- be directly used anyhow.
 instHandling :: ∀ esSend e es a. (Handling esSend e es => a) -> SendSite esSend e -> a
 instHandling x = unsafeCoerce (InstHandling x :: InstHandling esSend e es a)

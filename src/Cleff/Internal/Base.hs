@@ -140,7 +140,7 @@ instance IOE :> es => PrimMonad (Eff es) where
 -- * Unwrapping 'Eff'
 
 -- | Unsafely eliminate an 'IOE' effect from the top of the effect stack. This is mainly for implementing effects that
--- uses 'IO' but does not do anything really /impure/ (i.e. can be safely used 'unsafeDupablePerformIO' on), such as a
+-- uses 'IO' but does not do anything really /impure/ (/i.e./ can be safely used 'unsafeDupablePerformIO' on), such as a
 -- State effect.
 thisIsPureTrustMe :: Eff (IOE : es) ~> Eff es
 thisIsPureTrustMe = interpret \case

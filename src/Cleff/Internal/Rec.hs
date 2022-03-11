@@ -98,7 +98,7 @@ concat (Rec off len arr) (Rec off' len' arr') = Rec 0 (len + len') $ runPrimArra
 tail :: Rec (e : es) -> Rec es
 tail (Rec off len arr) = Rec (off + 1) (len - 1) arr
 
--- | @'KnownList' es@ means the list @es@ is concrete, i.e. is of the form @'[a1, a2, ..., an]@ instead of a type
+-- | @'KnownList' es@ means the list @es@ is concrete, /i.e./ is of the form @'[a1, a2, ..., an]@ instead of a type
 -- variable.
 class KnownList (es :: [Effect]) where
   -- | Get the length of the list.
@@ -128,7 +128,8 @@ take (Rec off _ arr) = Rec 0 len $ runPrimArray do
   pure marr
   where len = reifyLen @es
 
--- | The element @e@ is present in the list @es@.
+-- | @e ':>' es@ means the effect @e@ is present in the effect stack @es@, and therefore can be 'Cleff.send'ed in an
+-- @'Cleff.Eff' es@ computation.
 class (e :: Effect) :> (es :: [Effect]) where
   -- | Get the index of the element.
   reifyIndex :: Int
@@ -152,7 +153,7 @@ instance TypeError (ElemNotFound e) => e :> '[] where
 index :: ∀ e es. e :> es => Rec es -> HandlerPtr e
 index (Rec off _ arr) = HandlerPtr $ indexPrimArray arr (off + reifyIndex @e @es)
 
--- | @es@ is a subset of @es'@, i.e. all elements of @es@ are in @es'@.
+-- | @es@ is a subset of @es'@, /i.e./ all elements of @es@ are in @es'@.
 class KnownList es => Subset (es :: [Effect]) (es' :: [Effect]) where
   -- | Get a list of indices of the elements.
   reifyIndices :: [Int]

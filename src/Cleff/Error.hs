@@ -165,7 +165,7 @@ errorHandler eid = \case
 -- incur an exception, and we won't be quite able to display the details of that exception properly at that point.
 -- Therefore please properly handle the errors in the forked threads separately.
 --
--- However if you use @async@ and @wait@ for the action in the same effect scope (i.e. they get to be interpreted by
+-- However if you use @async@ and @wait@ for the action in the same effect scope (/i.e./ they get to be interpreted by
 -- the same 'runError' handler), the error /will/ be caught in the parent thread even if you don't deal with it in the
 -- forked thread. But if you passed the @Async@ value out of the effect scope and @wait@ed for it elsewhere, the error
 -- will again not be caught. The best choice is /not to pass @Async@ values around randomly/.
