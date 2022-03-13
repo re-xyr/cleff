@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.3.2.0 (2022-03-13)
+
 ### Changed
 
 - Slight performance improvements

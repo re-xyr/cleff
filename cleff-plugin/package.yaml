@@ -1,5 +1,5 @@
 name:                cleff-plugin
-version:             0.1.0.0
+version:             0.1.1.0
 github:              "re-xyr/cleff"
 license:             BSD3
 author:              "Xy Ren"
@@ -16,17 +16,17 @@ extra-source-files:
 - CHANGELOG.md
 - README.md
 
-synopsis:            Fake fundeps for extensible effects
+synopsis:            Automatic disambiguation for extensible effects
 category:            Control, Effect, Language
 
-description:         Please see the README on GitHub at <https://github.com/re-xyr/cleff#readme>
+description:         Please see the README on GitHub at <https://github.com/re-xyr/cleff/tree/master/cleff-plugin#readme>
 
 dependencies:
 - base >= 4.12 && < 4.17
 - cleff >= 0.1 && < 0.4
+- containers >= 0.5 && < 0.7
 - ghc >= 8.6 && < 9.3
 - ghc-tcplugins-extra >= 0.3 && < 0.5
-- containers >= 0.5 && < 0.7
 
 ghc-options:
 - -Wall

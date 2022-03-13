@@ -6,8 +6,8 @@ cabal-version: 1.12
 
 name:           cleff-plugin
 version:        0.1.0.0
-synopsis:       Fake fundeps for extensible effects
-description:    Please see the README on GitHub at <https://github.com/re-xyr/cleff#readme>
+synopsis:       Automatic disambiguation for extensible effects
+description:    Please see the README on GitHub at <https://github.com/re-xyr/cleff/tree/master/cleff-plugin#readme>
 category:       Control, Effect, Language
 homepage:       https://github.com/re-xyr/cleff#readme
 bug-reports:    https://github.com/re-xyr/cleff/issues
@@ -15,6 +15,7 @@ author:         Xy Ren
 maintainer:     xy.r@outlook.com
 copyright:      2022 Xy Ren
 license:        BSD3
+license-file:   LICENSE
 build-type:     Simple
 tested-with:
     GHC == 8.6.5

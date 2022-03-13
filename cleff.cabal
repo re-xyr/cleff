@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           cleff
-version:        0.3.2.0
+version:        0.3.3.0
 synopsis:       Fast and concise extensible effects
 description:    Please see the README on GitHub at <https://github.com/re-xyr/cleff#readme>
 category:       Control, Effect, Language

@@ -45,4 +45,4 @@ This is quite unwieldy. This plugin tells GHC extra information so code like thi
 
 This plugin's design is largely inspired by [`polysemy-plugin`](https://hackage.haskell.org/package/polysemy-plugin), which is in turn based on [`simple-effects`](https://hackage.haskell.org/package/simple-effects).
 
-Refer to [`docs/plugin-spec.md`](../docs/plugin-spec.md) for details on the disambiguation algorithm this typecheck plugin uses.
+Refer to [`docs/plugin-spec.md`](https://github.com/re-xyr/cleff/tree/master/docs/plugin-spec.md) for details on the disambiguation algorithm this typecheck plugin uses.
