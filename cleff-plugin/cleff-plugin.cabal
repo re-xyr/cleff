@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           cleff-plugin
-version:        0.1.0.0
+version:        0.1.1.0
 synopsis:       Automatic disambiguation for extensible effects
 description:    Please see the README on GitHub at <https://github.com/re-xyr/cleff/tree/master/cleff-plugin#readme>
 category:       Control, Effect, Language
