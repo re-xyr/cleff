@@ -59,10 +59,18 @@ newtype InternalHandler e = InternalHandler { runHandler :: ∀ es. e (Eff es) ~
 -- which is a type-level list that holds all effects available.
 --
 -- The best practice is to always use a polymorphic type variable for the effect stack @es@, and then use the type
--- operators '(:>)' and '(:>>)' in constraints to indicate what effects are available in the stack. For example,
+-- operators '(:>)' and '(:>>)' in constraints to indicate what effects are available in the stack. Examples:
 --
 -- @
 -- ('Cleff.Reader.Reader' 'String' ':>' es, 'Cleff.State.State' 'Bool' ':>' es) => 'Eff' es 'Integer'
+-- @
+--
+-- @
+-- 'Cleff.Reader.Reader' 'String' ':>' es => 'Eff' es 'Integer'
+-- @
+--
+-- @
+-- '['Cleff.Reader.Reader' 'String', 'Cleff.State.State' 'Bool'] ':>>' es => 'Eff' es 'Integer'
 -- @
 --
 -- means you can perform operations of the @'Cleff.Reader.Reader' 'String'@ effect and the @'Cleff.State.State' 'Bool'@
