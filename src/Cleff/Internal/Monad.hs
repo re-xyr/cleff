@@ -76,7 +76,7 @@ newtype InternalHandler e = InternalHandler { runHandler :: ∀ es. e (Eff es) ~
 -- @
 -- '['Cleff.Reader.Reader' 'String', 'Cleff.State.State' 'Bool'] ':>>' es => 'Eff' es 'Integer'
 -- @
--- mean you can perform operations of the @'Cleff.Reader.Reader' 'String'@ effect and the @'Cleff.State.State' 'Bool'@
+-- both mean you can perform operations of the @'Cleff.Reader.Reader' 'String'@ effect and the @'Cleff.State.State' 'Bool'@
 -- effect in a computation returning an 'Integer'. The reason why you should always use a polymorphic effect stack as
 -- opposed to a concrete list of effects are that
 --
