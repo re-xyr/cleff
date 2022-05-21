@@ -123,7 +123,7 @@ tryErrorJust f m = (Right <$> m) `catchError` \e -> maybe (throwError e) (pure .
 type ExcUid = Int
 
 -- | Exception wrapper used in 'runError' in order not to conflate error types with exception types.
-data ErrorExc = ErrorExc {-# UNPACK #-} !ExcUid Any
+data ErrorExc = ErrorExc !ExcUid Any
   deriving anyclass (Exception)
 
 instance Show ErrorExc where

@@ -128,7 +128,7 @@ take (Rec off _ arr) = Rec 0 len $ runPrimArray do
 class (e :: Effect) :> (es :: [Effect]) where
   -- | Get the index of the element.
   reifyIndex :: Int
-  reifyIndex = unreifiable "Elem" "Cleff.Internal.Rec.reifyIndex" "the index of an element of a type-level list"
+  reifyIndex = unreifiable "Elem" "Cleff.Internal.Rec.reifyIndex" "the index of an effect in the effect stack"
 infix 0 :>
 
 -- | The element closer to the head takes priority.
@@ -153,7 +153,7 @@ class KnownList es => Subset (es :: [Effect]) (es' :: [Effect]) where
   -- | Get a list of indices of the elements.
   reifyIndices :: [Int]
   reifyIndices = unreifiable
-    "Subset" "Cleff.Internal.Rec.reifyIndices" "the index of multiple elements of a type-level list"
+    "Subset" "Cleff.Internal.Rec.reifyIndices" "the indices of a subset of the effect stack"
 
 instance Subset '[] es where
   reifyIndices = []
