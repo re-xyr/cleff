@@ -14,8 +14,10 @@
 -- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
 -- extra careful if you're to depend on this module.
 module Cleff.Internal.Interpret
-  ( -- * Trivial handling
-    adjust
+  ( -- * General transformation
+    alter
+  , adjust
+    -- * Trivial handling
   , raise
   , raiseN
   , inject
@@ -56,11 +58,15 @@ import           Unsafe.Coerce        (unsafeCoerce)
 
 -- * Trivial handling
 
--- | Adjust the effect stack by a contravariant transformation function over the stack. This function reveals the
+-- | Alter the effect environment by a contravariant transformation function over it. This function reveals the
 -- profunctorial nature of 'Eff'; in particular, 'Eff' is a profunctor @['Effect'] -> 'Data.Kind.Type'@, @lmap@ is
--- 'adjust', and @rmap@ is 'fmap'.
+-- 'alter', and @rmap@ is 'fmap'.
+alter :: ∀ es es'. (Env es' -> Env es) -> Eff es ~> Eff es'
+alter f = \(Eff m) -> Eff \es -> m (f es)
+
+-- | A specialized version of 'alter' that only adjusts the effect stack.
 adjust :: ∀ es es'. (Rec es' -> Rec es) -> Eff es ~> Eff es'
-adjust f m = Eff (unEff m . adjustEnv f)
+adjust f = alter (adjustEnv f)
 
 -- | Lift a computation into a bigger effect stack with one more effect. For a more general version see 'raiseN'.
 raise :: ∀ e es. Eff es ~> Eff (e : es)
@@ -205,9 +211,9 @@ reinterpret3 = reinterpretN @'[e', e'', e''']
 
 -- | Like 'reinterpret', but adds arbitrarily many new effects. This function requires @TypeApplications@.
 reinterpretN :: ∀ es' e es. KnownList es' => Handler e (es' ++ es) -> Eff (e : es) ~> Eff (es' ++ es)
-reinterpretN handle m = Eff \es ->
+reinterpretN handle = alter \es ->
   let (# ptr, es' #) = allocaEnv es
-  in unEff m $ appendEnv ptr (mkInternalHandler ptr es' handle) $ adjustEnv (Rec.drop @es') es'
+  in appendEnv ptr (mkInternalHandler ptr es' handle) $ adjustEnv (Rec.drop @es') es'
 {-# INLINE reinterpretN #-}
 
 -- | Respond to an effect, but does not eliminate it from the stack. This means you can re-send the operations in the
@@ -222,9 +228,9 @@ impose = imposeN @'[e']
 
 -- | Like 'impose', but allows introducing arbitrarily many effects. This requires @TypeApplications@.
 imposeN :: ∀ es' e es. (KnownList es', e :> es) => Handler e (es' ++ es) -> Eff es ~> Eff (es' ++ es)
-imposeN handle m = Eff \es ->
+imposeN handle = alter \es ->
   let (# ptr, es' #) = allocaEnv es
-  in unEff m $ replaceEnv ptr (mkInternalHandler ptr es' handle) $ adjustEnv (Rec.drop @es') es'
+  in replaceEnv ptr (mkInternalHandler ptr es' handle) $ adjustEnv (Rec.drop @es') es'
 {-# INLINE imposeN #-}
 
 -- * Translating effects
@@ -278,7 +284,7 @@ translate trans = reinterpret (sendVia toEff . trans)
 --     ('toEff' . use)
 -- @
 toEff :: Handling esSend e es => Eff esSend ~> Eff es
-toEff m = Eff \es -> unEff m (updateEnv es esSend)
+toEff = alter \es -> updateEnv es esSend
 
 -- | Run a computation in the current effect stack, just like 'toEff', but takes a 'Handler' of the current effect
 -- being interpreted, so that inside the computation being ran, the effect is interpreted differently. This is useful
@@ -294,7 +300,7 @@ toEff m = Eff \es -> unEff m (updateEnv es esSend)
 --       'Cleff.Reader.Local' f m -> 'toEffWith' (handle $ f r) m
 -- @
 toEffWith :: ∀ esSend e es. Handling esSend e es => Handler e es -> Eff esSend ~> Eff es
-toEffWith handle m = Eff \es -> unEff m $
+toEffWith handle = alter \es ->
   -- The 'Handling' constraint of 'handle' will NOT be prematurely initialized here because that will make 'handle'
   -- monomorphic. Therefore this usage is safe.
   writeEnv (hdlPtr @esSend) (mkInternalHandler (hdlPtr @esSend) es handle) $ updateEnv es esSend
@@ -303,4 +309,4 @@ toEffWith handle m = Eff \es -> unEff m $
 -- with effect operations with the monad type in the negative position, which means it's unlikely that you need to use
 -- this function in implementing your effects.
 withFromEff :: Handling esSend e es => ((Eff es ~> Eff esSend) -> Eff esSend a) -> Eff es a
-withFromEff f = Eff \es -> unEff (f \m -> Eff \ess -> unEff m (updateEnv ess es)) (updateEnv es esSend)
+withFromEff f = Eff \es -> unEff (f $ alter \ess -> updateEnv ess es) (updateEnv es esSend)

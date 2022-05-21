@@ -24,6 +24,7 @@ module Cleff.Internal.Base
   , thisIsPureTrustMe
   , runIOE
   , runPure
+  , runPureIO
     -- * Effect interpretation
   , HandlerIO
   , interpretIO
@@ -35,6 +36,7 @@ module Cleff.Internal.Base
 import           Cleff.Internal
 import           Cleff.Internal.Interpret
 import           Cleff.Internal.Monad
+import qualified Cleff.Internal.Rec          as Rec
 import           Control.Monad.Base          (MonadBase (liftBase))
 import           Control.Monad.Catch         (ExitCase (ExitCaseException, ExitCaseSuccess), MonadCatch, MonadMask,
                                               MonadThrow)
@@ -143,23 +145,31 @@ instance IOE :> es => PrimMonad (Eff es) where
 -- uses 'IO' but does not do anything really /impure/ (/i.e./ can be safely used 'unsafeDupablePerformIO' on), such as a
 -- State effect.
 thisIsPureTrustMe :: Eff (IOE : es) ~> Eff es
-thisIsPureTrustMe = interpret \case
-#ifdef DYNAMIC_IOE
-  Lift m   -> primLiftIO m
-  Unlift f -> primUnliftIO \runInIO -> f (runInIO . toEff)
+thisIsPureTrustMe =
+#ifndef DYNAMIC_IOE
+  adjust (Rec.cons $ HandlerPtr (-1))
+#else
+  interpret \case
+    Lift m   -> primLiftIO m
+    Unlift f -> primUnliftIO \runInIO -> f (runInIO . toEff)
 #endif
 {-# INLINE thisIsPureTrustMe #-}
 
 -- | Unwrap an 'Eff' computation with side effects into an 'IO' computation, given that all effects other than 'IOE' are
 -- interpreted.
 runIOE :: Eff '[IOE] ~> IO
-runIOE m = unEff (thisIsPureTrustMe m) emptyEnv
+runIOE = runPureIO . thisIsPureTrustMe
 {-# INLINE runIOE #-}
 
 -- | Unwrap a pure 'Eff' computation into a pure value, given that all effects are interpreted.
 runPure :: Eff '[] a -> a
-runPure m = unsafeDupablePerformIO $ unEff m emptyEnv
-{-# NOINLINE runPure #-}
+runPure = unsafeDupablePerformIO . runPureIO
+{-# INLINE runPure #-}
+
+-- | Unwrap a pure 'Eff' computation into an 'IO' computation. You may occasionally need this.
+runPureIO :: Eff '[] ~> IO
+runPureIO (Eff m) = m emptyEnv
+{-# INLINE runPureIO #-}
 
 -- * Effect interpretation
 
