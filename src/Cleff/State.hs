@@ -105,7 +105,7 @@ runState s m = thisIsPureTrustMe do
 --
 -- === Caveats
 --
--- Like 'runState', the 'state' operation in this handler is atomic. Like 'runState', and unlike 'mtl', any errors will
+-- Like 'runState', the 'state' operation in this handler is atomic. Like 'runState', and unlike @mtl@, any errors will
 -- not revert the state changes.
 --
 -- Be warned that if you use a thread pool, then when a thread is reused, it may read the state left from the last

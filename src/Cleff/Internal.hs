@@ -15,7 +15,7 @@ module Cleff.Internal
   , type (~>)
   , type (++)
   , HandlerPtr (HandlerPtr, unHandlerPtr)
-    -- * The 'Any' type
+    -- * The @Any@ type
   , Any
   , pattern Any
   , fromAny

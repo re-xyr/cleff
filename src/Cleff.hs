@@ -178,7 +178,7 @@ import           UnliftIO                 (MonadIO (liftIO), MonadUnliftIO (with
 -- @
 --
 -- Here, we used the 'reinterpret' function to introduce a @'Cleff.State.State' ('Data.Map.Map' 'FilePath' 'String')@ as
--- the in-memory filesystem, making 'filesystemToState' a /reinterpreter/ that "maps" an effect into another effect.
+-- the in-memory filesystem, making @filesystemToState@ a /reinterpreter/ that "maps" an effect into another effect.
 -- We also added a @'Cleff.Fail.Fail' ':>' es@ constraint to our reinterpreter so that we're able to report errors.
 -- To make an /interpreter/ out of this is simple, as we just need to interpret the remaining 'Cleff.State.State'
 -- effect:
