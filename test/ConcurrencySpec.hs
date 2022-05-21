@@ -3,16 +3,17 @@ module ConcurrencySpec where
 import           Cleff
 import           Cleff.Error         (runError, throwError)
 import           Cleff.State
-import           Control.Monad       (when)
+import           Control.Monad       (void, when)
 import           Data.Set            (Set)
 import qualified Data.Set            as Set
 import           Test.Hspec
-import           UnliftIO            (concurrently_)
+import           UnliftIO            (concurrently_, replicateConcurrently_)
 import           UnliftIO.Concurrent (threadDelay)
 
 spec :: Spec
 spec = do
   sharedState
+  localState
   errorHandling
 
 sharedState :: Spec
@@ -29,6 +30,25 @@ sharedState = it "should have shared state" do
         when (f n) $ do
           modify $ Set.insert n
         addWhen f $ n - 1
+
+localState :: Spec
+localState = it "should have local state" $
+  void $ runIOE $ runStateLocal x $ do
+    replicateConcurrently_ 2 $ do
+      r <- goDownward 0
+      liftIO $ r `shouldBe` x
+  where
+    x :: Int
+    x = 100000
+
+    goDownward :: State Int :> es => Int -> Eff es Int
+    goDownward acc = do
+      end <- state @Int $ \case
+        0 -> (True,  0)
+        n -> (False, n - 1)
+      if end
+        then pure acc
+        else goDownward $ acc + 1
 
 errorHandling :: Spec
 errorHandling = it "should handle errors properly" do

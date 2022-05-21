@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE MagicHash           #-}
 {-# LANGUAGE UnboxedTuples       #-}
 {-# OPTIONS_HADDOCK not-home #-}
 -- |

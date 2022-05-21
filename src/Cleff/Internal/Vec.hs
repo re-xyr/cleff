@@ -1,3 +1,4 @@
+{-# OPTIONS_HADDOCK not-home #-}
 -- |
 -- Copyright: (c) 2021 Xy Ren
 -- License: BSD3
@@ -74,7 +75,7 @@ lookup ix (Vec _ tree) = go tree
     go (Tip arr)    = indexSmallArray arr (initialMask .&. ix)
     go (Node s arr) = go (indexSmallArray arr (mask s ix))
 
--- | Update a value in a 'Vec' by an index. The value will be forced before installing. This deos not perform any
+-- | Update a value in a 'Vec' by an index. The value will be forced before installing. This does not perform any
 -- bounds check.
 update :: Int -> a -> Vec a -> Vec a
 update ix x (Vec len tree) = Vec len (go tree)

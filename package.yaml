@@ -78,6 +78,7 @@ default-extensions:
 - GADTs
 - GeneralizedNewtypeDeriving
 - LambdaCase
+- MagicHash
 - NoStarIsType
 - PatternSynonyms
 - PolyKinds
@@ -92,6 +93,7 @@ default-extensions:
 - TypeOperators
 - UndecidableInstances
 - UnicodeSyntax
+- UnliftedFFITypes
 - ViewPatterns
 
 library:

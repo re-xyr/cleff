@@ -1,6 +1,14 @@
 # Changelog for `cleff`
 
 ## Unreleased
+ 
+### Changed
+
+- Slight performance improvements
+
+### Added
+
+- `runStateLocal` that runs the `State` effect with thread-local semantics
 
 ## 0.3.2.0 (2022-03-13)
 

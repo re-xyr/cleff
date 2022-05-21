@@ -19,6 +19,8 @@ module Cleff.Internal
   , Any
   , pattern Any
   , fromAny
+    -- * Miscellaneous
+  , noinline
   ) where
 
 import           Data.Kind     (Type)
@@ -58,3 +60,8 @@ pattern Any :: forall a. a -> Any
 pattern Any {fromAny} <- (unsafeCoerce -> fromAny)
   where Any = unsafeCoerce
 {-# COMPLETE Any #-}
+
+-- | Magic function that tells the compiler /not/ to inline the argument.
+noinline :: a -> a
+noinline x = x
+{-# NOINLINE noinline #-}

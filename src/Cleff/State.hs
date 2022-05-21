@@ -16,6 +16,7 @@ module Cleff.State
   , modify
     -- * Interpretations
   , runState
+  , runStateLocal
   , runStateIORef
   , runStateMVar
   , runStateTVar
@@ -24,13 +25,14 @@ module Cleff.State
 
 import           Cleff
 import           Cleff.Internal.Base
-import           Control.Monad       (void)
-import           Data.Atomics        (atomicModifyIORefCAS)
-import           Data.Tuple          (swap)
-import           Lens.Micro          (Lens', (&), (.~), (^.))
-import           UnliftIO.IORef      (IORef, newIORef, readIORef, writeIORef)
-import           UnliftIO.MVar       (MVar, modifyMVar, readMVar, swapMVar)
-import           UnliftIO.STM        (TVar, atomically, readTVar, readTVarIO, writeTVar)
+import           Cleff.Internal.ThreadVar
+import           Control.Monad            (void)
+import           Data.Atomics             (atomicModifyIORefCAS)
+import           Data.Tuple               (swap)
+import           Lens.Micro               (Lens', (&), (.~), (^.))
+import           UnliftIO.IORef           (IORef, newIORef, readIORef, writeIORef)
+import           UnliftIO.MVar            (MVar, modifyMVar, readMVar, swapMVar)
+import           UnliftIO.STM             (TVar, atomically, readTVar, readTVarIO, writeTVar)
 
 -- * Effect
 
@@ -93,6 +95,31 @@ runState s m = thisIsPureTrustMe do
   s' <- readIORef rs
   pure (x, s')
 {-# INLINE runState #-}
+
+-- | Run a 'State' effect where each thread has its thread-local state.
+--
+-- This means that each thread will have an individual state that has the same initial value. Threfore, state
+-- operations on one thread will not change the state for any other thread.
+--
+-- The returned final state is that of the current thread.
+--
+-- === Caveats
+--
+-- Like 'runState', the 'state' operation in this handler is atomic. Like 'runState', and unlike 'mtl', any errors will
+-- not revert the state changes.
+--
+-- Be warned that if you use a thread pool, then when a thread is reused, it may read the state left from the last
+-- usage, therefore losing locality. If you use a thread pool, you will want to manually reset the state after each
+-- task.
+--
+-- @since 0.3.3.0
+runStateLocal :: s -> Eff (State s : es) a -> Eff es (a, s)
+runStateLocal s m = thisIsPureTrustMe do
+  rs <- newThreadVar s
+  x <- reinterpret (\e -> getThreadVar rs >>= \r -> handleIORef r e) m
+  s' <- readIORef =<< getThreadVar rs
+  pure (x, s')
+{-# INLINE runStateLocal #-}
 
 -- | Run the 'State' effect in terms of operations on a supplied 'IORef'. The 'state' operation is atomic.
 --
