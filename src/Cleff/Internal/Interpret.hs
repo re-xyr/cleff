@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE UnboxedTuples       #-}
 {-# OPTIONS_HADDOCK not-home #-}
 -- |
 -- Copyright: (c) 2021 Xy Ren
@@ -211,9 +210,9 @@ reinterpret3 = reinterpretN @'[e', e'', e''']
 
 -- | Like 'reinterpret', but adds arbitrarily many new effects. This function requires @TypeApplications@.
 reinterpretN :: ∀ es' e es. KnownList es' => Handler e (es' ++ es) -> Eff (e : es) ~> Eff (es' ++ es)
-reinterpretN handle = alter \es ->
-  let (# ptr, es' #) = allocaEnv es
-  in appendEnv ptr (mkInternalHandler ptr es' handle) $ adjustEnv (Rec.drop @es') es'
+reinterpretN handle = alter \es -> appendEnv
+  (mkInternalHandler (peekEnv es) es handle)
+  (adjustEnv (Rec.drop @es') es)
 {-# INLINE reinterpretN #-}
 
 -- | Respond to an effect, but does not eliminate it from the stack. This means you can re-send the operations in the
@@ -228,9 +227,9 @@ impose = imposeN @'[e']
 
 -- | Like 'impose', but allows introducing arbitrarily many effects. This requires @TypeApplications@.
 imposeN :: ∀ es' e es. (KnownList es', e :> es) => Handler e (es' ++ es) -> Eff es ~> Eff (es' ++ es)
-imposeN handle = alter \es ->
-  let (# ptr, es' #) = allocaEnv es
-  in replaceEnv ptr (mkInternalHandler ptr es' handle) $ adjustEnv (Rec.drop @es') es'
+imposeN handle = alter \es -> replaceEnv
+  (mkInternalHandler (peekEnv es) es handle)
+  (adjustEnv (Rec.drop @es') es)
 {-# INLINE imposeN #-}
 
 -- * Translating effects

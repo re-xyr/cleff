@@ -50,6 +50,7 @@ library
       Cleff.Internal.Monad
       Cleff.Internal.Rec
       Cleff.Internal.TH
+      Cleff.Internal.Vec
       Cleff.Mask
       Cleff.Output
       Cleff.Reader
