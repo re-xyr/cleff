@@ -84,12 +84,10 @@ See [`example/`](https://github.com/re-xyr/cleff/tree/master/example/) for more 
 
 ## Benchmarks
 
-These are the results of the [effect-zoo](https://github.com/ocharles/effect-zoo) microbenchmarks, compiled by GHC 8.10.7. Keep in mind that these are *very short and synthetic programs*, and may or may not tell the accurate performance characteristics of different effect libraries in real use:
+These are the results of [`effectful`'s microbenchmarks](https://github.com/haskell-effectful/effectful/tree/master/benchmarks), compiled by GHC 8.10.7. Each diagram shows the average run time of each effect library's implementation of an identical program; lower is better. Each benchmark suite has two flavors - *shallow* and *deep* - where the shallow variant only uses necessary effects, and the deep variant adds 10 redundant `Reader` effects, to simulate more realistic scenarios. Keep in mind that these are *very short and synthetic programs*, and may or may not tell the accurate performance characteristics of different effect libraries in real use.
 
-- `big-stack`: ![big-stack benchmark result](https://raw.githubusercontent.com/re-xyr/cleff/master/docs/img/effect-zoo-big-stack.png)
-- `countdown`: ![countdown benchmark result](https://raw.githubusercontent.com/re-xyr/cleff/master/docs/img/effect-zoo-countdown.png)
-- `file-sizes`: ![file-sizes benchmark result](https://raw.githubusercontent.com/re-xyr/cleff/master/docs/img/effect-zoo-file-sizes.png)
-- `reinterpretation`: ![reinterpretation benchmark result](https://raw.githubusercontent.com/re-xyr/cleff/master/docs/img/effect-zoo-reinterpretation.png)
+- `countdown`: ![countdown benchmark result](https://raw.githubusercontent.com/re-xyr/cleff/master/docs/img/benchmark-countdown.png)
+- `filesize`: ![filesize benchmark result](https://raw.githubusercontent.com/re-xyr/cleff/master/docs/img/benchmark-filesize.png)
 
 ### Differences from `effectful`
 
