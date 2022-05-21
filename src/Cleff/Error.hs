@@ -134,8 +134,8 @@ instance Show ErrorExc where
     \those shenanigans mentioned or other similar ones seem unlikely, please report this as a bug." <>)
 
 catch' :: ∀ e m a. MonadUnliftIO m => ExcUid -> m a -> (e -> m a) -> m a
-catch' eid m h = m `Exc.catch` \ex@(ErrorExc eid' e) ->
-  if eid == eid' then h (fromAny e) else Exc.throwIO ex
+catch' eid m h = m `Exc.catch` \ex@(ErrorExc eid' (Any e)) ->
+  if eid == eid' then h e else Exc.throwIO ex
 {-# INLINE catch' #-}
 
 try' :: ∀ e m a. MonadUnliftIO m => ExcUid -> m a -> m (Either e a)
@@ -152,7 +152,7 @@ newExcUid = incrCounter 1 excUidSource
 
 errorHandler :: ExcUid -> Handler (Error e) (IOE : es)
 errorHandler eid = \case
-  ThrowError e     -> Exc.throwIO $ ErrorExc eid (toAny e)
+  ThrowError e     -> Exc.throwIO $ ErrorExc eid (Any e)
   CatchError m' h' -> withToIO \toIO -> liftIO $ catch' eid (toIO m') (toIO . h')
 {-# INLINE errorHandler #-}
 

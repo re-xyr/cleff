@@ -74,9 +74,9 @@ library
       FunctionalDependencies
       GADTs
       GeneralizedNewtypeDeriving
-      KindSignatures
       LambdaCase
       NoStarIsType
+      PatternSynonyms
       PolyKinds
       RankNTypes
       RoleAnnotations
@@ -89,6 +89,7 @@ library
       TypeOperators
       UndecidableInstances
       UnicodeSyntax
+      ViewPatterns
   ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wpartial-fields -Wunused-type-patterns -Wmissing-export-lists
   build-depends:
       atomic-primops ==0.8.*
@@ -132,9 +133,9 @@ test-suite cleff-example
       FunctionalDependencies
       GADTs
       GeneralizedNewtypeDeriving
-      KindSignatures
       LambdaCase
       NoStarIsType
+      PatternSynonyms
       PolyKinds
       RankNTypes
       RoleAnnotations
@@ -147,6 +148,7 @@ test-suite cleff-example
       TypeOperators
       UndecidableInstances
       UnicodeSyntax
+      ViewPatterns
   ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       atomic-primops ==0.8.*
@@ -196,9 +198,9 @@ test-suite cleff-test
       FunctionalDependencies
       GADTs
       GeneralizedNewtypeDeriving
-      KindSignatures
       LambdaCase
       NoStarIsType
+      PatternSynonyms
       PolyKinds
       RankNTypes
       RoleAnnotations
@@ -211,6 +213,7 @@ test-suite cleff-test
       TypeOperators
       UndecidableInstances
       UnicodeSyntax
+      ViewPatterns
   ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       atomic-primops ==0.8.*

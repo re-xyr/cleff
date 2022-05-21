@@ -38,7 +38,7 @@ module Cleff.Internal.Monad
   ) where
 
 import           Cleff.Internal
-import           Cleff.Internal.Rec  (HandlerPtr (HandlerPtr, unHandlerPtr), KnownList, Rec, Subset, type (:>))
+import           Cleff.Internal.Rec  (KnownList, Rec, Subset, type (:>))
 import qualified Cleff.Internal.Rec  as Rec
 import           Control.Applicative (Applicative (liftA2))
 import           Control.Monad.Fix   (MonadFix (mfix))
@@ -140,17 +140,17 @@ readEnv (Env _ re mem) = fromAny $ mem Map.! unHandlerPtr (Rec.index @e re)
 
 -- | Overwrite the handler a pointer points to. \( O(1) \).
 writeEnv :: ∀ e es. HandlerPtr e -> InternalHandler e -> Env es -> Env es
-writeEnv (HandlerPtr m) x (Env n re mem) = Env n re (Map.insert m (toAny x) mem)
+writeEnv (HandlerPtr m) x (Env n re mem) = Env n re (Map.insert m (Any x) mem)
 {-# INLINE writeEnv #-}
 
 -- | Replace the handler pointer of an effect in the stack. \( O(n) \).
 replaceEnv :: ∀ e es. e :> es => HandlerPtr e -> InternalHandler e -> Env es -> Env es
-replaceEnv (HandlerPtr m) x (Env n re mem) = Env n (Rec.update @e (HandlerPtr m) re) (Map.insert m (toAny x) mem)
+replaceEnv (HandlerPtr m) x (Env n re mem) = Env n (Rec.update @e (HandlerPtr m) re) (Map.insert m (Any x) mem)
 {-# INLINE replaceEnv #-}
 
 -- | Add a new effect to the stack with its corresponding handler pointer. \( O(n) \).
 appendEnv :: ∀ e es. HandlerPtr e -> InternalHandler e -> Env es -> Env (e : es)
-appendEnv (HandlerPtr m) x (Env n re mem) = Env n (Rec.cons (HandlerPtr m) re) (Map.insert m (toAny x) mem)
+appendEnv (HandlerPtr m) x (Env n re mem) = Env n (Rec.cons (HandlerPtr m) re) (Map.insert m (Any x) mem)
 {-# INLINE appendEnv #-}
 
 -- | Use the state of LHS as a newer version for RHS. \( O(1) \).

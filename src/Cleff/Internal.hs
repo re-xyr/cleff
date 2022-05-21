@@ -14,10 +14,11 @@ module Cleff.Internal
     Effect
   , type (~>)
   , type (++)
+  , HandlerPtr (HandlerPtr, unHandlerPtr)
     -- * The 'Any' type
   , Any
+  , pattern Any
   , fromAny
-  , toAny
   ) where
 
 import           Data.Kind     (Type)
@@ -47,13 +48,13 @@ type family xs ++ ys where
   (x : xs) ++ ys = x : (xs ++ ys)
 infixr 5 ++
 
--- | Coerce any boxed value into 'Any'.
-toAny :: a -> Any
-toAny = unsafeCoerce
-{-# INLINE toAny #-}
+-- | A pointer to an effect handler.
+type role HandlerPtr nominal
+newtype HandlerPtr (e :: Effect) = HandlerPtr { unHandlerPtr :: Int }
 
--- | Coerce 'Any' to a boxed value. This is /generally unsafe/ and it is your responsibility to ensure that the type
--- you're coercing into is the original type that the 'Any' is coerced from.
-fromAny :: Any -> a
-fromAny = unsafeCoerce
-{-# INLINE fromAny #-}
+-- | A pattern synonym for coercing values to and from 'Any'. This is not any less unsafe but prevents possivle
+-- misuses.
+pattern Any :: forall a. a -> Any
+pattern Any {fromAny} <- (unsafeCoerce -> fromAny)
+  where Any = unsafeCoerce
+{-# COMPLETE Any #-}

@@ -87,7 +87,7 @@ primLiftIO = Eff . const
 -- should not be used directly; use 'withRunInIO' instead, or if you're interpreting higher-order effects, use
 -- 'withToIO'.
 primUnliftIO :: ((Eff es ~> IO) -> IO a) -> Eff es a
-primUnliftIO f = Eff \es -> f (`unEff` es)
+primUnliftIO f = Eff \es -> f \(Eff m) -> m es
 {-# INLINE primUnliftIO #-}
 
 instance IOE :> es => MonadIO (Eff es) where
@@ -197,7 +197,7 @@ interpretIO f = interpret (liftIO . f)
 --     'Control.Exception.bracket' (toIO alloc) (toIO . dealloc) (toIO . use)
 -- @
 withToIO :: (Handling esSend e es, IOE :> es) => ((Eff esSend ~> IO) -> IO a) -> Eff es a
-withToIO f = Eff \es -> f \m -> unEff m (updateEnv es esSend)
+withToIO f = Eff \es -> f \(Eff m) -> m (updateEnv es esSend)
 
 -- | Lift an 'IO' computation into @'Eff' esSend@. This is analogous to 'liftIO', and is only useful in dealing with
 -- effect operations with the monad type in the negative position, for example 'Control.Exception.mask'ing:

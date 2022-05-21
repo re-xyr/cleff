@@ -20,8 +20,7 @@
 -- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
 -- extra careful if you're to depend on this module.
 module Cleff.Internal.Rec
-  ( HandlerPtr (HandlerPtr, unHandlerPtr)
-  , Rec
+  ( Rec
   , type (++)
     -- * Construction
   , empty
@@ -48,10 +47,6 @@ import           GHC.Exts                 (runRW#, unsafeFreezeByteArray#)
 import           GHC.ST                   (ST (ST))
 import           GHC.TypeLits             (ErrorMessage (ShowType, Text, (:<>:)), TypeError)
 import           Prelude                  hiding (concat, drop, head, tail, take)
-
--- | A pointer to an effect handler.
-type role HandlerPtr nominal
-newtype HandlerPtr (e :: Effect) = HandlerPtr { unHandlerPtr :: Int }
 
 -- | Extensible record type supporting efficient \( O(1) \) reads. The underlying implementation is 'PrimArray'
 -- slices.

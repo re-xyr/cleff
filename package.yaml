@@ -78,9 +78,9 @@ default-extensions:
 - FunctionalDependencies
 - GADTs
 - GeneralizedNewtypeDeriving
-- KindSignatures
 - LambdaCase
 - NoStarIsType
+- PatternSynonyms
 - PolyKinds
 - RankNTypes
 - RoleAnnotations
@@ -93,6 +93,7 @@ default-extensions:
 - TypeOperators
 - UndecidableInstances
 - UnicodeSyntax
+- ViewPatterns
 
 library:
   source-dirs: src
