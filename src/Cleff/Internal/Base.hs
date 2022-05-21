@@ -83,21 +83,18 @@ data IOE :: Effect where
 -- instead, or if you're interpreting higher-order effects, use 'fromIO'.
 primLiftIO :: IO a -> Eff es a
 primLiftIO = Eff . const
-{-# INLINE primLiftIO #-}
 
 -- | Give a runner function a way to run 'Eff' actions as an 'IO' computation. This function is /highly unsafe/ and
 -- should not be used directly; use 'withRunInIO' instead, or if you're interpreting higher-order effects, use
 -- 'withToIO'.
 primUnliftIO :: ((Eff es ~> IO) -> IO a) -> Eff es a
 primUnliftIO f = Eff \es -> f \(Eff m) -> m es
-{-# INLINE primUnliftIO #-}
 
 instance IOE :> es => MonadIO (Eff es) where
 #ifdef DYNAMIC_IOE
   liftIO = send . Lift
 #else
   liftIO = primLiftIO
-  {-# INLINE liftIO #-}
 #endif
 
 instance IOE :> es => MonadUnliftIO (Eff es) where
@@ -105,7 +102,6 @@ instance IOE :> es => MonadUnliftIO (Eff es) where
   withRunInIO f = send $ Unlift f
 #else
   withRunInIO = primUnliftIO
-  {-# INLINE withRunInIO #-}
 #endif
 
 instance IOE :> es => MonadThrow (Eff es) where
@@ -168,7 +164,7 @@ runPure = unsafeDupablePerformIO . runPureIO
 
 -- | Unwrap a pure 'Eff' computation into an 'IO' computation. You may occasionally need this.
 runPureIO :: Eff '[] ~> IO
-runPureIO (Eff m) = m emptyEnv
+runPureIO = \(Eff m) -> m emptyEnv
 {-# INLINE runPureIO #-}
 
 -- * Effect interpretation
@@ -208,6 +204,7 @@ interpretIO f = interpret (liftIO . f)
 -- @
 withToIO :: (Handling esSend e es, IOE :> es) => ((Eff esSend ~> IO) -> IO a) -> Eff es a
 withToIO f = Eff \es -> f \(Eff m) -> m (updateEnv es esSend)
+{-# INLINE withToIO #-}
 
 -- | Lift an 'IO' computation into @'Eff' esSend@. This is analogous to 'liftIO', and is only useful in dealing with
 -- effect operations with the monad type in the negative position, for example 'Control.Exception.mask'ing:
@@ -232,3 +229,4 @@ withToIO f = Eff \es -> f \(Eff m) -> m (updateEnv es esSend)
 -- and the returned 'IO' computation is recovered into 'Eff' with 'fromIO'.
 fromIO :: (Handling esSend e es, IOE :> es) => IO ~> Eff esSend
 fromIO = Eff . const
+{-# INLINE fromIO #-}

@@ -41,6 +41,7 @@ module Cleff.Internal.Rec
   ) where
 
 import           Cleff.Internal
+import           Data.Foldable            (for_)
 import           Data.Primitive.PrimArray (MutablePrimArray (MutablePrimArray), PrimArray (PrimArray), copyPrimArray,
                                            indexPrimArray, newPrimArray, writePrimArray)
 import           GHC.Exts                 (runRW#, unsafeFreezeByteArray#)
@@ -165,14 +166,9 @@ instance (Subset es es', e :> es') => Subset (e : es) es' where
 pick :: ∀ es es'. Subset es es' => Rec es' -> Rec es
 pick (Rec off _ arr) = Rec 0 (reifyLen @es) $ runPrimArray do
   marr <- newPrimArray (reifyLen @es)
-  go marr 0 (reifyIndices @es @es')
+  for_ (zip [0..] (reifyIndices @es @es')) \(newIx, ix) ->
+    writePrimArray marr newIx $ indexPrimArray arr (off + ix)
   pure marr
-  where
-    go :: MutablePrimArray s Int -> Int -> [Int] -> ST s ()
-    go _ _ [] = pure ()
-    go marr newIx (ix : ixs) = do
-      writePrimArray marr newIx $ indexPrimArray arr (off + ix)
-      go marr (newIx + 1) ixs
 
 -- | Update an entry in the record. \( O(n) \).
 update :: ∀ e es. e :> es => HandlerPtr e -> Rec es -> Rec es

@@ -51,7 +51,6 @@ ghc-options:
 - -Wunused-type-patterns
 # - -ddump-hi
 # - -ddump-simpl
-# - -ddump-stg-final
 # - -ddump-to-file
 # - -dsuppress-all
 # - -dsuppress-uniques

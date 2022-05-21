@@ -160,12 +160,10 @@ class Handling esSend e es | esSend -> e es where
 -- | Get the pointer to the current effect handler itself.
 hdlPtr :: ∀ esSend e es. Handling esSend e es => HandlerPtr e
 hdlPtr = let SendSite _ ptr = sendSite @esSend in ptr
-{-# INLINE hdlPtr #-}
 
 -- | Get the send-site 'Env'.
 esSend :: Handling esSend e es => Env esSend
 esSend = let SendSite env _ = sendSite in env
-{-# INLINE esSend #-}
 
 -- | Newtype wrapper for instantiating the 'Handling' typeclass locally, a la the reflection trick. We do not use
 -- the @reflection@ library directly so as not to expose this piece of implementation detail to the user.
@@ -175,7 +173,6 @@ newtype InstHandling esSend e es a = InstHandling (Handling esSend e es => a)
 -- be directly used anyhow.
 instHandling :: ∀ esSend e es a. (Handling esSend e es => a) -> SendSite esSend e -> a
 instHandling x = unsafeCoerce (InstHandling x :: InstHandling esSend e es a)
-{-# INLINE instHandling #-}
 
 -- | The type of an /effect handler/, which is a function that transforms an effect @e@ from an arbitrary effect stack
 -- into computations in the effect stack @es@.
@@ -195,18 +192,22 @@ mkInternalHandler ptr es handle = InternalHandler \e -> Eff \ess ->
 -- | Interpret an effect @e@ in terms of effects in the effect stack @es@ with an effect handler.
 interpret :: ∀ e es. Handler e es -> Eff (e : es) ~> Eff es
 interpret = reinterpretN @'[]
+{-# INLINE interpret #-}
 
 -- | Like 'interpret', but adds a new effect @e'@ to the stack that can be used in the handler.
 reinterpret :: ∀ e' e es. Handler e (e' : es) -> Eff (e : es) ~> Eff (e' : es)
 reinterpret = reinterpretN @'[e']
+{-# INLINE reinterpret #-}
 
 -- | Like 'reinterpret', but adds two new effects.
 reinterpret2 :: ∀ e' e'' e es. Handler e (e' : e'' : es) -> Eff (e : es) ~> Eff (e' : e'' : es)
 reinterpret2 = reinterpretN @'[e', e'']
+{-# INLINE reinterpret2 #-}
 
 -- | Like 'reinterpret', but adds three new effects.
 reinterpret3 :: ∀ e' e'' e''' e es. Handler e (e' : e'' : e''' : es) -> Eff (e : es) ~> Eff (e' : e'' : e''' : es)
 reinterpret3 = reinterpretN @'[e', e'', e''']
+{-# INLINE reinterpret3 #-}
 
 -- | Like 'reinterpret', but adds arbitrarily many new effects. This function requires @TypeApplications@.
 reinterpretN :: ∀ es' e es. KnownList es' => Handler e (es' ++ es) -> Eff (e : es) ~> Eff (es' ++ es)
@@ -220,10 +221,12 @@ reinterpretN handle = alter \es -> appendEnv
 -- logging.
 interpose :: ∀ e es. e :> es => Handler e es -> Eff es ~> Eff es
 interpose = imposeN @'[]
+{-# INLINE interpose #-}
 
 -- | Like 'interpose', but allows to introduce one new effect to use in the handler.
 impose :: ∀ e' e es. e :> es => Handler e (e' : es) -> Eff es ~> Eff (e' : es)
 impose = imposeN @'[e']
+{-# INLINE impose #-}
 
 -- | Like 'impose', but allows introducing arbitrarily many effects. This requires @TypeApplications@.
 imposeN :: ∀ es' e es. (KnownList es', e :> es) => Handler e (es' ++ es) -> Eff es ~> Eff (es' ++ es)
@@ -241,6 +244,7 @@ imposeN handle = alter \es -> replaceEnv
 -- @
 transform :: ∀ e e' es. e' :> es => Translator e e' -> Eff (e : es) ~> Eff es
 transform trans = interpret (sendVia toEff . trans)
+{-# INLINE transform #-}
 
 -- | Like 'transform', but instead of using an effect in stack, add a new one to the top of it.
 --
@@ -249,6 +253,7 @@ transform trans = interpret (sendVia toEff . trans)
 -- @
 translate :: ∀ e e' es. Translator e e' -> Eff (e : es) ~> Eff (e' : es)
 translate trans = reinterpret (sendVia toEff . trans)
+{-# INLINE translate #-}
 
 -- * Combinators for interpreting higher effects
 
@@ -284,6 +289,7 @@ translate trans = reinterpret (sendVia toEff . trans)
 -- @
 toEff :: Handling esSend e es => Eff esSend ~> Eff es
 toEff = alter \es -> updateEnv es esSend
+{-# INLINE toEff #-}
 
 -- | Run a computation in the current effect stack, just like 'toEff', but takes a 'Handler' of the current effect
 -- being interpreted, so that inside the computation being ran, the effect is interpreted differently. This is useful
@@ -303,9 +309,11 @@ toEffWith handle = alter \es ->
   -- The 'Handling' constraint of 'handle' will NOT be prematurely initialized here because that will make 'handle'
   -- monomorphic. Therefore this usage is safe.
   writeEnv (hdlPtr @esSend) (mkInternalHandler (hdlPtr @esSend) es handle) $ updateEnv es esSend
+{-# INLINE toEffWith #-}
 
 -- | Temporarily gain the ability to lift some @'Eff' es@ actions into @'Eff' esSend@. This is only useful for dealing
 -- with effect operations with the monad type in the negative position, which means it's unlikely that you need to use
 -- this function in implementing your effects.
 withFromEff :: Handling esSend e es => ((Eff es ~> Eff esSend) -> Eff esSend a) -> Eff es a
 withFromEff f = Eff \es -> unEff (f $ alter \ess -> updateEnv ess es) (updateEnv es esSend)
+{-# INLINE withFromEff #-}

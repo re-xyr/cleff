@@ -109,7 +109,7 @@ makeCon shouldMakeSig name = do
   pure $
     maybeToList ((`InfixD` name) <$> fixity) ++
     [ SigD fnName fnSig | shouldMakeSig ] ++
-    [ FunD fnName [Clause (VarP <$> fnArgs) (NormalB fnBody) []] ]
+    [ FunD fnName [Clause [] (NormalB $ LamE (VarP <$> fnArgs) fnBody) []] ]
 
   where
     -- Uncapitalize the first letter / remove the ':' in operator constructors

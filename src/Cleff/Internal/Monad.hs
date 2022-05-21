@@ -124,7 +124,7 @@ emptyEnv = Env 0 Rec.empty Vec.empty
 
 -- | Adjust the effect stack via an function over 'Rec'.
 adjustEnv :: ∀ es' es. (Rec es -> Rec es') -> Env es -> Env es'
-adjustEnv f (Env n re mem) = Env n (f re) mem
+adjustEnv f = \(Env n re mem) -> Env n (f re) mem
 {-# INLINE adjustEnv #-}
 
 -- | Peek the next address to be allocated. \( O(1) \).
@@ -170,6 +170,7 @@ infix 0 :>>
 -- effect stack.
 send :: e :> es => e (Eff es) ~> Eff es
 send = sendVia id
+{-# INLINE send #-}
 
 -- | Perform an action in another effect stack via a transformation to that stack; in other words, this function "maps"
 -- the effect operation from effect stack @es@ to @es'@. This is a largely generalized version of 'send'; only use this
@@ -182,3 +183,4 @@ send = sendVia id
 -- @since 0.2.0.0
 sendVia :: e :> es' => (Eff es ~> Eff es') -> e (Eff es) ~> Eff es'
 sendVia f e = Eff \es -> unEff (f (runHandler (readEnv es) e)) es
+{-# INLINE sendVia #-}
