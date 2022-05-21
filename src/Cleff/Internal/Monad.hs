@@ -58,15 +58,21 @@ newtype InternalHandler e = InternalHandler { runHandler :: ∀ es. e (Eff es) ~
 -- which is a type-level list that holds all effects available.
 --
 -- The best practice is to always use a polymorphic type variable for the effect stack @es@, and then use the type
--- operators '(:>)' and '(:>>)' in constraints to indicate what effects are available in the stack. For example,
+-- operator '(:>)' in constraints to indicate what effects are available in the stack. For example,
 --
 -- @
 -- ('Cleff.Reader.Reader' 'String' ':>' es, 'Cleff.State.State' 'Bool' ':>' es) => 'Eff' es 'Integer'
 -- @
 --
 -- means you can perform operations of the @'Cleff.Reader.Reader' 'String'@ effect and the @'Cleff.State.State' 'Bool'@
--- effect in a computation returning an 'Integer'. The reason why you should always use a polymorphic effect stack as
--- opposed to a concrete list of effects are that
+-- effect in a computation returning an 'Integer'. A convenient shorthand, '(:>>)', can also be used to indicate
+-- multiple effects being in a stack:
+--
+-- @
+-- '['Cleff.Reader.Reader' 'String', 'Cleff.State.State' 'Bool'] ':>>' es => 'Eff' es 'Integer'
+-- @
+--
+-- The reason why you should always use a polymorphic effect stack as opposed to a concrete list of effects are that:
 --
 -- * it can contain other effects that are used by computations other than the current one, and
 -- * it does not require you to run the effects in any particular order.
