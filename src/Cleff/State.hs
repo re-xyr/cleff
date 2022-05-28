@@ -70,8 +70,8 @@ modify f = state (((), ) . f)
 
 handleIORef :: IOE :> es => IORef s -> Handler (State s) es
 handleIORef rs = \case
-  Get     -> liftIO $ readIORef rs
-  Put s'  -> liftIO $ writeIORef rs s'
+  Get     -> readIORef rs
+  Put s'  -> writeIORef rs s'
   State f -> liftIO $ atomicModifyIORefCAS rs (swap . f)
 
 -- | Run the 'State' effect.
@@ -89,7 +89,7 @@ handleIORef rs = \case
 -- computation. Any state operation done /before main thread finishes/ is still taken into account.
 runState :: s -> Eff (State s : es) a -> Eff es (a, s)
 runState s m = thisIsPureTrustMe do
-  rs <- liftIO $ newIORef s
+  rs <- newIORef s
   x <- reinterpret (handleIORef rs) m
   s' <- readIORef rs
   pure (x, s')
