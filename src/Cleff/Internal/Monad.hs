@@ -39,11 +39,12 @@ module Cleff.Internal.Monad
 import           Cleff.Internal
 import           Cleff.Internal.Rec  (KnownList, Rec, Subset, type (:>))
 import qualified Cleff.Internal.Rec  as Rec
-import           Cleff.Internal.Vec  (Vec)
-import qualified Cleff.Internal.Vec  as Vec
 import           Control.Applicative (Applicative (liftA2))
 import           Control.Monad.Fix   (MonadFix (mfix))
+import           Data.Any            (Any, fromAny, pattern Any)
 import           Data.Kind           (Constraint)
+import           Data.RadixVec       (RadixVec)
+import qualified Data.RadixVec       as Vec
 
 -- * The 'Eff' monad
 
@@ -111,7 +112,7 @@ type role Env nominal
 data Env (es :: [Effect]) = Env
   {-# UNPACK #-} !Int -- ^ The next address to allocate.
   {-# UNPACK #-} !(Rec es) -- ^ The effect stack storing pointers to handlers.
-  {-# UNPACK #-} !(Vec Any) -- ^ The storage that corresponds pointers to handlers.
+  {-# UNPACK #-} !(RadixVec Any) -- ^ The storage that corresponds pointers to handlers.
 
 -- | Create an empty 'Env' with no address allocated.
 emptyEnv :: Env '[]

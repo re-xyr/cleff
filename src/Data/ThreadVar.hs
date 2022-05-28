@@ -12,7 +12,7 @@
 --
 -- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
 -- extra careful if you're to depend on this module.
-module Cleff.Internal.ThreadVar (ThreadVar, newThreadVar, getThreadVar) where
+module Data.ThreadVar (ThreadVar, newThreadVar, getThreadVar) where
 
 import           Control.Monad.IO.Class (MonadIO (liftIO))
 import           Data.Atomics           (atomicModifyIORefCAS_)

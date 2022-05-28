@@ -46,13 +46,10 @@ library
       Cleff.Input
       Cleff.Internal
       Cleff.Internal.Base
-      Cleff.Internal.Instances
       Cleff.Internal.Interpret
       Cleff.Internal.Monad
       Cleff.Internal.Rec
       Cleff.Internal.TH
-      Cleff.Internal.ThreadVar
-      Cleff.Internal.Vec
       Cleff.Mask
       Cleff.Output
       Cleff.Reader
@@ -60,7 +57,10 @@ library
       Cleff.Trace
       Cleff.Writer
   other-modules:
-      Paths_cleff
+      Cleff.Internal.Instances
+      Data.Any
+      Data.RadixVec
+      Data.ThreadVar
   hs-source-dirs:
       src
   default-extensions:

@@ -25,14 +25,14 @@ module Cleff.State
 
 import           Cleff
 import           Cleff.Internal.Base
-import           Cleff.Internal.ThreadVar
-import           Control.Monad            (void)
-import           Data.Atomics             (atomicModifyIORefCAS)
-import           Data.Tuple               (swap)
-import           Lens.Micro               (Lens', (&), (.~), (^.))
-import           UnliftIO.IORef           (IORef, newIORef, readIORef, writeIORef)
-import           UnliftIO.MVar            (MVar, modifyMVar, readMVar, swapMVar)
-import           UnliftIO.STM             (TVar, atomically, readTVar, readTVarIO, writeTVar)
+import           Control.Monad       (void)
+import           Data.Atomics        (atomicModifyIORefCAS)
+import           Data.ThreadVar      (getThreadVar, newThreadVar)
+import           Data.Tuple          (swap)
+import           Lens.Micro          (Lens', (&), (.~), (^.))
+import           UnliftIO.IORef      (IORef, newIORef, readIORef, writeIORef)
+import           UnliftIO.MVar       (MVar, modifyMVar, readMVar, swapMVar)
+import           UnliftIO.STM        (TVar, atomically, readTVar, readTVarIO, writeTVar)
 
 -- * Effect
 

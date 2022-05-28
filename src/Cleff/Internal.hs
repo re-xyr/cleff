@@ -15,15 +15,9 @@ module Cleff.Internal
   , type (~>)
   , type (++)
   , HandlerPtr (HandlerPtr, unHandlerPtr)
-    -- * The @Any@ type
-  , Any
-  , pattern Any
-  , fromAny
   ) where
 
-import           Data.Kind     (Type)
-import           GHC.Exts      (Any)
-import           Unsafe.Coerce (unsafeCoerce)
+import           Data.Kind (Type)
 
 -- | The type of effects. An effect @e m a@ takes an effect monad type @m :: 'Type' -> 'Type'@ and a result type
 -- @a :: 'Type'@.
@@ -51,10 +45,3 @@ infixr 5 ++
 -- | A pointer to an effect handler.
 type role HandlerPtr nominal
 newtype HandlerPtr (e :: Effect) = HandlerPtr { unHandlerPtr :: Int }
-
--- | A pattern synonym for coercing values to and from 'Any'. This is not any less unsafe but prevents possivle
--- misuses.
-pattern Any :: forall a. a -> Any
-pattern Any {fromAny} <- (unsafeCoerce -> fromAny)
-  where Any = unsafeCoerce
-{-# COMPLETE Any #-}

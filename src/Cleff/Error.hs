@@ -33,11 +33,11 @@ module Cleff.Error
   ) where
 
 import           Cleff
-import           Cleff.Internal
 import           Cleff.Internal.Base
 import           Control.Exception    (Exception)
 import qualified Control.Exception    as Exc
 import           Control.Monad        ((<=<))
+import           Data.Any             (Any, pattern Any)
 import           Data.Atomics.Counter (AtomicCounter, incrCounter, newCounter)
 import           Data.Bool            (bool)
 import           System.IO.Unsafe     (unsafePerformIO)

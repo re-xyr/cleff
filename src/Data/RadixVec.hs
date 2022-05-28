@@ -10,7 +10,7 @@
 --
 -- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
 -- extra careful if you're to depend on this module.
-module Cleff.Internal.Vec (Vec, empty, lookup, update, snoc) where
+module Data.RadixVec (RadixVec, empty, lookup, update, snoc) where
 
 import           Control.Monad.ST          (ST)
 import           Data.Bits                 (Bits (unsafeShiftL, unsafeShiftR, (.&.)), FiniteBits (countTrailingZeros))
@@ -28,7 +28,7 @@ import           Prelude                   hiding (lookup)
 --
 -- The branching factor (base of log) is 32 therefore the time is close to constant in most cases. Note that in
 -- practice, lookup is faster than update, and update is faster than append.
-data Vec a = Vec !Int !(Tree a)
+data RadixVec a = RadixVec !Int !(Tree a)
 
 type Shift = Int
 
@@ -63,22 +63,22 @@ alterSmallArray marr ix f = do
   x <- readSmallArray marr ix
   writeSmallArray marr ix $! f x
 
--- | The empty 'Vec'.
-empty :: Vec a
-empty = Vec 0 $ Tip $ runSmallArray $ newSmallArray 0 $ error
-  "Cleff.Internal.Vec: Encountered an element in an empty Vec. Please report this as a bug."
+-- | The empty 'RadixVec'.
+empty :: RadixVec a
+empty = RadixVec 0 $ Tip $ runSmallArray $ newSmallArray 0 $ error
+  "Cleff.Internal.RadixVec: Encountered an element in an empty RadixVec. Please report this as a bug."
 
--- | Lookup in a 'Vec' by an index. This does not perform any bounds check.
-lookup :: Int -> Vec a -> a
-lookup ix (Vec _ tree) = go tree
+-- | Lookup in a 'RadixVec' by an index. This does not perform any bounds check.
+lookup :: Int -> RadixVec a -> a
+lookup ix (RadixVec _ tree) = go tree
   where
     go (Tip arr)    = indexSmallArray arr (initialMask .&. ix)
     go (Node s arr) = go (indexSmallArray arr (mask s ix))
 
--- | Update a value in a 'Vec' by an index. The value will be forced before installing. This does not perform any
+-- | Update a value in a 'RadixVec' by an index. The value will be forced before installing. This does not perform any
 -- bounds check.
-update :: Int -> a -> Vec a -> Vec a
-update ix x (Vec len tree) = Vec len (go tree)
+update :: Int -> a -> RadixVec a -> RadixVec a
+update ix x (RadixVec len tree) = RadixVec len (go tree)
   where
     go (Tip arr) = Tip $ runSmallArray do
       marr <- thawSmallArray arr 0 (sizeofSmallArray arr)
@@ -89,11 +89,11 @@ update ix x (Vec len tree) = Vec len (go tree)
       alterSmallArray marr (mask s ix) go
       pure marr
 
--- | Append a value to a 'Vec'. The value will be forced before installing. This does not perform any bounds check.
-snoc :: Vec a -> a -> Vec a
-snoc (Vec len tree) x
-  | ins <= topShift = Vec (len + 1) (go tree)
-  | otherwise = Vec (len + 1) $ Node (topShift + factor) $ runSmallArray $ do
+-- | Append a value to a 'RadixVec'. The value will be forced before installing. This does not perform any bounds check.
+snoc :: RadixVec a -> a -> RadixVec a
+snoc (RadixVec len tree) x
+  | ins <= topShift = RadixVec (len + 1) (go tree)
+  | otherwise = RadixVec (len + 1) $ Node (topShift + factor) $ runSmallArray $ do
     marr <- newSmallArray 2 $! tree
     writeSmallArray marr 1 $! branch topShift
     pure marr
