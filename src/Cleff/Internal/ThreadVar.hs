@@ -14,12 +14,12 @@
 -- extra careful if you're to depend on this module.
 module Cleff.Internal.ThreadVar (ThreadVar, newThreadVar, getThreadVar) where
 
-import           Cleff.Internal
 import           Control.Monad.IO.Class (MonadIO (liftIO))
 import           Data.Atomics           (atomicModifyIORefCAS_)
 import           Data.IntMap.Strict     (IntMap)
 import qualified Data.IntMap.Strict     as Map
 import           Foreign.C.Types
+import           GHC.Base               (noinline)
 import           GHC.Conc               (ThreadId (ThreadId))
 import           GHC.Exts               (ThreadId#, mkWeak#)
 import           GHC.IO                 (IO (IO))
