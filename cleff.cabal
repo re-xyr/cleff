@@ -5,9 +5,17 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           cleff
-version:        0.3.3.0
+version:        0.3.4.0
 synopsis:       Fast and concise extensible effects
-description:    Please see the README on GitHub at <https://github.com/re-xyr/cleff#readme>
+description:    @cleff@ is an effect system for building modular, well-abstracted and performant programs. It provides:
+                .
+                - Blazing-fast speed in the majority of use cases (<#benchmarks Benchmarks>)
+                - Well-built integration with the existing Haskell ecosystem (@unliftio@, @monad-control@, @exceptions@...)
+                - Predictable behavior under expections and concurrency that does not stab you in the back
+                - Flexible and expressive API for power users, with first-class support of scoped effects
+                .
+                You can use @cleff@ out of the box, with little to no boilerplate. To get started, use the module "Cleff" as a
+                starting point.
 category:       Control, Effect, Language
 homepage:       https://github.com/re-xyr/cleff#readme
 bug-reports:    https://github.com/re-xyr/cleff/issues
