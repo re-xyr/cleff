@@ -70,10 +70,9 @@ modify f = state (((), ) . f)
 
 handleIORef :: IOE :> es => IORef s -> Handler (State s) es
 handleIORef rs = \case
-  Get     -> readIORef rs
-  Put s'  -> writeIORef rs s'
+  Get     -> liftIO $ readIORef rs
+  Put s'  -> liftIO $ writeIORef rs s'
   State f -> liftIO $ atomicModifyIORefCAS rs (swap . f)
-{-# INLINE handleIORef #-}
 
 -- | Run the 'State' effect.
 --
@@ -90,11 +89,10 @@ handleIORef rs = \case
 -- computation. Any state operation done /before main thread finishes/ is still taken into account.
 runState :: s -> Eff (State s : es) a -> Eff es (a, s)
 runState s m = thisIsPureTrustMe do
-  rs <- newIORef s
+  rs <- liftIO $ newIORef s
   x <- reinterpret (handleIORef rs) m
   s' <- readIORef rs
   pure (x, s')
-{-# INLINE runState #-}
 
 -- | Run a 'State' effect where each thread has its thread-local state.
 --
@@ -119,14 +117,12 @@ runStateLocal s m = thisIsPureTrustMe do
   x <- reinterpret (\e -> getThreadVar rs >>= \r -> handleIORef r e) m
   s' <- readIORef =<< getThreadVar rs
   pure (x, s')
-{-# INLINE runStateLocal #-}
 
 -- | Run the 'State' effect in terms of operations on a supplied 'IORef'. The 'state' operation is atomic.
 --
 -- @since 0.2.1.0
 runStateIORef :: IOE :> es => IORef s -> Eff (State s : es) a -> Eff es a
 runStateIORef rs = interpret $ handleIORef rs
-{-# INLINE runStateIORef #-}
 
 -- | Run the 'State' effect in terms of operations on a supplied 'MVar'.
 --
@@ -136,7 +132,6 @@ runStateMVar rs = interpret \case
   Get     -> readMVar rs
   Put s'  -> void $ swapMVar rs s'
   State f -> modifyMVar rs \s -> let (x, !s') = f s in pure (s', x)
-{-# INLINE runStateMVar #-}
 
 -- | Run the 'State' effect in terms of operations on a supplied 'TVar'.
 --
@@ -150,7 +145,6 @@ runStateTVar rs = interpret \case
     let (x, !s') = f s
     writeTVar rs s'
     pure x
-{-# INLINE runStateTVar #-}
 
 -- | Run a 'State' effect in terms of a larger 'State' via a 'Lens''.
 zoom :: State t :> es => Lens' t s -> Eff (State s : es) ~> Eff es
@@ -158,4 +152,3 @@ zoom field = interpret \case
   Get     -> gets (^. field)
   Put s   -> modify (& field .~ s)
   State f -> state \t -> let (a, !s) = f (t ^. field) in (a, t & field .~ s)
-{-# INLINE zoom #-}

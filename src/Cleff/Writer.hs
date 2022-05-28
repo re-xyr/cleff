@@ -63,19 +63,18 @@ listens f m = do
 runWriter :: ∀ w es a. Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
 runWriter m = thisIsPureTrustMe do
   rw <- newIORef mempty
-  x <- reinterpret (h [rw]) m
+  x <- reinterpret (handle [rw]) m
   w' <- readIORef rw
   pure (x, w')
   where
-    h :: [IORef w] -> Handler (Writer w) (IOE : es)
-    h rws = \case
+    handle :: [IORef w] -> Handler (Writer w) (IOE : es)
+    handle rws = \case
       Tell w' -> traverse_ (\rw -> liftIO $ atomicModifyIORefCAS_ rw (<> w')) rws
       Listen m' -> do
         rw' <- newIORef mempty
-        x <- toEffWith (h $ rw' : rws) m'
+        x <- toEffWith (handle $ rw' : rws) m'
         w' <- readIORef rw'
         pure (x, w')
-{-# INLINE runWriter #-}
 
 -- | Run a monoidal 'Writer' effect, but appends the listened output to the parent value only when the listen operation
 -- finishes. This means that when you run two 'listen's on two threads, the values 'tell'ed inside will not be appended
@@ -97,17 +96,16 @@ runWriter m = thisIsPureTrustMe do
 runWriterBatch :: ∀ w es a. Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
 runWriterBatch m = thisIsPureTrustMe do
   rw <- newIORef mempty
-  x <- reinterpret (h rw) m
+  x <- reinterpret (handle rw) m
   w' <- readIORef rw
   pure (x, w')
   where
-    h :: IORef w -> Handler (Writer w) (IOE : es)
-    h rw = \case
+    handle :: IORef w -> Handler (Writer w) (IOE : es)
+    handle rw = \case
       Tell w' -> liftIO $ atomicModifyIORefCAS_ rw (<> w')
       Listen m' -> do
         rw' <- newIORef mempty
-        x <- toEffWith (h rw') m'
+        x <- toEffWith (handle rw') m'
         w' <- readIORef rw'
         liftIO $ atomicModifyIORefCAS_ rw (<> w')
         pure (x, w')
-{-# INLINE runWriterBatch #-}

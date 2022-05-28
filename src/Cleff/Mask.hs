@@ -85,9 +85,7 @@ bracket :: Mask :> es
   -> Eff es b
 bracket alloc dealloc action = mask \restore -> do
   res <- alloc
-  ret <- restore (action res) `onError` dealloc res
-  _ <- uninterruptibleMask_ (dealloc res)
-  pure ret
+  restore (action res) `finally` dealloc res
 
 -- | Like 'bracket', but only runs cleanup if an exception is thrown in the main computation.
 bracketOnError :: Mask :> es
@@ -141,4 +139,3 @@ runMask = thisIsPureTrustMe . reinterpret \case
   UninterruptibleMask f -> withToIO \toIO -> Exc.uninterruptibleMask \restore -> toIO $ f (fromIO . restore . toIO)
   OnException m n -> withToIO \toIO -> toIO m `Exc.catch` \(e :: Exc.SomeException) ->
     Exc.try @Exc.SomeException (toIO n) *> Exc.throwIO e
-{-# INLINE runMask #-}

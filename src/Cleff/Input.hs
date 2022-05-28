@@ -47,7 +47,6 @@ inputs f = f <$> input
 runInputConst :: i -> Eff (Input i : es) ~> Eff es
 runInputConst x = interpret \case
   Input -> pure x
-{-# INLINE runInputConst #-}
 
 -- | Run an 'Input' effect by going through a list of values.
 inputToListState :: Eff (Input (Maybe i) : es) ~> Eff (State [i] : es)
@@ -55,7 +54,6 @@ inputToListState = reinterpret \case
   Input -> state \case
     []     -> (Nothing, [])
     x : xs -> (Just x, xs)
-{-# INLINE inputToListState #-}
 
 -- | Run an 'Input' in terms of a 'Reader'.
 --
@@ -63,13 +61,11 @@ inputToListState = reinterpret \case
 inputToReader :: Eff (Input i : es) ~> Eff (Reader i : es)
 inputToReader = reinterpret \case
   Input -> ask
-{-# INLINE inputToReader #-}
 
 -- | Run an 'Input' effect by performing a computation for each input request.
 runInputEff :: Eff es i -> Eff (Input i : es) ~> Eff es
 runInputEff m = interpret \case
   Input -> m
-{-# INLINE runInputEff #-}
 
 -- | Transform an 'Input' effect into another one already in the effect stack, by a pure function.
 --
@@ -77,7 +73,6 @@ runInputEff m = interpret \case
 mapInput :: Input i' :> es => (i' -> i) -> Eff (Input i : es) ~> Eff es
 mapInput f = interpret \case
   Input -> f <$> input
-{-# INLINE mapInput #-}
 
 -- | Transform an 'Input' effect into another one already in the effect stack, by an effectful computation.
 --
@@ -85,4 +80,3 @@ mapInput f = interpret \case
 bindInput :: Input i' :> es => (i' -> Eff es i) -> Eff (Input i : es) ~> Eff es
 bindInput f = interpret \case
   Input -> f =<< input
-{-# INLINE bindInput #-}

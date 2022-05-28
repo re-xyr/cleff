@@ -83,32 +83,22 @@ newtype Eff es a = Eff { unEff :: Env es -> IO a }
 
 instance Functor (Eff es) where
   fmap f (Eff x) = Eff (fmap f . x)
-  {-# INLINE fmap #-}
   x <$ Eff y = Eff \es -> x <$ y es
-  {-# INLINE (<$) #-}
 
 instance Applicative (Eff es) where
   pure = Eff . const . pure
-  {-# INLINE pure #-}
   Eff f <*> Eff x = Eff \es -> f es <*> x es
-  {-# INLINE (<*>) #-}
   Eff x <*  Eff y = Eff \es -> x es <*  y es
-  {-# INLINE (<*) #-}
   Eff x  *> Eff y = Eff \es -> x es  *> y es
-  {-# INLINE (*>) #-}
   liftA2 f (Eff x) (Eff y) = Eff \es -> liftA2 f (x es) (y es)
-  {-# INLINE liftA2 #-}
 
 instance Monad (Eff es) where
   -- no 'return', because the default impl is correct and it is going to be deprecated anyway
   Eff x >>= f = Eff \es -> x es >>= \x' -> unEff (f x') es
-  {-# INLINE (>>=) #-}
   (>>) = (*>) -- More efficient, since the default is @x >> y = x >>= const y@
-  {-# INLINE (>>) #-}
 
 instance MonadFix (Eff es) where
   mfix f = Eff \es -> mfix \x -> unEff (f x) es
-  {-# INLINE mfix #-}
 
 -- * Effect environment
 
@@ -121,7 +111,7 @@ type role Env nominal
 data Env (es :: [Effect]) = Env
   {-# UNPACK #-} !Int -- ^ The next address to allocate.
   {-# UNPACK #-} !(Rec es) -- ^ The effect stack storing pointers to handlers.
-  !(Vec Any) -- ^ The storage that corresponds pointers to handlers.
+  {-# UNPACK #-} !(Vec Any) -- ^ The storage that corresponds pointers to handlers.
 
 -- | Create an empty 'Env' with no address allocated.
 emptyEnv :: Env '[]
@@ -145,17 +135,17 @@ readEnv (Env _ re mem) = fromAny $ Vec.lookup (unHandlerPtr (Rec.index @e re)) m
 
 -- | Overwrite the handler a pointer points to. \( O(1) \).
 writeEnv :: ∀ e es. HandlerPtr e -> InternalHandler e -> Env es -> Env es
-writeEnv (HandlerPtr m) x (Env n re mem) = Env n re (Vec.update m (Any x) mem)
+writeEnv (HandlerPtr m) x (Env n re mem) = Env n re $ Vec.update m (Any x) mem
 {-# INLINE writeEnv #-}
 
 -- | Replace the handler pointer of an effect in the stack. \( O(n) \).
 replaceEnv :: ∀ e es. e :> es => InternalHandler e -> Env es -> Env es
-replaceEnv x (Env n re mem) = Env (n + 1) (Rec.update @e (HandlerPtr n) re) (Vec.snoc mem (Any x))
+replaceEnv x (Env n re mem) = Env (n + 1) (Rec.update @e (HandlerPtr n) re) (Vec.snoc mem $ Any x)
 {-# INLINE replaceEnv #-}
 
 -- | Add a new effect to the stack with its corresponding handler pointer. \( O(n) \).
 appendEnv :: ∀ e es. InternalHandler e -> Env es -> Env (e : es)
-appendEnv x (Env n re mem) = Env (n + 1) (Rec.cons (HandlerPtr n) re) (Vec.snoc mem (Any x))
+appendEnv x (Env n re mem) = Env (n + 1) (Rec.cons (HandlerPtr n) re) (Vec.snoc mem $ Any x)
 {-# INLINE appendEnv #-}
 
 -- | Use the state of LHS as a newer version for RHS. \( O(1) \).

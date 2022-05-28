@@ -43,25 +43,21 @@ output :: Output o :> es => o -> Eff es ()
 outputToListState :: Eff (Output o : es) ~> Eff (State [o] : es)
 outputToListState = reinterpret \case
   Output x -> modify (x :)
-{-# INLINE outputToListState #-}
 
 -- | Run an 'Output' effect by translating it into a 'Writer'.
 outputToWriter :: (o -> o') -> Eff (Output o : es) ~> Eff (Writer o' : es)
 outputToWriter f = reinterpret \case
   Output x -> tell $ f x
-{-# INLINE outputToWriter #-}
 
 -- | Ignore outputs of an 'Output' effect altogether.
 ignoreOutput :: Eff (Output o : es) ~> Eff es
 ignoreOutput = interpret \case
   Output _ -> pure ()
-{-# INLINE ignoreOutput #-}
 
 -- | Run an 'Output' effect by performing a computation for each output.
 runOutputEff :: (o -> Eff es ()) -> Eff (Output o : es) ~> Eff es
 runOutputEff m = interpret \case
   Output x -> m x
-{-# INLINE runOutputEff #-}
 
 -- | Transform an 'Output' effect into another one already in the effect stack, by a pure function.
 --
@@ -69,7 +65,6 @@ runOutputEff m = interpret \case
 mapOutput :: Output o' :> es => (o -> o') -> Eff (Output o : es) ~> Eff es
 mapOutput f = interpret \case
   Output x -> output $ f x
-{-# INLINE mapOutput #-}
 
 -- | Transform an 'Output' effect into another one already in the effect stack, by an effectful computation.
 --
@@ -77,4 +72,3 @@ mapOutput f = interpret \case
 bindOutput :: Output o' :> es => (o -> Eff es o') -> Eff (Output o : es) ~> Eff es
 bindOutput f = interpret \case
   Output x -> output =<< f x
-{-# INLINE bindOutput #-}
