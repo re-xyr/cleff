@@ -34,7 +34,8 @@ module Cleff.Internal.Base
   ) where
 
 import           Cleff.Internal
-import           Cleff.Internal.Env
+import           Cleff.Internal.Env          (Handling)
+import qualified Cleff.Internal.Env          as Env
 import           Cleff.Internal.Interpret
 import           Cleff.Internal.Monad
 import qualified Cleff.Internal.Rec          as Rec
@@ -165,7 +166,7 @@ runPure = unsafeDupablePerformIO . runPureIO
 
 -- | Unwrap a pure 'Eff' computation into an 'IO' computation. You may occasionally need this.
 runPureIO :: Eff '[] ~> IO
-runPureIO = \(Eff m) -> m emptyEnv
+runPureIO = \(Eff m) -> m Env.empty
 {-# INLINE runPureIO #-}
 
 -- * Effect interpretation
@@ -204,7 +205,7 @@ interpretIO f = interpret (liftIO . f)
 --     'Control.Exception.bracket' (toIO alloc) (toIO . dealloc) (toIO . use)
 -- @
 withToIO :: (Handling esSend e es, IOE :> es) => ((Eff esSend ~> IO) -> IO a) -> Eff es a
-withToIO f = Eff \es -> f \(Eff m) -> m (updateEnv es esSend)
+withToIO f = Eff \es -> f \(Eff m) -> m (Env.update es esSend)
 {-# INLINE withToIO #-}
 
 -- | Lift an 'IO' computation into @'Eff' esSend@. This is analogous to 'liftIO', and is only useful in dealing with

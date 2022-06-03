@@ -7,8 +7,8 @@
 -- Stability: unstable
 -- Portability: non-portable (GHC only)
 --
--- This module contains functions for interpreting effects. Most of the times you won't need to import this directly;
--- the module "Cleff" reexports most of the functionalities.
+-- This module contains most functions for  interacting with the effect system. Most of the times you won't need to
+-- import this directly; the module "Cleff" reexports the majority of the functionalities.
 --
 -- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
 -- extra careful if you're to depend on this module.
@@ -29,11 +29,6 @@ module Cleff.Internal.Interpret
   , raiseNUnder
   , raiseUnderN
   , raiseNUnderN
-    -- * Handler types
-  , Handling
-  , esSend
-  , Handler
-  , Translator
     -- * Interpreting effects
   , interpret
   , reinterpret
@@ -44,22 +39,22 @@ module Cleff.Internal.Interpret
   , impose
   , imposeN
     -- * Translating effects
+  , Translator
   , transform
   , translate
     -- * Combinators for interpreting higher effects
+  , esSend
   , toEff
   , toEffWith
   , withFromEff
   ) where
 
 import           Cleff.Internal
-import           Cleff.Internal.Env
+import           Cleff.Internal.Env   (Handler, Handling, esSend)
+import qualified Cleff.Internal.Env   as Env
 import           Cleff.Internal.Monad
 import           Cleff.Internal.Rec   (Rec)
 import qualified Cleff.Internal.Rec   as Rec
-import           Unsafe.Coerce        (unsafeCoerce)
-
--- * Trivial handling
 
 -- | Alter the effect environment by a contravariant transformation function over it. This function reveals the
 -- profunctorial nature of 'Eff'; in particular, 'Eff' is a profunctor @['Effect'] -> 'Data.Kind.Type'@, @lmap@ is
@@ -69,8 +64,9 @@ alter f = \(Eff m) -> Eff \es -> m (f es)
 
 -- | A specialized version of 'alter' that only adjusts the effect stack.
 adjust :: ∀ es es'. (Rec es' -> Rec es) -> Eff es ~> Eff es'
-adjust f = alter (adjustEnv f)
+adjust f = alter (Env.adjust f)
 
+-- * Performing operations
 
 -- | Perform an effect operation, /i.e./ a value of an effect type @e :: 'Effect'@. This requires @e@ to be in the
 -- effect stack.
@@ -88,8 +84,10 @@ send = sendVia id
 --
 -- @since 0.2.0.0
 sendVia :: e :> es' => (Eff es ~> Eff es') -> e (Eff es) ~> Eff es'
-sendVia f e = Eff \es -> unEff (f (runHandler (readEnv es) e)) es
+sendVia f e = Eff \es -> unEff (f $ Env.read es e) es
 {-# INLINE sendVia #-}
+
+-- * Trivial handling
 
 -- | Lift a computation into a bigger effect stack with one more effect. For a more general version see 'raiseN'.
 raise :: ∀ e es. Eff es ~> Eff (e : es)
@@ -143,7 +141,7 @@ raiseUnderN = raiseNUnderN @'[e] @es' @es
 -- need to supply all three type variables explicitly.
 --
 -- @since 0.2.0.0
-raiseNUnderN :: ∀ es'' es' es. (KnownList es', KnownList es'') => Eff (es' ++ es) ~> Eff (es' ++ (es'' ++ es))
+raiseNUnderN :: ∀ es'' es' es. (KnownList es', KnownList es'') => Eff (es' ++ es) ~> Eff (es' ++ es'' ++ es)
 raiseNUnderN = adjust \re -> Rec.concat
   (Rec.take @es' @(es'' ++ es) re) (Rec.drop @es'' @es (Rec.drop @es' @(es'' ++ es) re))
 
@@ -159,59 +157,7 @@ subsume = subsumeN @'[e]
 subsumeN :: ∀ es' es. Subset es' es => Eff (es' ++ es) ~> Eff es
 subsumeN = adjust \re -> Rec.concat (Rec.pick @es' re) re
 
--- * Handler types
-
--- | The send-site environment.
-data SendSite esSend e = SendSite
-  {-# UNPACK #-} !(Env esSend) -- ^ The send-site 'Env'.
-  {-# UNPACK #-} !(HandlerPtr e) -- ^ The pointer to the current effect handler.
-
--- | The typeclass that denotes a handler scope, handling effect @e@ sent from the effect stack @esSend@ in the
--- effect stack @es@.
---
--- You should not define instances for this typeclass whatsoever.
-class Handling esSend e es | esSend -> e es where
-  -- @esSend@ is existential so it uniquely determines the other two variables. As handling scopes can nest, the other
-  -- two variables cannot determine anything.
-
-  -- | Obtain the send-site environment.
-  sendSite :: SendSite esSend e
-  sendSite = error
-    "Cleff.Internal.Interpret.sendSite: Attempting to access the send site without a reflected value. This is perhaps \
-    \because you are trying to define an instance for the 'Handling' typeclass, which you should not be doing \
-    \whatsoever. If that or other shenanigans seem unlikely, please report this as a bug."
-
--- | Get the pointer to the current effect handler itself.
-hdlPtr :: ∀ esSend e es. Handling esSend e es => HandlerPtr e
-hdlPtr = let SendSite _ ptr = sendSite @esSend in ptr
-
--- | Get the send-site 'Env'.
-esSend :: Handling esSend e es => Env esSend
-esSend = let SendSite env _ = sendSite in env
-
--- | Newtype wrapper for instantiating the 'Handling' typeclass locally, a la the reflection trick. We do not use
--- the @reflection@ library directly so as not to expose this piece of implementation detail to the user.
-newtype InstHandling esSend e es a = InstHandling (Handling esSend e es => a)
-
--- | Instantiate an 'Handling' typeclass, /i.e./ pass an implicit send-site environment in. This function shouldn't
--- be directly used anyhow.
-instHandling :: ∀ esSend e es a. (Handling esSend e es => a) -> SendSite esSend e -> a
-instHandling x = unsafeCoerce (InstHandling x :: InstHandling esSend e es a)
-
--- | The type of an /effect handler/, which is a function that transforms an effect @e@ from an arbitrary effect stack
--- into computations in the effect stack @es@.
-type Handler e es = ∀ esSend. Handling esSend e es => e (Eff esSend) ~> Eff es
-
--- | The type of a simple transformation function from effect @e@ to @e'@.
-type Translator e e' = ∀ esSend. e (Eff esSend) ~> e' (Eff esSend)
-
 -- * Interpreting effects
-
--- | Transform a 'Handler' into an 'InternalHandler' given a pointer that is going to point to the 'InternalHandler'
--- and the current 'Env'.
-mkInternalHandler :: HandlerPtr e -> Env es -> Handler e es -> InternalHandler e
-mkInternalHandler ptr es handle = InternalHandler \e -> Eff \ess ->
-  unEff (instHandling handle (SendSite ess ptr) e) (updateEnv ess es)
 
 -- | Interpret an effect @e@ in terms of effects in the effect stack @es@ with an effect handler.
 interpret :: ∀ e es. Handler e es -> Eff (e : es) ~> Eff es
@@ -235,9 +181,7 @@ reinterpret3 = reinterpretN @'[e', e'', e''']
 
 -- | Like 'reinterpret', but adds arbitrarily many new effects. This function requires @TypeApplications@.
 reinterpretN :: ∀ es' e es. KnownList es' => Handler e (es' ++ es) -> Eff (e : es) ~> Eff (es' ++ es)
-reinterpretN handle = alter \es -> appendEnv
-  (mkInternalHandler (peekEnv es) es handle)
-  (adjustEnv (Rec.drop @es') es)
+reinterpretN handle = alter \es -> Env.extend es handle $ Env.adjust (Rec.drop @es') es
 {-# INLINE reinterpretN #-}
 
 -- | Respond to an effect, but does not eliminate it from the stack. This means you can re-send the operations in the
@@ -254,12 +198,13 @@ impose = imposeN @'[e']
 
 -- | Like 'impose', but allows introducing arbitrarily many effects. This requires @TypeApplications@.
 imposeN :: ∀ es' e es. (KnownList es', e :> es) => Handler e (es' ++ es) -> Eff es ~> Eff (es' ++ es)
-imposeN handle = alter \es -> replaceEnv
-  (mkInternalHandler (peekEnv es) es handle)
-  (adjustEnv (Rec.drop @es') es)
+imposeN handle = alter \es -> Env.overwriteLocal es handle $ Env.adjust (Rec.drop @es') es
 {-# INLINE imposeN #-}
 
 -- * Translating effects
+
+-- | The type of a simple transformation function from effect @e@ to @e'@.
+type Translator e e' = ∀ esSend. e (Eff esSend) ~> e' (Eff esSend)
 
 -- | Interpret an effect in terms of another effect in the stack via a simple 'Translator'.
 --
@@ -312,8 +257,13 @@ translate trans = reinterpret (sendVia toEff . trans)
 --     ('toEff' . use)
 -- @
 toEff :: Handling esSend e es => Eff esSend ~> Eff es
-toEff = alter \es -> updateEnv es esSend
+toEff = alter \es -> Env.update es esSend
 {-# INLINE toEff #-}
+
+-- [Note] toEffWith
+--
+-- The 'Handling' constraint of 'handle' will NOT be prematurely initialized here because that will make 'handle'
+-- monomorphic. Therefore this usage is safe.
 
 -- | Run a computation in the current effect stack, just like 'toEff', but takes a 'Handler' of the current effect
 -- being interpreted, so that inside the computation being ran, the effect is interpreted differently. This is useful
@@ -329,15 +279,12 @@ toEff = alter \es -> updateEnv es esSend
 --       'Cleff.Reader.Local' f m -> 'toEffWith' (handle $ f r) m
 -- @
 toEffWith :: ∀ esSend e es. Handling esSend e es => Handler e es -> Eff esSend ~> Eff es
-toEffWith handle = alter \es ->
-  -- The 'Handling' constraint of 'handle' will NOT be prematurely initialized here because that will make 'handle'
-  -- monomorphic. Therefore this usage is safe.
-  writeEnv (hdlPtr @esSend) (mkInternalHandler (hdlPtr @esSend) es handle) $ updateEnv es esSend
+toEffWith handle = alter \es -> Env.overwriteSelfGlobal es handle $ Env.update es esSend
 {-# INLINE toEffWith #-}
 
 -- | Temporarily gain the ability to lift some @'Eff' es@ actions into @'Eff' esSend@. This is only useful for dealing
 -- with effect operations with the monad type in the negative position, which means it's unlikely that you need to use
 -- this function in implementing your effects.
 withFromEff :: Handling esSend e es => ((Eff es ~> Eff esSend) -> Eff esSend a) -> Eff es a
-withFromEff f = Eff \es -> unEff (f $ alter \ess -> updateEnv ess es) (updateEnv es esSend)
+withFromEff f = Eff \es -> unEff (f $ alter \ess -> Env.update ess es) (Env.update es esSend)
 {-# INLINE withFromEff #-}

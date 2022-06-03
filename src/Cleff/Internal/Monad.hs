@@ -65,7 +65,6 @@ newtype Eff es a = Eff { unEff :: Env es -> IO a }
 -- retain correct HO semantics. For more details on this see https://github.com/re-xyr/cleff/issues/5.
 type role Env nominal
 data Env (es :: [Effect]) = Env
-  {-# UNPACK #-} !Int -- ^ The next address to allocate.
   {-# UNPACK #-} !(Rec es) -- ^ The effect stack storing pointers to handlers.
   {-# UNPACK #-} !(RadixVec Any) -- ^ The storage that corresponds pointers to handlers.
 
