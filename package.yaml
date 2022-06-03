@@ -130,6 +130,7 @@ tests:
     - extra
     - hspec
     - lifted-base
+    - unliftio
 
   cleff-example:
     main:                Main.hs
@@ -141,3 +142,4 @@ tests:
     dependencies:
     - cleff
     - extra
+    - unliftio

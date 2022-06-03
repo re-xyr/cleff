@@ -10,7 +10,9 @@ import           Cleff.Plugin.Internal (Plugin, makePlugin)
 
 -- | The GHC typechecker plugin that disambiguates trivial uses of @cleff@ effects. Refer to the README for more info.
 plugin :: Plugin
-#if MIN_VERSION_cleff(0, 3, 2)
+#if MIN_VERSION_cleff(0, 3, 4)
+plugin = makePlugin [("cleff", "Cleff.Internal.Stack", ":>")]
+#elif MIN_VERSION_cleff(0, 3, 2)
 plugin = makePlugin [("cleff", "Cleff.Internal.Rec", ":>")]
 #elif MIN_VERSION_cleff(0, 3, 1)
 plugin = makePlugin [("cleff", "Cleff.Internal.Rec", "Elem")]

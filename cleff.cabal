@@ -180,6 +180,7 @@ test-suite cleff-example
     , template-haskell >=2.14 && <2.19
     , th-abstraction >=0.2 && <0.5
     , transformers-base ==0.4.*
+    , unliftio
     , unliftio-core >=0.1.1 && <0.3
   if flag(dynamic-ioe)
     cpp-options: -DDYNAMIC_IOE
@@ -250,6 +251,7 @@ test-suite cleff-test
     , template-haskell >=2.14 && <2.19
     , th-abstraction >=0.2 && <0.5
     , transformers-base ==0.4.*
+    , unliftio
     , unliftio-core >=0.1.1 && <0.3
   if flag(dynamic-ioe)
     cpp-options: -DDYNAMIC_IOE
