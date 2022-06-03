@@ -1,6 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 module Cleff.Internal.Env
-  ( Env (Env)
+  ( Env
   , Handling
   , Handler
   , esSend
@@ -14,9 +14,7 @@ module Cleff.Internal.Env
   , update
   ) where
 
-import           Cleff.Internal
 import           Cleff.Internal.Monad
-import           Cleff.Internal.Rec   (Rec)
 import qualified Cleff.Internal.Rec   as Rec
 import           Data.Any             (fromAny, pattern Any)
 import qualified Data.RadixVec        as Vec

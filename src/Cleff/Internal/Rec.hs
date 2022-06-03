@@ -19,8 +19,11 @@
 -- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
 -- extra careful if you're to depend on this module.
 module Cleff.Internal.Rec
-  ( Rec
+  ( Effect
+  , Rec
+  , HandlerPtr (HandlerPtr, unHandlerPtr)
     -- * Construction
+  , type (++)
   , empty
   , cons
   , concat
@@ -39,18 +42,25 @@ module Cleff.Internal.Rec
   , update
   ) where
 
-import           Cleff.Internal
-import           Data.Coerce    (coerce)
-import           Data.Kind      (Constraint)
-import           Data.PrimVec   (PrimVec)
-import qualified Data.PrimVec   as Vec
-import           GHC.TypeLits   (ErrorMessage (ShowType, Text, (:<>:)), TypeError)
-import           Prelude        hiding (concat, drop, head, tail, take)
+import           Data.Coerce  (coerce)
+import           Data.Kind    (Constraint, Type)
+import           Data.PrimVec (PrimVec)
+import qualified Data.PrimVec as Vec
+import           GHC.TypeLits (ErrorMessage (ShowType, Text, (:<>:)), TypeError)
+import           Prelude      hiding (concat, drop, head, tail, take)
+
+-- | The type of effects. An effect @e m a@ takes an effect monad type @m :: 'Type' -> 'Type'@ and a result type
+-- @a :: 'Type'@.
+type Effect = (Type -> Type) -> Type -> Type
 
 -- | Extensible record type supporting efficient \( O(1) \) reads. The underlying implementation is 'PrimArray'
 -- slices.
 type role Rec nominal
 newtype Rec (es :: [Effect]) = Rec (PrimVec Int)
+
+-- | A pointer to an effect handler.
+type role HandlerPtr nominal
+newtype HandlerPtr (e :: Effect) = HandlerPtr { unHandlerPtr :: Int }
 
 unreifiable :: String -> String -> String -> a
 unreifiable clsName funName comp = error $
@@ -65,6 +75,12 @@ empty = coerce (Vec.empty @Int)
 -- | Prepend one entry to the record. \( O(n) \).
 cons :: HandlerPtr e -> Rec es -> Rec (e : es)
 cons = coerce (Vec.cons @Int)
+
+-- | Type level list concatenation.
+type family xs ++ ys where
+  '[] ++ ys = ys
+  (x : xs) ++ ys = x : (xs ++ ys)
+infixr 5 ++
 
 -- | Concatenate two records. \( O(m+n) \).
 concat :: Rec es -> Rec es' -> Rec (es ++ es')

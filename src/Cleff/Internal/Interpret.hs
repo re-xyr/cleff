@@ -30,6 +30,7 @@ module Cleff.Internal.Interpret
   , raiseUnderN
   , raiseNUnderN
     -- * Interpreting effects
+  , Handler
   , interpret
   , reinterpret
   , reinterpret2
@@ -43,17 +44,16 @@ module Cleff.Internal.Interpret
   , transform
   , translate
     -- * Combinators for interpreting higher effects
+  , Handling
   , esSend
   , toEff
   , toEffWith
   , withFromEff
   ) where
 
-import           Cleff.Internal
 import           Cleff.Internal.Env   (Handler, Handling, esSend)
 import qualified Cleff.Internal.Env   as Env
 import           Cleff.Internal.Monad
-import           Cleff.Internal.Rec   (Rec)
 import qualified Cleff.Internal.Rec   as Rec
 
 -- | Alter the effect environment by a contravariant transformation function over it. This function reveals the

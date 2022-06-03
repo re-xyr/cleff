@@ -33,8 +33,6 @@ module Cleff.Internal.Base
   , fromIO
   ) where
 
-import           Cleff.Internal
-import           Cleff.Internal.Env          (Handling)
 import qualified Cleff.Internal.Env          as Env
 import           Cleff.Internal.Interpret
 import           Cleff.Internal.Monad

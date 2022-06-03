@@ -14,16 +14,22 @@
 module Cleff.Internal.Monad
   ( -- * The 'Eff' monad
     Eff (Eff, unEff)
+  , Effect
   , Env (Env)
-    -- * Constraints on effect stacks
+  , HandlerPtr (HandlerPtr, unHandlerPtr)
+    -- * Effect stack and constrints
+  , Rec
   , (:>)
   , (:>>)
   , KnownList
   , Subset
+    -- * Misc types
+  , type (++)
+  , type (~>)
   ) where
 
-import           Cleff.Internal
-import           Cleff.Internal.Rec  (KnownList, Rec, Subset, type (:>), type (:>>))
+import           Cleff.Internal.Rec  (Effect, HandlerPtr (HandlerPtr, unHandlerPtr), KnownList, Rec, Subset, type (++),
+                                      type (:>), type (:>>))
 import           Control.Applicative (Applicative (liftA2))
 import           Control.Monad.Fix   (MonadFix (mfix))
 import           Control.Monad.Zip   (MonadZip (munzip, mzipWith))
@@ -146,3 +152,18 @@ instance IsString a => IsString (Eff es a) where
 instance MonadZip (Eff es) where
   mzipWith = liftA2
   munzip x = (fst <$> x, snd <$> x)
+
+-- * Misc types
+
+-- | A natural transformation from @f@ to @g@. With this, instead of writing
+--
+-- @
+-- runSomeEffect :: 'Cleff.Eff' (SomeEffect : es) a -> 'Cleff.Eff' es a
+-- @
+--
+-- you can write:
+--
+-- @
+-- runSomeEffect :: 'Cleff.Eff' (SomeEffect : es) ~> 'Cleff.Eff' es
+-- @
+type f ~> g = ∀ a. f a -> g a

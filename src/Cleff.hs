@@ -90,9 +90,7 @@ module Cleff
   , MonadUnliftIO (..)
   ) where
 
-import           Cleff.Internal
 import           Cleff.Internal.Base
-import           Cleff.Internal.Env       (Handler, Handling)
 import           Cleff.Internal.Interpret
 import           Cleff.Internal.Monad
 import           Cleff.Internal.TH
