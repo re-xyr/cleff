@@ -20,6 +20,9 @@ module Cleff.Internal.Base
     -- * Primitive 'IO' functions
   , primLiftIO
   , primUnliftIO
+    -- * Related classes
+  , MonadIO (liftIO)
+  , MonadUnliftIO (withRunInIO)
     -- * Unwrapping 'Eff'
   , thisIsPureTrustMe
   , runIOE
@@ -40,12 +43,11 @@ import qualified Cleff.Internal.Rec          as Rec
 import           Control.Monad.Base          (MonadBase (liftBase))
 import           Control.Monad.Catch         (MonadCatch, MonadMask, MonadThrow)
 import qualified Control.Monad.Catch         as Catch
+import           Control.Monad.IO.Unlift     (MonadIO (liftIO), MonadUnliftIO (withRunInIO))
 import           Control.Monad.Primitive     (PrimMonad (PrimState, primitive), RealWorld)
 import           Control.Monad.Trans.Control (MonadBaseControl (StM, liftBaseWith, restoreM))
 import           GHC.IO                      (IO (IO))
 import           System.IO.Unsafe            (unsafeDupablePerformIO)
-import qualified UnliftIO
-import           UnliftIO                    (MonadIO (liftIO), MonadUnliftIO (withRunInIO), throwIO)
 
 -- * The 'IOE' effect
 
@@ -104,14 +106,14 @@ instance IOE :> es => MonadUnliftIO (Eff es) where
 #endif
 
 instance IOE :> es => MonadThrow (Eff es) where
-  throwM = throwIO
+  throwM = liftIO . Catch.throwM
 
 instance IOE :> es => MonadCatch (Eff es) where
-  catch = UnliftIO.catch
+  catch m h = withRunInIO \run -> Catch.catch (run m) (run . h)
 
 instance IOE :> es => MonadMask (Eff es) where
-  mask = UnliftIO.mask
-  uninterruptibleMask = UnliftIO.uninterruptibleMask
+  mask f = withRunInIO \run -> Catch.mask \restore -> run $ f (liftIO . restore . run)
+  uninterruptibleMask f = withRunInIO \run -> Catch.uninterruptibleMask \restore -> run $ f (liftIO . restore . run)
   generalBracket ma mz m = withRunInIO \run -> Catch.generalBracket (run ma) (\x e -> run $ mz x e) (run . m)
 
 -- | Compatibility instance; use 'MonadIO' if possible.

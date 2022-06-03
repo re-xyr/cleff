@@ -25,14 +25,14 @@ module Cleff.State
 
 import           Cleff
 import           Cleff.Internal.Base
-import           Control.Monad       (void)
-import           Data.Atomics        (atomicModifyIORefCAS)
-import           Data.ThreadVar      (getThreadVar, newThreadVar)
-import           Data.Tuple          (swap)
-import           Lens.Micro          (Lens', (&), (.~), (^.))
-import           UnliftIO.IORef      (IORef, newIORef, readIORef, writeIORef)
-import           UnliftIO.MVar       (MVar, modifyMVar, readMVar, swapMVar)
-import           UnliftIO.STM        (TVar, atomically, readTVar, readTVarIO, writeTVar)
+import           Control.Concurrent.MVar (MVar, modifyMVar, readMVar, swapMVar)
+import           Control.Concurrent.STM  (TVar, atomically, readTVar, readTVarIO, writeTVar)
+import           Control.Monad           (void)
+import           Data.Atomics            (atomicModifyIORefCAS)
+import           Data.IORef              (IORef, newIORef, readIORef, writeIORef)
+import           Data.ThreadVar          (getThreadVar, newThreadVar)
+import           Data.Tuple              (swap)
+import           Lens.Micro              (Lens', (&), (.~), (^.))
 
 -- * Effect
 
@@ -70,8 +70,8 @@ modify f = state (((), ) . f)
 
 handleIORef :: IOE :> es => IORef s -> Handler (State s) es
 handleIORef rs = \case
-  Get     -> readIORef rs
-  Put s'  -> writeIORef rs s'
+  Get     -> liftIO $ readIORef rs
+  Put s'  -> liftIO $ writeIORef rs s'
   State f -> liftIO $ atomicModifyIORefCAS rs (swap . f)
 
 -- | Run the 'State' effect.
@@ -89,9 +89,9 @@ handleIORef rs = \case
 -- computation. Any state operation done /before main thread finishes/ is still taken into account.
 runState :: s -> Eff (State s : es) a -> Eff es (a, s)
 runState s m = thisIsPureTrustMe do
-  rs <- newIORef s
+  rs <- liftIO $ newIORef s
   x <- reinterpret (handleIORef rs) m
-  s' <- readIORef rs
+  s' <- liftIO $ readIORef rs
   pure (x, s')
 
 -- | Run a 'State' effect where each thread has its thread-local state.
@@ -113,9 +113,9 @@ runState s m = thisIsPureTrustMe do
 -- @since 0.3.3.0
 runStateLocal :: s -> Eff (State s : es) a -> Eff es (a, s)
 runStateLocal s m = thisIsPureTrustMe do
-  rs <- newThreadVar s
-  x <- reinterpret (\e -> getThreadVar rs >>= \r -> handleIORef r e) m
-  s' <- readIORef =<< getThreadVar rs
+  rs <- liftIO $ newThreadVar s
+  x <- reinterpret (\e -> liftIO (getThreadVar rs) >>= \r -> handleIORef r e) m
+  s' <- liftIO $ readIORef =<< getThreadVar rs
   pure (x, s')
 
 -- | Run the 'State' effect in terms of operations on a supplied 'IORef'. The 'state' operation is atomic.
@@ -129,18 +129,18 @@ runStateIORef rs = interpret $ handleIORef rs
 -- @since 0.2.1.0
 runStateMVar :: IOE :> es => MVar s -> Eff (State s : es) a -> Eff es a
 runStateMVar rs = interpret \case
-  Get     -> readMVar rs
-  Put s'  -> void $ swapMVar rs s'
-  State f -> modifyMVar rs \s -> let (x, !s') = f s in pure (s', x)
+  Get     -> liftIO $ readMVar rs
+  Put s'  -> liftIO $ void $ swapMVar rs s'
+  State f -> liftIO $ modifyMVar rs \s -> let (x, !s') = f s in pure (s', x)
 
 -- | Run the 'State' effect in terms of operations on a supplied 'TVar'.
 --
 -- @since 0.2.1.0
 runStateTVar :: IOE :> es => TVar s -> Eff (State s : es) a -> Eff es a
 runStateTVar rs = interpret \case
-  Get -> readTVarIO rs
-  Put s' -> atomically $ writeTVar rs s'
-  State f -> atomically do
+  Get -> liftIO $ readTVarIO rs
+  Put s' -> liftIO $ atomically $ writeTVar rs s'
+  State f -> liftIO $ atomically do
     s <- readTVar rs
     let (x, !s') = f s
     writeTVar rs s'

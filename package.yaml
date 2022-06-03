@@ -39,10 +39,11 @@ dependencies:
 - microlens >= 0.1 && < 0.5
 - monad-control >= 1 && < 1.1
 - primitive >= 0.6.4 && < 0.8
+- stm >= 2.5 && < 2.6
 - template-haskell >= 2.14 && < 2.19
 - th-abstraction >= 0.2 && < 0.5
 - transformers-base >= 0.4 && < 0.5
-- unliftio >= 0.2.4 && < 0.3
+- unliftio-core >= 0.1.1 && < 0.3
 
 flags:
   dynamic-ioe:

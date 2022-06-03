@@ -14,17 +14,17 @@
 -- extra careful if you're to depend on this module.
 module Data.ThreadVar (ThreadVar, newThreadVar, getThreadVar) where
 
+import           Control.Concurrent     (myThreadId)
 import           Control.Monad.IO.Class (MonadIO (liftIO))
 import           Data.Atomics           (atomicModifyIORefCAS_)
 import           Data.IntMap.Strict     (IntMap)
 import qualified Data.IntMap.Strict     as Map
+import           Data.IORef             (IORef, newIORef, readIORef)
 import           Foreign.C.Types
 import           GHC.Base               (noinline)
 import           GHC.Conc               (ThreadId (ThreadId))
 import           GHC.Exts               (ThreadId#, mkWeak#)
 import           GHC.IO                 (IO (IO))
-import           UnliftIO.Concurrent    (myThreadId)
-import           UnliftIO.IORef         (IORef, newIORef, readIORef)
 
 -- | Get the hash for a 'ThreadId' in terms of C types (RTS function).
 #if __GLASGOW_HASKELL__ >= 903
@@ -56,12 +56,12 @@ attachFinalizer (ThreadId tid#) (IO finalize#) = IO \s1 -> let
 data ThreadVar a = ThreadVar a {-# UNPACK #-} !(IORef (IntMap (IORef a)))
 
 -- | Create a thread variable with a same initial value for each thread.
-newThreadVar :: MonadIO m => a -> m (ThreadVar a)
+newThreadVar :: a -> IO (ThreadVar a)
 newThreadVar x = ThreadVar x <$> newIORef Map.empty
 
 -- | Get the variable local to this thread, in the form of an 'IORef'. It is guaranteed that the returned 'IORef'
 -- will not be read or mutated by other threads inadvertently.
-getThreadVar :: MonadIO m => ThreadVar a -> m (IORef a)
+getThreadVar :: ThreadVar a -> IO (IORef a)
 getThreadVar (ThreadVar x0 table) = do
   tid <- myThreadId
   let thash = hashThreadId tid

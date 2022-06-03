@@ -112,10 +112,11 @@ library
     , microlens >=0.1 && <0.5
     , monad-control >=1 && <1.1
     , primitive >=0.6.4 && <0.8
+    , stm ==2.5.*
     , template-haskell >=2.14 && <2.19
     , th-abstraction >=0.2 && <0.5
     , transformers-base ==0.4.*
-    , unliftio >=0.2.4 && <0.3
+    , unliftio-core >=0.1.1 && <0.3
   if flag(dynamic-ioe)
     cpp-options: -DDYNAMIC_IOE
   if impl(ghc >= 8.8)
@@ -175,10 +176,11 @@ test-suite cleff-example
     , microlens >=0.1 && <0.5
     , monad-control >=1 && <1.1
     , primitive >=0.6.4 && <0.8
+    , stm ==2.5.*
     , template-haskell >=2.14 && <2.19
     , th-abstraction >=0.2 && <0.5
     , transformers-base ==0.4.*
-    , unliftio >=0.2.4 && <0.3
+    , unliftio-core >=0.1.1 && <0.3
   if flag(dynamic-ioe)
     cpp-options: -DDYNAMIC_IOE
   if impl(ghc >= 8.8)
@@ -244,10 +246,11 @@ test-suite cleff-test
     , microlens >=0.1 && <0.5
     , monad-control >=1 && <1.1
     , primitive >=0.6.4 && <0.8
+    , stm ==2.5.*
     , template-haskell >=2.14 && <2.19
     , th-abstraction >=0.2 && <0.5
     , transformers-base ==0.4.*
-    , unliftio >=0.2.4 && <0.3
+    , unliftio-core >=0.1.1 && <0.3
   if flag(dynamic-ioe)
     cpp-options: -DDYNAMIC_IOE
   if impl(ghc >= 8.8)

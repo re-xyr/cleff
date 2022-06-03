@@ -94,7 +94,6 @@ import           Cleff.Internal.Base
 import           Cleff.Internal.Interpret
 import           Cleff.Internal.Monad
 import           Cleff.Internal.TH
-import           UnliftIO                 (MonadIO (liftIO), MonadUnliftIO (withRunInIO))
 
 -- $runningEffects
 -- To run an effect @T@, we should use an /interpreter/ of @T@, which is a function that has a type like this:

@@ -21,7 +21,7 @@ import           Cleff
 import           Cleff.Internal.Base
 import           Data.Atomics        (atomicModifyIORefCAS_)
 import           Data.Foldable       (traverse_)
-import           UnliftIO.IORef      (IORef, newIORef, readIORef)
+import           Data.IORef          (IORef, newIORef, readIORef)
 
 -- * Effect
 
@@ -62,18 +62,18 @@ listens f m = do
 -- /before main thread finishes/ is still taken into account.
 runWriter :: ∀ w es a. Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
 runWriter m = thisIsPureTrustMe do
-  rw <- newIORef mempty
+  rw <- liftIO $ newIORef mempty
   x <- reinterpret (handle [rw]) m
-  w' <- readIORef rw
+  w' <- liftIO $ readIORef rw
   pure (x, w')
   where
     handle :: [IORef w] -> Handler (Writer w) (IOE : es)
     handle rws = \case
       Tell w' -> traverse_ (\rw -> liftIO $ atomicModifyIORefCAS_ rw (<> w')) rws
       Listen m' -> do
-        rw' <- newIORef mempty
+        rw' <- liftIO $ newIORef mempty
         x <- toEffWith (handle $ rw' : rws) m'
-        w' <- readIORef rw'
+        w' <- liftIO $ readIORef rw'
         pure (x, w')
 
 -- | Run a monoidal 'Writer' effect, but appends the listened output to the parent value only when the listen operation
@@ -95,17 +95,17 @@ runWriter m = thisIsPureTrustMe do
 -- @since 0.2.0.0
 runWriterBatch :: ∀ w es a. Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
 runWriterBatch m = thisIsPureTrustMe do
-  rw <- newIORef mempty
+  rw <- liftIO $ newIORef mempty
   x <- reinterpret (handle rw) m
-  w' <- readIORef rw
+  w' <- liftIO $ readIORef rw
   pure (x, w')
   where
     handle :: IORef w -> Handler (Writer w) (IOE : es)
     handle rw = \case
       Tell w' -> liftIO $ atomicModifyIORefCAS_ rw (<> w')
       Listen m' -> do
-        rw' <- newIORef mempty
+        rw' <- liftIO $ newIORef mempty
         x <- toEffWith (handle rw') m'
-        w' <- readIORef rw'
+        w' <- liftIO $ readIORef rw'
         liftIO $ atomicModifyIORefCAS_ rw (<> w')
         pure (x, w')
