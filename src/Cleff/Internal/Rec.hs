@@ -20,7 +20,6 @@
 -- extra careful if you're to depend on this module.
 module Cleff.Internal.Rec
   ( Rec
-  , type (++)
     -- * Construction
   , empty
   , cons
@@ -33,6 +32,7 @@ module Cleff.Internal.Rec
   , drop
     -- * Retrieval and updating
   , (:>)
+  , (:>>)
   , Subset
   , index
   , pick
@@ -41,6 +41,7 @@ module Cleff.Internal.Rec
 
 import           Cleff.Internal
 import           Data.Foldable            (for_)
+import           Data.Kind                (Constraint)
 import           Data.Primitive.PrimArray (MutablePrimArray (MutablePrimArray), PrimArray (PrimArray), copyPrimArray,
                                            indexPrimArray, newPrimArray, writePrimArray)
 import           GHC.Exts                 (runRW#, unsafeFreezeByteArray#)
@@ -143,6 +144,13 @@ type ElemNotFound e = Text "The element '" :<>: ShowType e :<>: Text "' is not p
 instance TypeError (ElemNotFound e) => e :> '[] where
   reifyIndex = error
     "Cleff.Internal.reifyIndex: Attempting to refer to a nonexistent member. Please report this as a bug."
+
+-- | @xs ':>>' es@ means the list of effects @xs@ are all present in the effect stack @es@. This is a convenient type
+-- alias for @(e1 ':>' es, ..., en ':>' es)@.
+type family xs :>> es :: Constraint where
+  '[] :>> _ = ()
+  (x : xs) :>> es = (x :> es, xs :>> es)
+infix 0 :>>
 
 -- | Get an element in the record. Amortized \( O(1) \).
 index :: ∀ e es. e :> es => Rec es -> HandlerPtr e

@@ -14,7 +14,6 @@
 module Cleff.Internal.Monad
   ( -- * The 'Eff' monad
     Eff (Eff, unEff)
-    -- * Effect environment
   , Env (Env)
     -- * Constraints on effect stacks
   , (:>)
@@ -24,11 +23,10 @@ module Cleff.Internal.Monad
   ) where
 
 import           Cleff.Internal
-import           Cleff.Internal.Rec  (KnownList, Rec, Subset, type (:>))
+import           Cleff.Internal.Rec  (KnownList, Rec, Subset, type (:>), type (:>>))
 import           Control.Applicative (Applicative (liftA2))
 import           Control.Monad.Fix   (MonadFix (mfix))
 import           Data.Any            (Any)
-import           Data.Kind           (Constraint)
 import           Data.RadixVec       (RadixVec)
 
 -- * The 'Eff' monad
@@ -60,6 +58,17 @@ newtype Eff es a = Eff { unEff :: Env es -> IO a }
   -- ^ The effect monad receives an effect environment 'Env' that contains all effect handlers and produces an 'IO'
   -- action.
 
+-- | The /effect environment/ that corresponds effects in the stack to their respective 'InternalHandler's. This
+-- structure simulates memory: handlers are retrieved via pointers ('HandlerPtr's), and for each effect in the stack
+-- we can either change what pointer it uses or change the handler the pointer points to. The former is used for global
+-- effect interpretation ('Cleff.reinterpretN') and the latter for local interpretation ('Cleff.toEffWith') in order to
+-- retain correct HO semantics. For more details on this see https://github.com/re-xyr/cleff/issues/5.
+type role Env nominal
+data Env (es :: [Effect]) = Env
+  {-# UNPACK #-} !Int -- ^ The next address to allocate.
+  {-# UNPACK #-} !(Rec es) -- ^ The effect stack storing pointers to handlers.
+  {-# UNPACK #-} !(RadixVec Any) -- ^ The storage that corresponds pointers to handlers.
+
 instance Functor (Eff es) where
   fmap f (Eff x) = Eff (fmap f . x)
   x <$ Eff y = Eff \es -> x <$ y es
@@ -78,25 +87,3 @@ instance Monad (Eff es) where
 
 instance MonadFix (Eff es) where
   mfix f = Eff \es -> mfix \x -> unEff (f x) es
-
--- * Effect environment
-
--- | The /effect environment/ that corresponds effects in the stack to their respective 'InternalHandler's. This
--- structure simulates memory: handlers are retrieved via pointers ('HandlerPtr's), and for each effect in the stack
--- we can either change what pointer it uses or change the handler the pointer points to. The former is used for global
--- effect interpretation ('Cleff.reinterpretN') and the latter for local interpretation ('Cleff.toEffWith') in order to
--- retain correct HO semantics. For more details on this see https://github.com/re-xyr/cleff/issues/5.
-type role Env nominal
-data Env (es :: [Effect]) = Env
-  {-# UNPACK #-} !Int -- ^ The next address to allocate.
-  {-# UNPACK #-} !(Rec es) -- ^ The effect stack storing pointers to handlers.
-  {-# UNPACK #-} !(RadixVec Any) -- ^ The storage that corresponds pointers to handlers.
-
--- * Performing effect operations
-
--- | @xs ':>>' es@ means the list of effects @xs@ are all present in the effect stack @es@. This is a convenient type
--- alias for @(e1 ':>' es, ..., en ':>' es)@.
-type family xs :>> es :: Constraint where
-  '[] :>> _ = ()
-  (x : xs) :>> es = (x :> es, xs :>> es)
-infix 0 :>>
