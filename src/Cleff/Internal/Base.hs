@@ -38,8 +38,7 @@ import           Cleff.Internal.Interpret
 import           Cleff.Internal.Monad
 import qualified Cleff.Internal.Rec          as Rec
 import           Control.Monad.Base          (MonadBase (liftBase))
-import           Control.Monad.Catch         (ExitCase (ExitCaseException, ExitCaseSuccess), MonadCatch, MonadMask,
-                                              MonadThrow)
+import           Control.Monad.Catch         (MonadCatch, MonadMask, MonadThrow)
 import qualified Control.Monad.Catch         as Catch
 import           Control.Monad.Primitive     (PrimMonad (PrimState, primitive), RealWorld)
 import           Control.Monad.Trans.Control (MonadBaseControl (StM, liftBaseWith, restoreM))
@@ -113,13 +112,7 @@ instance IOE :> es => MonadCatch (Eff es) where
 instance IOE :> es => MonadMask (Eff es) where
   mask = UnliftIO.mask
   uninterruptibleMask = UnliftIO.uninterruptibleMask
-  generalBracket ma mz m = UnliftIO.mask \restore -> do
-    a <- ma
-    x <- restore (m a) `UnliftIO.catch` \e -> do
-      _ <- mz a (ExitCaseException e)
-      throwIO e
-    z <- mz a (ExitCaseSuccess x)
-    pure (x, z)
+  generalBracket ma mz m = withRunInIO \run -> Catch.generalBracket (run ma) (\x e -> run $ mz x e) (run . m)
 
 -- | Compatibility instance; use 'MonadIO' if possible.
 instance IOE :> es => MonadBase IO (Eff es) where
