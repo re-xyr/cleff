@@ -16,6 +16,9 @@ module Cleff.Internal.Interpret
   ( -- * General transformation
     alter
   , adjust
+    -- * Performing operations
+  , send
+  , sendVia
     -- * Trivial handling
   , raise
   , raiseN
@@ -50,6 +53,7 @@ module Cleff.Internal.Interpret
   ) where
 
 import           Cleff.Internal
+import           Cleff.Internal.Env
 import           Cleff.Internal.Monad
 import           Cleff.Internal.Rec   (Rec)
 import qualified Cleff.Internal.Rec   as Rec
@@ -66,6 +70,26 @@ alter f = \(Eff m) -> Eff \es -> m (f es)
 -- | A specialized version of 'alter' that only adjusts the effect stack.
 adjust :: ∀ es es'. (Rec es' -> Rec es) -> Eff es ~> Eff es'
 adjust f = alter (adjustEnv f)
+
+
+-- | Perform an effect operation, /i.e./ a value of an effect type @e :: 'Effect'@. This requires @e@ to be in the
+-- effect stack.
+send :: e :> es => e (Eff es) ~> Eff es
+send = sendVia id
+{-# INLINE send #-}
+
+-- | Perform an action in another effect stack via a transformation to that stack; in other words, this function "maps"
+-- the effect operation from effect stack @es@ to @es'@. This is a largely generalized version of 'send'; only use this
+-- if you are sure about what you're doing.
+--
+-- @
+-- 'send' = 'sendVia' 'id'
+-- @
+--
+-- @since 0.2.0.0
+sendVia :: e :> es' => (Eff es ~> Eff es') -> e (Eff es) ~> Eff es'
+sendVia f e = Eff \es -> unEff (f (runHandler (readEnv es) e)) es
+{-# INLINE sendVia #-}
 
 -- | Lift a computation into a bigger effect stack with one more effect. For a more general version see 'raiseN'.
 raise :: ∀ e es. Eff es ~> Eff (e : es)

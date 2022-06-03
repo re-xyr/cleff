@@ -13,47 +13,25 @@
 -- extra careful if you're to depend on this module.
 module Cleff.Internal.Monad
   ( -- * The 'Eff' monad
-    InternalHandler (InternalHandler, runHandler)
-  , Eff (Eff, unEff)
+    Eff (Eff, unEff)
     -- * Effect environment
-  , Env
-  , HandlerPtr
-  , emptyEnv
-  , adjustEnv
-  , peekEnv
-  , readEnv
-  , writeEnv
-  , replaceEnv
-  , appendEnv
-  , updateEnv
+  , Env (Env)
     -- * Constraints on effect stacks
   , (:>)
   , (:>>)
   , KnownList
   , Subset
-    -- * Performing effect operations
-  , send
-  , sendVia
   ) where
 
 import           Cleff.Internal
 import           Cleff.Internal.Rec  (KnownList, Rec, Subset, type (:>))
-import qualified Cleff.Internal.Rec  as Rec
 import           Control.Applicative (Applicative (liftA2))
 import           Control.Monad.Fix   (MonadFix (mfix))
-import           Data.Any            (Any, fromAny, pattern Any)
+import           Data.Any            (Any)
 import           Data.Kind           (Constraint)
 import           Data.RadixVec       (RadixVec)
-import qualified Data.RadixVec       as Vec
 
 -- * The 'Eff' monad
-
--- | The internal representation of effect handlers. This is just a natural transformation from the effect type
--- @e ('Eff' es)@ to the effect monad @'Eff' es@ for any effect stack @es@.
---
--- In interpreting functions (see "Cleff.Internal.Interpret"), the user-facing 'Cleff.Handler' type is transformed into
--- this type.
-newtype InternalHandler e = InternalHandler { runHandler :: ∀ es. e (Eff es) ~> Eff es }
 
 -- | The extensible effects monad. The monad @'Eff' es@ is capable of performing any effect in the /effect stack/ @es@,
 -- which is a type-level list that holds all effects available.
@@ -114,46 +92,6 @@ data Env (es :: [Effect]) = Env
   {-# UNPACK #-} !(Rec es) -- ^ The effect stack storing pointers to handlers.
   {-# UNPACK #-} !(RadixVec Any) -- ^ The storage that corresponds pointers to handlers.
 
--- | Create an empty 'Env' with no address allocated.
-emptyEnv :: Env '[]
-emptyEnv = Env 0 Rec.empty Vec.empty
-{-# INLINE emptyEnv #-}
-
--- | Adjust the effect stack via an function over 'Rec'.
-adjustEnv :: ∀ es' es. (Rec es -> Rec es') -> Env es -> Env es'
-adjustEnv f = \(Env n re mem) -> Env n (f re) mem
-{-# INLINE adjustEnv #-}
-
--- | Peek the next address to be allocated. \( O(1) \).
-peekEnv :: ∀ e es. Env es -> HandlerPtr e
-peekEnv (Env n _ _) = HandlerPtr n
-{-# INLINE peekEnv #-}
-
--- | Read the handler a pointer points to. \( O(1) \).
-readEnv :: ∀ e es. e :> es => Env es -> InternalHandler e
-readEnv (Env _ re mem) = fromAny $ Vec.lookup (unHandlerPtr (Rec.index @e re)) mem
-{-# INLINE readEnv #-}
-
--- | Overwrite the handler a pointer points to. \( O(1) \).
-writeEnv :: ∀ e es. HandlerPtr e -> InternalHandler e -> Env es -> Env es
-writeEnv (HandlerPtr m) x (Env n re mem) = Env n re $ Vec.update m (Any x) mem
-{-# INLINE writeEnv #-}
-
--- | Replace the handler pointer of an effect in the stack. \( O(n) \).
-replaceEnv :: ∀ e es. e :> es => InternalHandler e -> Env es -> Env es
-replaceEnv x (Env n re mem) = Env (n + 1) (Rec.update @e (HandlerPtr n) re) (Vec.snoc mem $ Any x)
-{-# INLINE replaceEnv #-}
-
--- | Add a new effect to the stack with its corresponding handler pointer. \( O(n) \).
-appendEnv :: ∀ e es. InternalHandler e -> Env es -> Env (e : es)
-appendEnv x (Env n re mem) = Env (n + 1) (Rec.cons (HandlerPtr n) re) (Vec.snoc mem $ Any x)
-{-# INLINE appendEnv #-}
-
--- | Use the state of LHS as a newer version for RHS. \( O(1) \).
-updateEnv :: ∀ es es'. Env es' -> Env es -> Env es
-updateEnv (Env n _ mem) (Env _ re' _) = Env n re' mem
-{-# INLINE updateEnv #-}
-
 -- * Performing effect operations
 
 -- | @xs ':>>' es@ means the list of effects @xs@ are all present in the effect stack @es@. This is a convenient type
@@ -162,22 +100,3 @@ type family xs :>> es :: Constraint where
   '[] :>> _ = ()
   (x : xs) :>> es = (x :> es, xs :>> es)
 infix 0 :>>
-
--- | Perform an effect operation, /i.e./ a value of an effect type @e :: 'Effect'@. This requires @e@ to be in the
--- effect stack.
-send :: e :> es => e (Eff es) ~> Eff es
-send = sendVia id
-{-# INLINE send #-}
-
--- | Perform an action in another effect stack via a transformation to that stack; in other words, this function "maps"
--- the effect operation from effect stack @es@ to @es'@. This is a largely generalized version of 'send'; only use this
--- if you are sure about what you're doing.
---
--- @
--- 'send' = 'sendVia' 'id'
--- @
---
--- @since 0.2.0.0
-sendVia :: e :> es' => (Eff es ~> Eff es') -> e (Eff es) ~> Eff es'
-sendVia f e = Eff \es -> unEff (f (runHandler (readEnv es) e)) es
-{-# INLINE sendVia #-}

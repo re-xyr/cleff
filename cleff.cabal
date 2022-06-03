@@ -54,6 +54,7 @@ library
       Cleff.Input
       Cleff.Internal
       Cleff.Internal.Base
+      Cleff.Internal.Env
       Cleff.Internal.Interpret
       Cleff.Internal.Monad
       Cleff.Internal.Rec

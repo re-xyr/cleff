@@ -34,6 +34,7 @@ module Cleff.Internal.Base
   ) where
 
 import           Cleff.Internal
+import           Cleff.Internal.Env
 import           Cleff.Internal.Interpret
 import           Cleff.Internal.Monad
 import qualified Cleff.Internal.Rec          as Rec
@@ -45,8 +46,8 @@ import           Control.Monad.Primitive     (PrimMonad (PrimState, primitive), 
 import           Control.Monad.Trans.Control (MonadBaseControl (StM, liftBaseWith, restoreM))
 import           GHC.IO                      (IO (IO))
 import           System.IO.Unsafe            (unsafeDupablePerformIO)
-import           UnliftIO                    (MonadIO (liftIO), MonadUnliftIO (withRunInIO), throwIO)
 import qualified UnliftIO
+import           UnliftIO                    (MonadIO (liftIO), MonadUnliftIO (withRunInIO), throwIO)
 
 -- * The 'IOE' effect
 
