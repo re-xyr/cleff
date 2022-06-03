@@ -6,8 +6,9 @@
 -- Stability: unstable
 -- Portability: non-portable (GHC only)
 --
--- This module contains the definition of the 'Eff' monad. Most of the times, you won't need to use this module
--- directly; user-facing functionalities are all exported via the "Cleff" module.
+-- This module contains the definition of the 'Eff' monad, as well as reexports of some shared utilities in the
+-- internal modules. Most of the times, you won't need to use this module directly; user-facing functionalities are all
+-- exported via the "Cleff" module.
 --
 -- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
 -- extra careful if you're to depend on this module.
@@ -17,8 +18,7 @@ module Cleff.Internal.Monad
   , Effect
   , Env (Env)
   , HandlerPtr (HandlerPtr, unHandlerPtr)
-    -- * Effect stack and constrints
-  , Rec
+    -- * Constraints
   , (:>)
   , (:>>)
   , KnownList
@@ -28,15 +28,15 @@ module Cleff.Internal.Monad
   , type (~>)
   ) where
 
-import           Cleff.Internal.Rec  (Effect, HandlerPtr (HandlerPtr, unHandlerPtr), KnownList, Rec, Subset, type (++),
-                                      type (:>), type (:>>))
-import           Control.Applicative (Applicative (liftA2))
-import           Control.Monad.Fix   (MonadFix (mfix))
-import           Control.Monad.Zip   (MonadZip (munzip, mzipWith))
-import           Data.Any            (Any)
-import           Data.Monoid         (Ap (Ap))
-import           Data.RadixVec       (RadixVec)
-import           Data.String         (IsString (fromString))
+import           Cleff.Internal.Stack (Effect, HandlerPtr (HandlerPtr, unHandlerPtr), KnownList, Stack, Subset,
+                                       type (++), type (:>), type (:>>))
+import           Control.Applicative  (Applicative (liftA2))
+import           Control.Monad.Fix    (MonadFix (mfix))
+import           Control.Monad.Zip    (MonadZip (munzip, mzipWith))
+import           Data.Any             (Any)
+import           Data.Monoid          (Ap (Ap))
+import           Data.RadixVec        (RadixVec)
+import           Data.String          (IsString (fromString))
 
 -- * The 'Eff' monad
 
@@ -67,14 +67,14 @@ newtype Eff es a = Eff { unEff :: Env es -> IO a }
   -- ^ The effect monad receives an effect environment 'Env' that contains all effect handlers and produces an 'IO'
   -- action.
 
--- | The /effect environment/ that corresponds effects in the stack to their respective 'InternalHandler's. This
+-- | The /effect environment/ that corresponds effects in the stack to their respective handlers. This
 -- structure simulates memory: handlers are retrieved via pointers ('HandlerPtr's), and for each effect in the stack
 -- we can either change what pointer it uses or change the handler the pointer points to. The former is used for global
 -- effect interpretation ('Cleff.reinterpretN') and the latter for local interpretation ('Cleff.toEffWith') in order to
 -- retain correct HO semantics. For more details on this see https://github.com/re-xyr/cleff/issues/5.
 type role Env nominal
 data Env (es :: [Effect]) = Env
-  {-# UNPACK #-} !(Rec es) -- ^ The effect stack storing pointers to handlers.
+  {-# UNPACK #-} !(Stack es) -- ^ The effect stack storing pointers to handlers.
   {-# UNPACK #-} !(RadixVec Any) -- ^ The storage that corresponds pointers to handlers.
 
 instance Functor (Eff es) where

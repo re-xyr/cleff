@@ -56,7 +56,7 @@ library
       Cleff.Internal.Env
       Cleff.Internal.Interpret
       Cleff.Internal.Monad
-      Cleff.Internal.Rec
+      Cleff.Internal.Stack
       Cleff.Internal.TH
       Cleff.Mask
       Cleff.Output

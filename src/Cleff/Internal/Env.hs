@@ -1,4 +1,17 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# OPTIONS_HADDOCK not-home #-}
+-- |
+-- Copyright: (c) 2021 Xy Ren
+-- License: BSD3
+-- Maintainer: xy.r@outlook.com
+-- Stability: unstable
+-- Portability: non-portable (GHC only)
+--
+-- Operations on the effect environment type 'Env'. These operations are more flexible than the public API; you may
+-- want to use these in conjunction with the effect stack manipulation operations in "Cleff.Internal.Stack".
+--
+-- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
+-- extra careful if you're to depend on this module.
 module Cleff.Internal.Env
   ( Env
   , Handling
@@ -15,7 +28,8 @@ module Cleff.Internal.Env
   ) where
 
 import           Cleff.Internal.Monad
-import qualified Cleff.Internal.Rec   as Rec
+import           Cleff.Internal.Stack (Stack)
+import qualified Cleff.Internal.Stack as Stack
 import           Data.Any             (fromAny, pattern Any)
 import qualified Data.RadixVec        as Vec
 import           Prelude              hiding (read)
@@ -77,21 +91,21 @@ mkInternalHandler ptr es handle = InternalHandler \e -> Eff \ess ->
 
 -- | Create an empty 'Env' with no address allocated.
 empty :: Env '[]
-empty = Env Rec.empty Vec.empty
+empty = Env Stack.empty Vec.empty
 
 -- | Read the handler a pointer points to. \( O(1) \).
 read :: ∀ e es. e :> es => Env es -> ∀ es'. e (Eff es') ~> Eff es'
-read (Env stack heap) = fromAny $ Vec.lookup (unHandlerPtr (Rec.index @e stack)) heap
+read (Env stack heap) = fromAny $ Vec.lookup (unHandlerPtr (Stack.index @e stack)) heap
 
--- | Adjust the effect stack via an function over 'Rec'.
-adjust :: ∀ es' es. (Rec es -> Rec es') -> Env es -> Env es'
+-- | Adjust the effect stack via an function over 'Stack'.
+adjust :: ∀ es' es. (Stack es -> Stack es') -> Env es -> Env es'
 adjust f = \(Env stack heap) -> Env (f stack) heap
 
 -- | Replace the handler a pointer points to. \( O(1) \).
 overwriteGlobal :: ∀ e es es'. e :> es => Env es' -> Handler e es' -> Env es -> Env es
 overwriteGlobal es hdl (Env stack heap) = Env stack $
   Vec.update m (Any $ mkInternalHandler ptr es hdl) heap
-  where ptr@(HandlerPtr m) = Rec.index @e stack
+  where ptr@(HandlerPtr m) = Stack.index @e stack
 
 -- | Replace the handler a pointer points to. \( O(1) \).
 overwriteSelfGlobal :: ∀ e es es' esSend. Handling esSend e es => Env es' -> Handler e es' -> Env esSend -> Env esSend
@@ -102,14 +116,14 @@ overwriteSelfGlobal es hdl (Env stack heap) = Env stack $
 -- | Replace the handler pointer of an effect in the stack. \( O(n) \).
 overwriteLocal :: ∀ e es es'. e :> es => Env es' -> Handler e es' -> Env es -> Env es
 overwriteLocal es hdl (Env stack heap) = Env
-  (Rec.update @e ptr stack)
+  (Stack.update @e ptr stack)
   (Vec.snoc heap $ Any $ mkInternalHandler ptr es hdl)
   where ptr = HandlerPtr (Vec.size heap)
 
 -- | Add a new effect to the stack with its corresponding handler pointer. \( O(n) \).
 extend :: ∀ e es es'. Env es' -> Handler e es' -> Env es -> Env (e : es)
 extend es hdl (Env stack heap) = Env
-  (Rec.cons ptr stack)
+  (Stack.cons ptr stack)
   (Vec.snoc heap $ Any $ mkInternalHandler ptr es hdl)
   where ptr = HandlerPtr (Vec.size heap)
 

@@ -1,7 +1,13 @@
 # Changelog for `cleff`
 
+## Unreleased
+
+### Changed
+
+- Internal overhaul
+
 ## 0.3.3.0 (2022-05-21)
- 
+
 ### Changed
 
 - Slight performance improvements

@@ -7,8 +7,9 @@
 -- Stability: unstable
 -- Portability: non-portable (GHC only)
 --
--- This module contains most functions for  interacting with the effect system. Most of the times you won't need to
--- import this directly; the module "Cleff" reexports the majority of the functionalities.
+-- This module contains most functions for interacting with the effect system. Most of the times you won't need to
+-- import this directly; the module "Cleff" reexports the majority of the functionalities. If you want operations
+-- more flexible than these, see "Cleff.Internal.Env".
 --
 -- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
 -- extra careful if you're to depend on this module.
@@ -54,7 +55,8 @@ module Cleff.Internal.Interpret
 import           Cleff.Internal.Env   (Handler, Handling, esSend)
 import qualified Cleff.Internal.Env   as Env
 import           Cleff.Internal.Monad
-import qualified Cleff.Internal.Rec   as Rec
+import           Cleff.Internal.Stack (Stack)
+import qualified Cleff.Internal.Stack as Stack
 
 -- | Alter the effect environment by a contravariant transformation function over it. This function reveals the
 -- profunctorial nature of 'Eff'; in particular, 'Eff' is a profunctor @['Effect'] -> 'Data.Kind.Type'@, @lmap@ is
@@ -63,7 +65,7 @@ alter :: ∀ es es'. (Env es' -> Env es) -> Eff es ~> Eff es'
 alter f = \(Eff m) -> Eff \es -> m (f es)
 
 -- | A specialized version of 'alter' that only adjusts the effect stack.
-adjust :: ∀ es es'. (Rec es' -> Rec es) -> Eff es ~> Eff es'
+adjust :: ∀ es es'. (Stack es' -> Stack es) -> Eff es ~> Eff es'
 adjust f = alter (Env.adjust f)
 
 -- * Performing operations
@@ -96,7 +98,7 @@ raise = raiseN @'[e]
 -- | Lift a computation into a bigger effect stack with arbitrarily more effects. This function requires
 -- @TypeApplications@.
 raiseN :: ∀ es' es. KnownList es' => Eff es ~> Eff (es' ++ es)
-raiseN = adjust (Rec.drop @es')
+raiseN = adjust (Stack.drop @es')
 
 -- | Like 'raise', but adds the new effect under the top effect. This is useful for transforming an interpreter
 -- @e' ':>' es => 'Eff' (e : es) '~>` 'Eff' es@ into a reinterpreter @'Eff' (e : es) '~>' 'Eff' (e' : es)@:
@@ -142,12 +144,12 @@ raiseUnderN = raiseNUnderN @'[e] @es' @es
 --
 -- @since 0.2.0.0
 raiseNUnderN :: ∀ es'' es' es. (KnownList es', KnownList es'') => Eff (es' ++ es) ~> Eff (es' ++ es'' ++ es)
-raiseNUnderN = adjust \re -> Rec.concat
-  (Rec.take @es' @(es'' ++ es) re) (Rec.drop @es'' @es (Rec.drop @es' @(es'' ++ es) re))
+raiseNUnderN = adjust \re -> Stack.concat
+  (Stack.take @es' @(es'' ++ es) re) (Stack.drop @es'' @es (Stack.drop @es' @(es'' ++ es) re))
 
 -- | Lift a computation with a fixed, known effect stack into some superset of the stack.
 inject :: ∀ es' es. Subset es' es => Eff es' ~> Eff es
-inject = adjust (Rec.pick @es')
+inject = adjust (Stack.pick @es')
 
 -- | Eliminate a duplicate effect from the top of the effect stack. For a more general version see 'subsumeN'.
 subsume :: ∀ e es. e :> es => Eff (e : es) ~> Eff es
@@ -155,7 +157,7 @@ subsume = subsumeN @'[e]
 
 -- | Eliminate several duplicate effects from the top of the effect stack. This function requires @TypeApplications@.
 subsumeN :: ∀ es' es. Subset es' es => Eff (es' ++ es) ~> Eff es
-subsumeN = adjust \re -> Rec.concat (Rec.pick @es' re) re
+subsumeN = adjust \re -> Stack.concat (Stack.pick @es' re) re
 
 -- * Interpreting effects
 
@@ -181,7 +183,7 @@ reinterpret3 = reinterpretN @'[e', e'', e''']
 
 -- | Like 'reinterpret', but adds arbitrarily many new effects. This function requires @TypeApplications@.
 reinterpretN :: ∀ es' e es. KnownList es' => Handler e (es' ++ es) -> Eff (e : es) ~> Eff (es' ++ es)
-reinterpretN handle = alter \es -> Env.extend es handle $ Env.adjust (Rec.drop @es') es
+reinterpretN handle = alter \es -> Env.extend es handle $ Env.adjust (Stack.drop @es') es
 {-# INLINE reinterpretN #-}
 
 -- | Respond to an effect, but does not eliminate it from the stack. This means you can re-send the operations in the
@@ -198,7 +200,7 @@ impose = imposeN @'[e']
 
 -- | Like 'impose', but allows introducing arbitrarily many effects. This requires @TypeApplications@.
 imposeN :: ∀ es' e es. (KnownList es', e :> es) => Handler e (es' ++ es) -> Eff es ~> Eff (es' ++ es)
-imposeN handle = alter \es -> Env.overwriteLocal es handle $ Env.adjust (Rec.drop @es') es
+imposeN handle = alter \es -> Env.overwriteLocal es handle $ Env.adjust (Stack.drop @es') es
 {-# INLINE imposeN #-}
 
 -- * Translating effects

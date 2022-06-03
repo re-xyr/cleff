@@ -42,12 +42,6 @@ import           Data.Atomics.Counter (AtomicCounter, incrCounter, newCounter)
 import           Data.Bool            (bool)
 import           System.IO.Unsafe     (unsafePerformIO)
 
--- [Note] Exception operations in unliftio
---
--- The exception operations in @unliftio@ is neat for end users, since they automatically filter out asynchronous
--- exceptions. However that is not desirable in library implementation as it imposes extra overhead, and we don't need
--- the guarantee it provides anyway.
-
 -- * Effect
 
 -- | An effect capable of breaking out of current control flow by throwing an error of type @e@, and handling the

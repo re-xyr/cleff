@@ -39,7 +39,7 @@ module Cleff.Internal.Base
 import qualified Cleff.Internal.Env          as Env
 import           Cleff.Internal.Interpret
 import           Cleff.Internal.Monad
-import qualified Cleff.Internal.Rec          as Rec
+import qualified Cleff.Internal.Stack        as Stack
 import           Control.Monad.Base          (MonadBase (liftBase))
 import           Control.Monad.Catch         (MonadCatch, MonadMask, MonadThrow)
 import qualified Control.Monad.Catch         as Catch
@@ -138,7 +138,7 @@ instance IOE :> es => PrimMonad (Eff es) where
 thisIsPureTrustMe :: Eff (IOE : es) ~> Eff es
 thisIsPureTrustMe =
 #ifndef DYNAMIC_IOE
-  adjust (Rec.cons $ HandlerPtr (-1))
+  adjust (Stack.cons $ HandlerPtr (-1))
 #else
   interpret \case
     Lift m   -> primLiftIO m

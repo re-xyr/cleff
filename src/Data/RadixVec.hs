@@ -5,11 +5,6 @@
 -- Maintainer: xy.r@outlook.com
 -- Stability: unstable
 -- Portability: non-portable (GHC only)
---
--- This module contains an efficient vector datatype that is implemented as a radix tree.
---
--- __This is an /internal/ module and its API may change even between minor versions.__ Therefore you should be
--- extra careful if you're to depend on this module.
 module Data.RadixVec (RadixVec, size, empty, lookup, update, snoc) where
 
 import           Control.Monad.ST          (ST)
@@ -63,6 +58,7 @@ alterSmallArray marr ix f = do
   x <- readSmallArray marr ix
   writeSmallArray marr ix $! f x
 
+-- | Get the size of the 'RadixVec'.
 size :: RadixVec a -> Int
 size (RadixVec sz _) = sz
 

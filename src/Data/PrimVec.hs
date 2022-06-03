@@ -1,4 +1,11 @@
 {-# LANGUAGE UnboxedTuples #-}
+{-# OPTIONS_HADDOCK not-home #-}
+-- |
+-- Copyright: (c) 2021 Xy Ren
+-- License: BSD3
+-- Maintainer: xy.r@outlook.com
+-- Stability: unstable
+-- Portability: non-portable (GHC only)
 module Data.PrimVec (PrimVec, empty, head, tail, take, drop, index, cons, concat, pick, update) where
 
 import           Data.Foldable            (for_)
@@ -9,6 +16,7 @@ import           GHC.Exts                 (runRW#, unsafeFreezeByteArray#)
 import           GHC.ST                   (ST (ST))
 import           Prelude                  hiding (concat, drop, head, tail, take)
 
+-- | Slices of 'PrimArray'.
 data PrimVec a = PrimVec
   {-# UNPACK #-} !Int
   {-# UNPACK #-} !Int
