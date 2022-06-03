@@ -80,31 +80,26 @@ mkInternalHandler ptr es handle = InternalHandler \e -> Eff \ess ->
 -- | Create an empty 'Env' with no address allocated.
 empty :: Env '[]
 empty = Env Rec.empty Vec.empty
-{-# INLINE empty #-}
 
 -- | Read the handler a pointer points to. \( O(1) \).
 read :: ∀ e es. e :> es => Env es -> ∀ es'. e (Eff es') ~> Eff es'
 read (Env stack heap) = fromAny $ Vec.lookup (unHandlerPtr (Rec.index @e stack)) heap
-{-# INLINE read #-}
 
 -- | Adjust the effect stack via an function over 'Rec'.
 adjust :: ∀ es' es. (Rec es -> Rec es') -> Env es -> Env es'
 adjust f = \(Env stack heap) -> Env (f stack) heap
-{-# INLINE adjust #-}
 
 -- | Replace the handler a pointer points to. \( O(1) \).
 overwriteGlobal :: ∀ e es es'. e :> es => Env es' -> Handler e es' -> Env es -> Env es
 overwriteGlobal es hdl (Env stack heap) = Env stack $
   Vec.update m (Any $ mkInternalHandler ptr es hdl) heap
   where ptr@(HandlerPtr m) = Rec.index @e stack
-{-# INLINE overwriteGlobal #-}
 
 -- | Replace the handler a pointer points to. \( O(1) \).
 overwriteSelfGlobal :: ∀ e es es' esSend. Handling esSend e es => Env es' -> Handler e es' -> Env esSend -> Env esSend
 overwriteSelfGlobal es hdl (Env stack heap) = Env stack $
   Vec.update ix (Any $ mkInternalHandler ptr es hdl) heap
   where ptr@(HandlerPtr ix) = hdlPtr @esSend
-{-# INLINE overwriteSelfGlobal #-}
 
 -- | Replace the handler pointer of an effect in the stack. \( O(n) \).
 overwriteLocal :: ∀ e es es'. e :> es => Env es' -> Handler e es' -> Env es -> Env es
@@ -112,7 +107,6 @@ overwriteLocal es hdl (Env stack heap) = Env
   (Rec.update @e ptr stack)
   (Vec.snoc heap $ Any $ mkInternalHandler ptr es hdl)
   where ptr = HandlerPtr (Vec.size heap)
-{-# INLINE overwriteLocal #-}
 
 -- | Add a new effect to the stack with its corresponding handler pointer. \( O(n) \).
 extend :: ∀ e es es'. Env es' -> Handler e es' -> Env es -> Env (e : es)
@@ -120,10 +114,7 @@ extend es hdl (Env stack heap) = Env
   (Rec.cons ptr stack)
   (Vec.snoc heap $ Any $ mkInternalHandler ptr es hdl)
   where ptr = HandlerPtr (Vec.size heap)
-{-# INLINE extend #-}
 
 -- | Use the state of LHS as a newer version for RHS. \( O(1) \).
 update :: ∀ es es'. Env es' -> Env es -> Env es
 update (Env _ heap) (Env stack _) = Env stack heap
-{-# INLINE update #-}
-

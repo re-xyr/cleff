@@ -40,22 +40,17 @@ module Cleff.Internal.Rec
   ) where
 
 import           Cleff.Internal
-import           Data.Foldable            (for_)
-import           Data.Kind                (Constraint)
-import           Data.Primitive.PrimArray (MutablePrimArray (MutablePrimArray), PrimArray (PrimArray), copyPrimArray,
-                                           indexPrimArray, newPrimArray, writePrimArray)
-import           GHC.Exts                 (runRW#, unsafeFreezeByteArray#)
-import           GHC.ST                   (ST (ST))
-import           GHC.TypeLits             (ErrorMessage (ShowType, Text, (:<>:)), TypeError)
-import           Prelude                  hiding (concat, drop, head, tail, take)
+import           Data.Coerce    (coerce)
+import           Data.Kind      (Constraint)
+import           Data.PrimVec   (PrimVec)
+import qualified Data.PrimVec   as Vec
+import           GHC.TypeLits   (ErrorMessage (ShowType, Text, (:<>:)), TypeError)
+import           Prelude        hiding (concat, drop, head, tail, take)
 
 -- | Extensible record type supporting efficient \( O(1) \) reads. The underlying implementation is 'PrimArray'
 -- slices.
 type role Rec nominal
-data Rec (es :: [Effect]) = Rec
-  {-# UNPACK #-} !Int -- ^ The offset.
-  {-# UNPACK #-} !Int -- ^ The length.
-  {-# UNPACK #-} !(PrimArray Int) -- ^ The array content.
+newtype Rec (es :: [Effect]) = Rec (PrimVec Int)
 
 unreifiable :: String -> String -> String -> a
 unreifiable clsName funName comp = error $
@@ -63,36 +58,21 @@ unreifiable clsName funName comp = error $
   \to define an instance for the '" <> clsName <> "' typeclass, which you should not be doing whatsoever. If that or \
   \other shenanigans seem unlikely, please report this as a bug."
 
-runPrimArray :: (∀ s. ST s (MutablePrimArray s a)) -> PrimArray a
-runPrimArray (ST f) = let
-  !(# _, ba# #) = runRW# \s1 ->
-    let !(# s2, MutablePrimArray mba# #) = f s1
-    in unsafeFreezeByteArray# mba# s2
-  in PrimArray ba#
-
 -- | Create an empty record. \( O(1) \).
 empty :: Rec '[]
-empty = Rec 0 0 $ runPrimArray $ newPrimArray 0
+empty = coerce (Vec.empty @Int)
 
 -- | Prepend one entry to the record. \( O(n) \).
 cons :: HandlerPtr e -> Rec es -> Rec (e : es)
-cons x (Rec off len arr) = Rec 0 (len + 1) $ runPrimArray do
-  marr <- newPrimArray (len + 1)
-  writePrimArray marr 0 (unHandlerPtr x)
-  copyPrimArray marr 1 arr off len
-  pure marr
+cons = coerce (Vec.cons @Int)
 
 -- | Concatenate two records. \( O(m+n) \).
 concat :: Rec es -> Rec es' -> Rec (es ++ es')
-concat (Rec off len arr) (Rec off' len' arr') = Rec 0 (len + len') $ runPrimArray do
-  marr <- newPrimArray (len + len')
-  copyPrimArray marr 0 arr off len
-  copyPrimArray marr len arr' off' len'
-  pure marr
+concat = coerce (Vec.concat @Int)
 
 -- | Slice off one entry from the top of the record. \( O(1) \).
 tail :: Rec (e : es) -> Rec es
-tail (Rec off len arr) = Rec (off + 1) (len - 1) arr
+tail = coerce (Vec.tail @Int)
 
 -- | @'KnownList' es@ means the list @es@ is concrete, /i.e./ is of the form @'[a1, a2, ..., an]@ instead of a type
 -- variable.
@@ -109,20 +89,15 @@ instance KnownList es => KnownList (e : es) where
 
 -- | Slice off several entries from the top of the record. \( O(1) \).
 drop :: ∀ es es'. KnownList es => Rec (es ++ es') -> Rec es'
-drop (Rec off len arr) = Rec (off + len') (len - len') arr
-  where len' = reifyLen @es
+drop = coerce (Vec.drop @Int) (reifyLen @es)
 
 -- | Get the head of the record. \( O(1) \).
 head :: Rec (e : es) -> HandlerPtr e
-head (Rec off _ arr) = HandlerPtr $ indexPrimArray arr off
+head = coerce (Vec.head @Int)
 
 -- | Take elements from the top of the record. \( O(m) \).
 take :: ∀ es es'. KnownList es => Rec (es ++ es') -> Rec es
-take (Rec off _ arr) = Rec 0 len $ runPrimArray do
-  marr <- newPrimArray len
-  copyPrimArray marr 0 arr off len
-  pure marr
-  where len = reifyLen @es
+take = coerce (Vec.take @Int) (reifyLen @es)
 
 -- | @e ':>' es@ means the effect @e@ is present in the effect stack @es@, and therefore can be 'Cleff.send'ed in an
 -- @'Cleff.Eff' es@ computation.
@@ -154,7 +129,7 @@ infix 0 :>>
 
 -- | Get an element in the record. Amortized \( O(1) \).
 index :: ∀ e es. e :> es => Rec es -> HandlerPtr e
-index (Rec off _ arr) = HandlerPtr $ indexPrimArray arr (off + reifyIndex @e @es)
+index = coerce (Vec.index @Int) (reifyIndex @e @es)
 
 -- | @es@ is a subset of @es'@, /i.e./ all elements of @es@ are in @es'@.
 class KnownList es => Subset (es :: [Effect]) (es' :: [Effect]) where
@@ -171,16 +146,8 @@ instance (Subset es es', e :> es') => Subset (e : es) es' where
 
 -- | Get a subset of the record. Amortized \( O(m) \).
 pick :: ∀ es es'. Subset es es' => Rec es' -> Rec es
-pick (Rec off _ arr) = Rec 0 (reifyLen @es) $ runPrimArray do
-  marr <- newPrimArray (reifyLen @es)
-  for_ (zip [0..] (reifyIndices @es @es')) \(newIx, ix) ->
-    writePrimArray marr newIx $ indexPrimArray arr (off + ix)
-  pure marr
+pick = coerce (Vec.pick @Int) (reifyLen @es) (reifyIndices @es @es')
 
 -- | Update an entry in the record. \( O(n) \).
 update :: ∀ e es. e :> es => HandlerPtr e -> Rec es -> Rec es
-update x (Rec off len arr) = Rec 0 len $ runPrimArray do
-  marr <- newPrimArray len
-  copyPrimArray marr 0 arr off len
-  writePrimArray marr (reifyIndex @e @es) (unHandlerPtr x)
-  pure marr
+update = coerce (Vec.update @Int) (reifyIndex @e @es)

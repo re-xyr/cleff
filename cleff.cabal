@@ -66,8 +66,8 @@ library
       Cleff.Trace
       Cleff.Writer
   other-modules:
-      Cleff.Internal.Instances
       Data.Any
+      Data.PrimVec
       Data.RadixVec
       Data.ThreadVar
   hs-source-dirs:

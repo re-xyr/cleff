@@ -26,8 +26,11 @@ import           Cleff.Internal
 import           Cleff.Internal.Rec  (KnownList, Rec, Subset, type (:>), type (:>>))
 import           Control.Applicative (Applicative (liftA2))
 import           Control.Monad.Fix   (MonadFix (mfix))
+import           Control.Monad.Zip   (MonadZip (munzip, mzipWith))
 import           Data.Any            (Any)
+import           Data.Monoid         (Ap (Ap))
 import           Data.RadixVec       (RadixVec)
+import           Data.String         (IsString (fromString))
 
 -- * The 'Eff' monad
 
@@ -86,3 +89,60 @@ instance Monad (Eff es) where
 
 instance MonadFix (Eff es) where
   mfix f = Eff \es -> mfix \x -> unEff (f x) es
+
+-- | @since 0.2.1.0
+deriving via (Ap (Eff es) a) instance Bounded a => Bounded (Eff es a)
+
+-- | @since 0.2.1.0
+instance Num a => Num (Eff es a) where
+  (+) = liftA2 (+)
+  (-) = liftA2 (-)
+  (*) = liftA2 (*)
+  negate = fmap negate
+  abs = fmap abs
+  signum = fmap signum
+  fromInteger = pure . fromInteger
+
+-- | @since 0.2.1.0
+instance Fractional a => Fractional (Eff es a) where
+  (/) = liftA2 (/)
+  recip = fmap recip
+  fromRational = pure . fromRational
+
+-- | @since 0.2.1.0
+instance Floating a => Floating (Eff es a) where
+  pi = pure pi
+  exp = fmap exp
+  log = fmap log
+  sqrt = fmap sqrt
+  (**) = liftA2 (**)
+  logBase = liftA2 logBase
+  sin = fmap sin
+  cos = fmap cos
+  tan = fmap tan
+  asin = fmap asin
+  acos = fmap acos
+  atan = fmap atan
+  sinh = fmap sinh
+  cosh = fmap cosh
+  tanh = fmap tanh
+  asinh = fmap asinh
+  acosh = fmap acosh
+  atanh = fmap atanh
+
+-- | @since 0.2.1.0
+deriving newtype instance Semigroup a => Semigroup (Eff es a)
+
+-- | @since 0.2.1.0
+deriving newtype instance Monoid a => Monoid (Eff es a)
+
+-- | @since 0.2.1.0
+instance IsString a => IsString (Eff es a) where
+  fromString = pure . fromString
+
+-- | Compatibility instance for @MonadComprehensions@.
+--
+-- @since 0.2.1.0
+instance MonadZip (Eff es) where
+  mzipWith = liftA2
+  munzip x = (fst <$> x, snd <$> x)

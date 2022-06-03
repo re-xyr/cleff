@@ -111,8 +111,8 @@ library:
   ghc-options:
   - -Wmissing-export-lists
   other-modules:
-  - Cleff.Internal.Instances
   - Data.Any
+  - Data.PrimVec
   - Data.RadixVec
   - Data.ThreadVar
 
