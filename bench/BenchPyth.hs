@@ -1,23 +1,20 @@
 module BenchPyth where
 
-import           Control.Applicative (Alternative (empty))
-import qualified Control.Ev.Eff      as E
-import qualified Control.Ev.Util     as E
-import           Data.Foldable       (asum)
-import qualified Sp.Eff              as S
-import qualified Sp.Util             as S
+import qualified Control.Ev.Eff  as E
+import qualified Control.Ev.Util as E
+import qualified Sp.Eff          as S
+import qualified Sp.Util         as S
 
 programSp :: (S.NonDet S.:> e) => Int -> S.Eff e (Int, Int, Int)
 programSp upbound = do
-  let inrange n = asum $ pure <$> [1..n]
-  x <- inrange upbound
-  y <- inrange upbound
-  z <- inrange upbound
-  if (x*x + y*y == z*z) then return (x,y,z) else empty
+  x <- S.choice [1..upbound]
+  y <- S.choice [1..upbound]
+  z <- S.choice [1..upbound]
+  if (x*x + y*y == z*z) then return (x,y,z) else S.send S.Empty
 {-# NOINLINE programSp #-}
 
 pythSp :: Int -> [(Int, Int, Int)]
-pythSp n = S.runEff $ S.runNonDet @[] $ programSp n
+pythSp n = S.runEff $ S.runNonDet $ programSp n
 
 programEv :: (E.Choose E.:? e) => Int -> E.Eff e (Int, Int, Int)
 programEv upbound = do

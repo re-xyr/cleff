@@ -20,12 +20,12 @@ instance TestEquality Marker where
   testEquality (Marker l) (Marker r) =
     if l == r then Just (unsafeCoerce Refl) else Nothing
 
-data Result m a
+data Result a
   = Pure !a
   | forall r. Raise !(Marker r) !r
   | forall r b. Yield !(Marker r) !((b -> Ctl r) -> Ctl r) !(b -> Ctl a)
 
-newtype Ctl a = Ctl { unCtl :: IO (Result IO a) }
+newtype Ctl a = Ctl { unCtl :: IO (Result a) }
 
 instance Functor Ctl where
   fmap = liftM
