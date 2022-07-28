@@ -98,7 +98,7 @@ lift = alter Rec.tail
 
 send :: e :> es => e (Eff es) a -> Eff es a
 send e = Eff \es -> unEff (runHandler (Rec.index es) e) es
-{-# INLINE send #-}
+{-# NOINLINE send #-}
 
 toEff :: Handling esSend es r -> Eff esSend a -> Eff es a
 toEff (Handling esSend _) = alter (const esSend)

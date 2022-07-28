@@ -24,7 +24,6 @@ dependencies:
 - primitive
 - transformers
 - atomic-primops
-- eveff
 
 default-extensions:
 - AllowAmbiguousTypes
@@ -68,13 +67,14 @@ ghc-options:
 library:
   source-dirs: src
 
-tests:
-  speff-test:
-    main:                Spec.hs
-    source-dirs:         test
+benchmarks:
+  speff-bench:
+    main:                Main.hs
+    source-dirs:         bench
     ghc-options:
-    - -threaded
     - -rtsopts
-    - -with-rtsopts=-N
+    - -with-rtsopts=-T
     dependencies:
     - speff
+    - eveff
+    - tasty-bench

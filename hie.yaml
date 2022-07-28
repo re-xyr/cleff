@@ -3,5 +3,6 @@ cradle:
     - path: "./src"
       component: "speff:lib"
 
-    - path: "./test"
-      component: "speff:test:speff-test"
+    - path: "./bench"
+      component: "speff:bench:speff-bench"
+
