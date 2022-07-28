@@ -1,0 +1,6 @@
+indentation: 2
+comma-style: leading
+indent-wheres: true
+respectful: true
+haddock-style: single-line
+newlines-between-decls: 1

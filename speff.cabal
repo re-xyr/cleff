@@ -1,0 +1,109 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           speff
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/githubuser/speff#readme>
+homepage:       https://github.com/githubuser/speff#readme
+bug-reports:    https://github.com/githubuser/speff/issues
+author:         Author name here
+maintainer:     example@example.com
+copyright:      2022 Author name here
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/speff
+
+library
+  exposed-modules:
+      Sp.Eff
+      Sp.Internal.Ctl
+      Sp.Internal.Env
+      Sp.Internal.Monad
+      Sp.Util
+  other-modules:
+      Paths_speff
+  hs-source-dirs:
+      src
+  default-extensions:
+      AllowAmbiguousTypes
+      BlockArguments
+      DerivingStrategies
+      ExistentialQuantification
+      GADTs
+      LambdaCase
+      ScopedTypeVariables
+      TypeApplications
+      TypeOperators
+      UnicodeSyntax
+      KindSignatures
+      DataKinds
+      PolyKinds
+      RoleAnnotations
+      TypeFamilies
+      MultiParamTypeClasses
+      FlexibleContexts
+      FlexibleInstances
+      UndecidableInstances
+      RankNTypes
+      ConstraintKinds
+      FunctionalDependencies
+      EmptyCase
+  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wpartial-fields -Wunused-type-patterns -ddump-hi -ddump-simpl -ddump-to-file -dsuppress-all -dsuppress-uniques
+  build-depends:
+      atomic-primops
+    , base >=4.7 && <5
+    , eveff
+    , primitive
+    , transformers
+  default-language: Haskell2010
+
+test-suite speff-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_speff
+  hs-source-dirs:
+      test
+  default-extensions:
+      AllowAmbiguousTypes
+      BlockArguments
+      DerivingStrategies
+      ExistentialQuantification
+      GADTs
+      LambdaCase
+      ScopedTypeVariables
+      TypeApplications
+      TypeOperators
+      UnicodeSyntax
+      KindSignatures
+      DataKinds
+      PolyKinds
+      RoleAnnotations
+      TypeFamilies
+      MultiParamTypeClasses
+      FlexibleContexts
+      FlexibleInstances
+      UndecidableInstances
+      RankNTypes
+      ConstraintKinds
+      FunctionalDependencies
+      EmptyCase
+  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wpartial-fields -Wunused-type-patterns -ddump-hi -ddump-simpl -ddump-to-file -dsuppress-all -dsuppress-uniques -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      atomic-primops
+    , base >=4.7 && <5
+    , eveff
+    , primitive
+    , speff
+    , transformers
+  default-language: Haskell2010

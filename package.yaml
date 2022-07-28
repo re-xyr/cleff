@@ -1,56 +1,55 @@
-name:                cleff
-version:             0.3.4.0
-github:              "re-xyr/cleff"
+name:                speff
+version:             0.1.0.0
+github:              "githubuser/speff"
 license:             BSD3
-author:              "Xy Ren"
-maintainer:          "xy.r@outlook.com"
-copyright:           "2021 Xy Ren"
-
-tested-with:
-- GHC == 8.6.5
-- GHC == 8.8.4
-- GHC == 8.10.7
-- GHC == 9.0.2
-- GHC == 9.2.2
+author:              "Author name here"
+maintainer:          "example@example.com"
+copyright:           "2022 Author name here"
 
 extra-source-files:
-- CHANGELOG.md
 - README.md
+- ChangeLog.md
 
-synopsis:            Fast and concise extensible effects
-category:            Control, Effect, Language
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
 
-description: |
-  @cleff@ is an effect system for building modular, well-abstracted and performant programs. It provides:
-
-  - Blazing-fast speed in the majority of use cases (<#benchmarks Benchmarks>)
-  - Well-built integration with the existing Haskell ecosystem (@unliftio@, @monad-control@, @exceptions@...)
-  - Predictable behavior under expections and concurrency that does not stab you in the back
-  - Flexible and expressive API for power users, with first-class support of scoped effects
-
-  You can use @cleff@ out of the box, with little to no boilerplate. To get started, use the module "Cleff" as a
-  starting point.
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/githubuser/speff#readme>
 
 dependencies:
-- atomic-primops >= 0.8 && < 0.9
-- base >= 4.12 && < 4.17
-- containers >= 0.5 && < 0.7
-- exceptions >= 0.10 && < 0.11
-- microlens >= 0.1 && < 0.5
-- monad-control >= 1 && < 1.1
-- primitive >= 0.6.4 && < 0.8
-- stm >= 2.5 && < 2.6
-- template-haskell >= 2.14 && < 2.19
-- th-abstraction >= 0.2 && < 0.5
-- transformers-base >= 0.4 && < 0.5
-- unliftio-core >= 0.1.1 && < 0.3
+- base >= 4.7 && < 5
+- primitive
+- transformers
+- atomic-primops
+- eveff
 
-flags:
-  dynamic-ioe:
-    description: |
-      Make @IOE@ a real effect. This is only for reference purposes and should not be enabled in production code.
-    manual: true
-    default: false
+default-extensions:
+- AllowAmbiguousTypes
+- BlockArguments
+- DerivingStrategies
+- ExistentialQuantification
+- GADTs
+- LambdaCase
+- ScopedTypeVariables
+- TypeApplications
+- TypeOperators
+- UnicodeSyntax
+- KindSignatures
+- DataKinds
+- PolyKinds
+- RoleAnnotations
+- TypeFamilies
+- MultiParamTypeClasses
+- FlexibleContexts
+- FlexibleInstances
+- UndecidableInstances
+- RankNTypes
+- ConstraintKinds
+- FunctionalDependencies
+- EmptyCase
 
 ghc-options:
 - -Wall
@@ -60,86 +59,22 @@ ghc-options:
 - -Wno-unticked-promoted-constructors
 - -Wpartial-fields
 - -Wunused-type-patterns
-# - -ddump-hi
-# - -ddump-simpl
-# - -ddump-to-file
-# - -dsuppress-all
-# - -dsuppress-uniques
-
-when:
-- condition: flag(dynamic-ioe)
-  cpp-options:
-  - -DDYNAMIC_IOE
-- condition: impl(ghc >= 8.8)
-  ghc-options:
-  - -Wmissing-deriving-strategies
-
-default-extensions:
-- BangPatterns
-- BlockArguments
-- ConstraintKinds
-- DataKinds
-- DeriveAnyClass
-- DerivingStrategies
-- DerivingVia
-- EmptyCase
-- FlexibleContexts
-- FlexibleInstances
-- FunctionalDependencies
-- GADTs
-- GeneralizedNewtypeDeriving
-- LambdaCase
-- MagicHash
-- NoStarIsType
-- PatternSynonyms
-- PolyKinds
-- RankNTypes
-- RoleAnnotations
-- ScopedTypeVariables
-- StandaloneDeriving
-- TemplateHaskell
-- TupleSections
-- TypeApplications
-- TypeFamilies
-- TypeOperators
-- UndecidableInstances
-- UnicodeSyntax
-- UnliftedFFITypes
-- ViewPatterns
+- -ddump-hi
+- -ddump-simpl
+- -ddump-to-file
+- -dsuppress-all
+- -dsuppress-uniques
 
 library:
   source-dirs: src
-  ghc-options:
-  - -Wmissing-export-lists
-  other-modules:
-  - Data.Any
-  - Data.PrimVec
-  - Data.RadixVec
-  - Data.ThreadVar
 
 tests:
-  cleff-test:
-    main:                Main.hs
+  speff-test:
+    main:                Spec.hs
     source-dirs:         test
     ghc-options:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - cleff
-    - extra
-    - hspec
-    - lifted-base
-    - unliftio
-
-  cleff-example:
-    main:                Main.hs
-    source-dirs:         example
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - cleff
-    - extra
-    - unliftio
+    - speff
