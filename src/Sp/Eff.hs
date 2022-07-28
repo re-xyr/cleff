@@ -13,8 +13,6 @@ module Sp.Eff
   , abort
   , runEff
   , (:>)
-  , IOE
-  , runIOE
   ) where
 
 import           Sp.Internal.Monad

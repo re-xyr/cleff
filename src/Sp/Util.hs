@@ -24,7 +24,7 @@ module Sp.Util
 import           Control.Applicative (Alternative (empty, (<|>)))
 import           Data.Atomics        (atomicModifyIORefCAS_)
 import           Data.Foldable       (for_)
-import           Data.IORef          (IORef, newIORef, readIORef, writeIORef)
+import           Data.IORef          (IORef, readIORef, writeIORef)
 import           Sp.Internal.Monad
 
 data Reader r m a where
@@ -61,8 +61,7 @@ handleState r _ = \case
   Put s -> unsafeIO (writeIORef r s)
 
 runState :: s -> Eff (State s : es) a -> Eff es (a, s)
-runState s m = do
-  r <- unsafeIO (newIORef s)
+runState s m = withState s \r -> do
   x <- interpret (handleState r) m
   s' <- unsafeIO (readIORef r)
   pure (x, s')
@@ -98,16 +97,14 @@ listen m = send (Listen m)
 handleWriter :: forall w es a. Monoid w => [IORef w] -> Handler (Writer w) es a
 handleWriter rs ctx = \case
   Tell x   -> for_ rs \r -> unsafeIO (atomicModifyIORefCAS_ r (<> x))
-  Listen m -> do
-    r' <- unsafeIO (newIORef mempty)
+  Listen m -> withState mempty \r' -> do
     x <- toEff ctx (interpose (handleWriter (r' : rs)) m)
     w' <- unsafeIO (readIORef r')
     pure (x, w')
 {-# INLINABLE handleWriter #-}
 
 runWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
-runWriter m = do
-  r <- unsafeIO (newIORef mempty)
+runWriter m = withState mempty \r -> do
   x <- interpret (handleWriter [r]) m
   w' <- unsafeIO (readIORef r)
   pure (x, w')
@@ -127,7 +124,7 @@ handleNonDet ctx = \case
     let collect [] acc = pure acc
         collect (e : etc') acc = do
           xs <- cont e
-          collect etc' $! (xs <|> acc)
+          collect etc' $! acc <|> xs
     in collect etc empty
 {-# INLINABLE handleNonDet #-}
 

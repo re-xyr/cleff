@@ -15,17 +15,15 @@ module Sp.Internal.Monad
   , abort
   , runEff
   , (:>)
-  , IOE
-  , runIOE
+  , withState
   ) where
 
-import           Control.Monad          (ap, liftM)
-import           Control.Monad.IO.Class (MonadIO (liftIO))
-import           Data.Kind              (Type)
-import           Sp.Internal.Ctl        (Ctl, Marker, prompt, raise, runCtl, yield)
-import           Sp.Internal.Env        (Rec, (:>))
-import qualified Sp.Internal.Env        as Rec
-import           System.IO.Unsafe       (unsafeDupablePerformIO)
+import           Control.Monad   (ap, liftM)
+import           Data.IORef      (IORef)
+import           Data.Kind       (Type)
+import           Sp.Internal.Ctl (Ctl, Marker, prompt, promptState, raise, runCtl, unsafeIOCtl, yield)
+import           Sp.Internal.Env (Rec, (:>))
+import qualified Sp.Internal.Env as Rec
 
 type Effect = (Type -> Type) -> Type -> Type
 
@@ -55,7 +53,7 @@ type Handler e es r = forall esSend a. e :> esSend => Handling esSend es r -> e 
 -- behaviors itself; it is only unsafe in the sense that you can embed arbitrary IO actions in any effect environment
 -- therefore breaking effect abstraction.
 unsafeIO :: IO a -> Eff es a
-unsafeIO m = Eff (const $ liftIO m)
+unsafeIO m = Eff (const $ unsafeIOCtl m)
 {-# INLINE unsafeIO #-}
 
 toInternalHandler :: Marker r -> Env es -> Handler e es r -> InternalHandler e
@@ -108,14 +106,9 @@ abort (Handling _ mark) x = Eff (const $ raise mark x)
 {-# INLINE abort #-}
 
 runEff :: Eff '[] a -> a
-runEff (Eff m) = unsafeDupablePerformIO (runCtl $ m Rec.empty)
+runEff (Eff m) = runCtl $ m Rec.empty
 {-# INLINE runEff #-}
 
-data IOE :: Effect
-
-instance IOE :> es => MonadIO (Eff es) where
-  liftIO = unsafeIO
-
-runIOE :: Eff '[IOE] a -> IO a
-runIOE m = runCtl $ unEff (interpret (const $ \case) m) Rec.empty
-{-# INLINE runIOE #-}
+withState :: s -> (IORef s -> Eff es a) -> Eff es a
+withState x0 f = Eff \es -> promptState x0 \ref -> unEff (f ref) es
+{-# INLINE withState #-}
