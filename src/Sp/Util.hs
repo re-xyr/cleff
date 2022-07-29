@@ -17,11 +17,11 @@ module Sp.Util
   , listen
   , runWriter
   , NonDet (..)
-  , choose
+  , choice
   , runNonDet
   ) where
 
-import           Control.Applicative (Alternative (empty, (<|>)), Applicative (liftA2))
+import           Control.Applicative (Alternative (empty, (<|>)))
 import           Data.Atomics        (atomicModifyIORefCAS_)
 import           Data.Foldable       (for_)
 import           Data.IORef          (IORef, readIORef, writeIORef)
@@ -114,15 +114,20 @@ runWriter m = unsafeState mempty \r -> do
 
 data NonDet m a where
   Empty :: NonDet m a
-  Choice :: NonDet m Bool
+  Choice :: [a] -> NonDet m a
 
-choose :: NonDet :> es => Eff es Bool
-choose = send Choice
+choice :: NonDet :> es => [a] -> Eff es a
+choice etc = send (Choice etc)
 
 handleNonDet :: Alternative f => Handler NonDet es (f a)
 handleNonDet ctx = \case
-  Empty  -> abort ctx empty
-  Choice -> control ctx \cont -> liftA2 (<|>) (cont True) (cont False)
+  Empty      -> abort ctx empty
+  Choice etc -> control ctx \cont ->
+    let collect [] acc = pure acc
+        collect (e : etc') acc = do
+          xs <- cont e
+          collect etc' $! acc <|> xs
+    in collect etc empty
 {-# INLINABLE handleNonDet #-}
 
 runNonDet :: Alternative f => Eff (NonDet : es) a -> Eff es (f a)
@@ -132,5 +137,5 @@ runNonDet = interpret handleNonDet . fmap pure
 instance NonDet :> es => Alternative (Eff es) where
   empty = send Empty
   m <|> n = do
-    x <- send Choice
+    x <- send (Choice [True, False])
     if x then m else n
