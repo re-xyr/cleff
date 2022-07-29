@@ -3,6 +3,7 @@ module Sp.Internal.Ctl (Marker, Ctl, prompt, yield, raise, runCtl) where
 import           Control.Monad          (ap, liftM)
 import           Control.Monad.IO.Class (MonadIO (liftIO))
 import           Data.Atomics.Counter   (AtomicCounter, incrCounter, newCounter)
+import           Data.IORef             (IORef, newIORef, readIORef, writeIORef)
 import           Data.Type.Equality     (TestEquality (testEquality), type (:~:) (Refl))
 import           System.IO.Unsafe       (unsafePerformIO)
 import           Unsafe.Coerce          (unsafeCoerce)
@@ -20,12 +21,12 @@ instance TestEquality Marker where
   testEquality (Marker l) (Marker r) =
     if l == r then Just (unsafeCoerce Refl) else Nothing
 
-data Result m a
+data Result a
   = Pure !a
   | forall r. Raise !(Marker r) !r
   | forall r b. Yield !(Marker r) !((b -> Ctl r) -> Ctl r) !(b -> Ctl a)
 
-newtype Ctl a = Ctl { unCtl :: IO (Result IO a) }
+newtype Ctl a = Ctl { unCtl :: IO (Result a) }
 
 instance Functor Ctl where
   fmap = liftM
@@ -66,6 +67,21 @@ yield mark f = Ctl $ pure $ Yield mark f pure
 
 raise :: Marker r -> r -> Ctl a
 raise mark r = Ctl $ pure $ Raise mark r
+
+promptState :: forall s r. s -> (IORef s -> Ctl r) -> Ctl r
+promptState x0 f = do
+  ref <- liftIO (newIORef x0)
+  promptStateWith ref (f ref)
+
+promptStateWith :: IORef s -> Ctl r -> Ctl r
+promptStateWith ref (Ctl m) = Ctl $ m >>= \case
+  Pure x -> pure $ Pure x
+  Raise mark x -> pure $ Raise mark x
+  Yield mark ctl cont -> do
+    s0 <- liftIO (readIORef ref)
+    pure $ Yield mark ctl \x -> do
+      liftIO (writeIORef ref s0)
+      promptStateWith ref (cont x)
 
 runCtl :: Ctl a -> IO a
 runCtl (Ctl m) = m >>= \case
