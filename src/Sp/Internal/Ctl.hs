@@ -1,4 +1,4 @@
-module Sp.Internal.Ctl (Marker, Ctl, prompt, yield, raise, runCtl) where
+module Sp.Internal.Ctl (Marker, Ctl, prompt, yield, raise, promptState, promptStateWith, runCtl) where
 
 import           Control.Monad          (ap, liftM)
 import           Control.Monad.IO.Class (MonadIO (liftIO))

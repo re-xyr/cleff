@@ -4,6 +4,7 @@ module Sp.Internal.Monad
   , Handling
   , Handler
   , unsafeIO
+  , unsafeState
   , lift
   , interpret
   , reinterpret
@@ -21,8 +22,9 @@ module Sp.Internal.Monad
 
 import           Control.Monad          (ap, liftM, (>=>))
 import           Control.Monad.IO.Class (MonadIO (liftIO))
+import           Data.IORef             (IORef)
 import           Data.Kind              (Type)
-import           Sp.Internal.Ctl        (Ctl, Marker, prompt, raise, runCtl, yield)
+import           Sp.Internal.Ctl        (Ctl, Marker, prompt, promptState, raise, runCtl, yield)
 import           Sp.Internal.Env        (Rec, (:>))
 import qualified Sp.Internal.Env        as Rec
 import           System.IO.Unsafe       (unsafeDupablePerformIO)
@@ -63,6 +65,10 @@ unsafeIO :: IO a -> Eff es a
 unsafeIO m = Eff (\es -> Result es <$> liftIO m)
 {-# INLINE unsafeIO #-}
 
+unsafeState :: s -> (IORef s -> Eff es a) -> Eff es a
+unsafeState x0 f = Eff \es -> promptState x0 \ref -> unEff (f ref) es
+{-# INLINE unsafeState #-}
+
 toInternalHandler :: Marker r -> Env es -> Handler e es r -> InternalHandler e
 toInternalHandler mark es hdl = InternalHandler \e -> Eff \esSend ->
   Result esSend <$> (resVal <$> unEff (hdl (Handling esSend mark) e) es)
@@ -98,7 +104,7 @@ lift = alter Rec.tail
 
 send :: e :> es => e (Eff es) a -> Eff es a
 send e = Eff \es -> unEff (runHandler (Rec.index es) e) es
-{-# NOINLINE send #-}
+{-# INLINE send #-}
 
 toEff :: Handling esSend es r -> Eff esSend a -> Eff es a
 toEff (Handling esSend _) = alter (const esSend)

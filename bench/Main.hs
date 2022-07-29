@@ -11,7 +11,7 @@ main = defaultMain
     , bench "ev/deep" $ nf countdownEvDeep 10000000
     ]
   , bgroup "pyth"
-    [ bench "sp" $ nf pythSp 100
-    , bench "ev" $ nf pythEv 100
+    [ bench "sp" $ nf pythSp 200
+    , bench "ev" $ nf pythEv 200
     ]
   ]
