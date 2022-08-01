@@ -4,6 +4,7 @@ module Sp.Internal.Monad
   , Handling
   , Handler
   , unsafeIO
+  , unsafeState
   , lift
   , interpret
   , reinterpret
@@ -22,10 +23,11 @@ module Sp.Internal.Monad
 import           Control.Monad          (ap, liftM)
 import           Control.Monad.IO.Class (MonadIO (liftIO))
 import           Data.Kind              (Type)
-import           Sp.Internal.Ctl        (Ctl, Marker, prompt, raise, runCtl, yield)
+import           Sp.Internal.Ctl
 import           Sp.Internal.Env        (Rec, (:>))
 import qualified Sp.Internal.Env        as Rec
 import           System.IO.Unsafe       (unsafeDupablePerformIO)
+import Data.IORef (IORef)
 
 type Effect = (Type -> Type) -> Type -> Type
 
@@ -57,6 +59,10 @@ type Handler e es r = forall esSend a. e :> esSend => Handling esSend es r -> e 
 unsafeIO :: IO a -> Eff es a
 unsafeIO m = Eff (const $ liftIO m)
 {-# INLINE unsafeIO #-}
+
+unsafeState :: s -> (IORef s -> Eff es a) -> Eff es a
+unsafeState x0 f = Eff \es -> promptState x0 \ref -> unEff (f ref) es
+{-# INLINE unsafeState #-}
 
 toInternalHandler :: Marker r -> Env es -> Handler e es r -> InternalHandler e
 toInternalHandler mark es hdl = InternalHandler \e -> Eff \esSend -> unEff (hdl (Handling esSend mark) e) es
