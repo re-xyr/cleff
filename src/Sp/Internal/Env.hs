@@ -1,4 +1,5 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 -- |
 -- Copyright: (c) 2021 Xy Ren
 -- License: BSD3
@@ -36,57 +37,64 @@ module Sp.Internal.Env
   , update
   ) where
 
-import           Control.Monad.Primitive   (PrimMonad (PrimState))
-import           Data.Kind                 (Type)
-import           Data.Primitive.SmallArray (SmallArray, SmallMutableArray, copySmallArray, indexSmallArray,
-                                            newSmallArray, runSmallArray, writeSmallArray)
-import           GHC.Exts                  (Any)
-import           GHC.TypeLits              (ErrorMessage (ShowType, Text, (:<>:)), TypeError)
-import           Prelude                   hiding (all, any, concat, drop, head, length, tail, take, zipWith)
-import           Unsafe.Coerce             (unsafeCoerce)
+import           Control.Monad.Primitive (PrimMonad (PrimState))
+import           Data.Function           (on)
+import           Data.Kind               (Type)
+import           Data.Monoid             (All (All, getAll))
+import           Data.Primitive.Array    (Array, MutableArray, cloneArray, copyArray, emptyArray, indexArray, newArray,
+                                          runArray, thawArray, writeArray)
+import           GHC.Exts                (Any)
+import           GHC.TypeLits            (ErrorMessage (ShowType, Text, (:<>:)), TypeError)
+import           Prelude                 hiding (concat, drop, head, length, tail, take)
+import           Unsafe.Coerce           (unsafeCoerce)
 
--- | Extensible record type supporting efficient \( O(1) \) reads. The underlying implementation is 'SmallArray'
+-- | Extensible record type supporting efficient \( O(1) \) reads. The underlying implementation is 'Array'
 -- slices, therefore suits small numbers of entries (/i.e./ less than 128).
 type role Rec representational nominal
 data Rec (f :: k -> Type) (es :: [k]) = Rec
   {-# UNPACK #-} !Int -- ^ The offset.
   {-# UNPACK #-} !Int -- ^ The length.
-  {-# UNPACK #-} !(SmallArray Any) -- ^ The array content.
+  {-# UNPACK #-} !(Array Any) -- ^ The array content.
+
+instance (forall a. Eq (f a)) => Eq (Rec f es) where
+  Rec off len arr == Rec off' len' arr' = if len /= len' then False else
+    getAll $ foldMap All $
+      zipWith ((==) `on` fromAny @(f Any))
+        (fmap (\x -> indexArray arr (off + x)) [0 .. len - 1])
+        (fmap (\x -> indexArray arr' (off' + x)) [0 .. len - 1])
 
 -- | Get the length of the record.
 length :: Rec f es -> Int
 length (Rec _ len _) = len
 
--- | Create a new 'SmallMutableArray' with no contents.
-newArr :: PrimMonad m => Int -> m (SmallMutableArray (PrimState m) a)
-newArr len = newSmallArray len $ error
-  "Data.Rec.SmallArray.newArr: Attempting to read an element of the underlying array of a 'Rec'. Please report this \
-  \as a bug."
+-- | Create a new 'MutableArray' with no contents.
+newArr :: PrimMonad m => Int -> m (MutableArray (PrimState m) a)
+newArr len = newArray len $ error
+  "Sp.Env: Attempting to read an element of the underlying array of a 'Rec'. Please report this as a bug."
 
 -- | Create an empty record. \( O(1) \).
 empty :: Rec f '[]
-empty = Rec 0 0 $ runSmallArray $ newArr 0
+empty = Rec 0 0 $ emptyArray
 
 -- | Prepend one entry to the record. \( O(n) \).
 cons :: f e -> Rec f es -> Rec f (e ': es)
-cons x (Rec off len arr) = Rec 0 (len + 1) $ runSmallArray do
-  marr <- newArr (len + 1)
-  writeSmallArray marr 0 (toAny x)
-  copySmallArray marr 1 arr off len
+cons x (Rec off len arr) = Rec 0 (len + 1) $ runArray do
+  marr <- newArray (len + 1) (toAny x)
+  copyArray marr 1 arr off len
   pure marr
 
 -- | Type level list concatenation.
-type family xs ++ ys where
+type family (xs :: [k]) ++ (ys :: [k]) where
   '[] ++ ys = ys
   (x ': xs) ++ ys = x ': (xs ++ ys)
 infixr 5 ++
 
 -- | Concatenate two records. \( O(m+n) \).
 concat :: Rec f es -> Rec f es' -> Rec f (es ++ es')
-concat (Rec off len arr) (Rec off' len' arr') = Rec 0 (len + len') $ runSmallArray do
+concat (Rec off len arr) (Rec off' len' arr') = Rec 0 (len + len') $ runArray do
   marr <- newArr (len + len')
-  copySmallArray marr 0 arr off len
-  copySmallArray marr len arr' off' len'
+  copyArray marr 0 arr off len
+  copyArray marr len arr' off' len'
   pure marr
 
 -- | Slice off one entry from the top of the record. \( O(1) \).
@@ -103,7 +111,7 @@ unreifiable clsName funName comp = error $
 class KnownList (es :: [k]) where
   -- | Get the length of the list.
   reifyLen :: Int
-  reifyLen = unreifiable "KnownList" "Data.Rec.SmallArray.reifyLen" "the length of a type-level list"
+  reifyLen = unreifiable "KnownList" "Sp.Env" "the length of a type-level list"
 
 instance KnownList '[] where
   reifyLen = 0
@@ -118,21 +126,18 @@ drop (Rec off len arr) = Rec (off + len') (len - len') arr
 
 -- | Get the head of the record. \( O(1) \).
 head :: Rec f (e ': es) -> f e
-head (Rec off _ arr) = fromAny $ indexSmallArray arr off
+head (Rec off _ arr) = fromAny $ indexArray arr off
 
 -- | Take elements from the top of the record. \( O(m) \).
 take :: ∀ es es' f. KnownList es => Rec f (es ++ es') -> Rec f es
-take (Rec off _ arr) = Rec 0 len $ runSmallArray do
-  marr <- newArr len
-  copySmallArray marr 0 arr off (off + len)
-  pure marr
+take (Rec off _ arr) = Rec 0 len $ cloneArray arr off (off + len)
   where len = reifyLen @_ @es
 
 -- | The element @e@ is present in the list @es@.
 class (e :: k) :> (es :: [k]) where
   -- | Get the index of the element.
   reifyIndex :: Int
-  reifyIndex = unreifiable "Elem" "Data.Rec.SmallArray.reifyIndex" "the index of an element of a type-level list"
+  reifyIndex = unreifiable "Elem" "Sp.Env" "the index of an element of a type-level list"
 infix 0 :>
 
 instance {-# OVERLAPPING #-} e :> e : es where
@@ -145,18 +150,18 @@ type ElemNotFound e = 'Text "The element '" ':<>: 'ShowType e ':<>: 'Text "' is 
 
 instance TypeError (ElemNotFound e) => e :> '[] where
   reifyIndex = error
-    "Data.Rec.SmallArray.reifyIndex: Attempting to refer to a nonexistent member. Please report this as a bug."
+    "Sp.Env: Attempting to refer to a nonexistent member. Please report this as a bug."
 
 -- | Get an element in the record. Amortized \( O(1) \).
 index :: ∀ e es f. e :> es => Rec f es -> f e
-index (Rec off _ arr) = fromAny $ indexSmallArray arr (off + reifyIndex @_ @e @es)
+index (Rec off _ arr) = fromAny $ indexArray arr (off + reifyIndex @_ @e @es)
 
 -- | @es@ is a subset of @es'@.
 class KnownList es => Subset (es :: [k]) (es' :: [k]) where
   -- | Get a list of indices of the elements.
   reifyIndices :: [Int]
   reifyIndices = unreifiable
-    "Subset" "Data.Rec.SmallArray.reifyIndices" "the index of multiple elements of a type-level list"
+    "Subset" "Sp.Env" "the index of multiple elements of a type-level list"
 
 instance Subset '[] es where
   reifyIndices = []
@@ -166,23 +171,22 @@ instance (Subset es es', e :> es') => Subset (e ': es) es' where
 
 -- | Get a subset of the record. Amortized \( O(m) \).
 pick :: ∀ es es' f. Subset es es' => Rec f es' -> Rec f es
-pick (Rec off _ arr) = Rec 0 (reifyLen @_ @es) $ runSmallArray do
+pick (Rec off _ arr) = Rec 0 (reifyLen @_ @es) $ runArray do
   marr <- newArr (reifyLen @_ @es)
   go marr 0 (reifyIndices @_ @es @es')
   pure marr
   where
-    go :: PrimMonad m => SmallMutableArray (PrimState m) Any -> Int -> [Int] -> m ()
+    go :: PrimMonad m => MutableArray (PrimState m) Any -> Int -> [Int] -> m ()
     go _ _ [] = pure ()
     go marr newIx (ix : ixs) = do
-      writeSmallArray marr newIx (indexSmallArray arr (off + ix))
+      writeArray marr newIx (indexArray arr (off + ix))
       go marr (newIx + 1) ixs
 
 -- | Update an entry in the record. \( O(n) \).
 update :: ∀ e es f. e :> es => f e -> Rec f es -> Rec f es
-update x (Rec off len arr) = Rec 0 len $ runSmallArray do
-  marr <- newArr len
-  copySmallArray marr 0 arr off len
-  writeSmallArray marr (reifyIndex @_ @e @es) (toAny x)
+update x (Rec off len arr) = Rec 0 len $ runArray do
+  marr <- thawArray arr off len
+  writeArray marr (reifyIndex @_ @e @es) (toAny x)
   pure marr
 
 -- Helpers
