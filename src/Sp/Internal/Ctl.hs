@@ -1,9 +1,10 @@
-module Sp.Internal.Ctl (Marker, Ctl, prompt, yield, raise, promptState, promptStateWith, runCtl) where
+module Sp.Internal.Ctl (Marker, Ctl, prompt, yield, raise, promptState, runCtl) where
 
 import           Control.Monad          (ap, liftM)
 import           Control.Monad.IO.Class (MonadIO (liftIO))
 import           Data.Atomics.Counter   (AtomicCounter, incrCounter, newCounter)
 import           Data.IORef             (IORef, newIORef, readIORef, writeIORef)
+import           Data.Kind              (Type)
 import           Data.Type.Equality     (TestEquality (testEquality), type (:~:) (Refl))
 import           System.IO.Unsafe       (unsafePerformIO)
 import           Unsafe.Coerce          (unsafeCoerce)
@@ -15,18 +16,23 @@ uniqueSource = unsafePerformIO (newCounter 0)
 freshMarker :: forall a. Ctl (Marker a)
 freshMarker = liftIO $ Marker <$> incrCounter 1 uniqueSource
 
-newtype Marker a = Marker Int
+type role Marker representational
+newtype Marker (a :: Type) = Marker Int
 
 instance TestEquality Marker where
   testEquality (Marker l) (Marker r) =
     if l == r then Just (unsafeCoerce Refl) else Nothing
 
-data Result a
-  = Pure !a
-  | forall r. Raise !(Marker r) !r
-  | forall r b. Yield !(Marker r) !((b -> Ctl r) -> Ctl r) !(b -> Ctl a)
+-- We don't force the value because that makes the semantics nonstandard
+-- Plus lazy semantics seems to make benchmarks faster
+type role Result representational
+data Result (a :: Type)
+  = Pure a
+  | forall (r :: Type). Raise !(Marker r) r
+  | forall (r :: Type) (b :: Type). Yield !(Marker r) ((b -> Ctl r) -> Ctl r) (b -> Ctl a)
 
-newtype Ctl a = Ctl { unCtl :: IO (Result a) }
+type role Ctl representational
+newtype Ctl (a :: Type) = Ctl { unCtl :: IO (Result a) }
 
 instance Functor Ctl where
   fmap = liftM
@@ -62,9 +68,11 @@ promptWith mark m = Ctl $ unCtl m >>= \case
     Just Refl -> unCtl $ ctl (promptWith mark . cont)
     Nothing   -> pure $ Yield mark' ctl (promptWith mark . cont)
 
+-- yielding is not strict in f
 yield :: Marker r -> ((a -> Ctl r) -> Ctl r) -> Ctl a
 yield mark f = Ctl $ pure $ Yield mark f pure
 
+-- raising is not strict in r
 raise :: Marker r -> r -> Ctl a
 raise mark r = Ctl $ pure $ Raise mark r
 
@@ -86,8 +94,8 @@ promptStateWith ref (Ctl m) = Ctl $ m >>= \case
 runCtl :: Ctl a -> IO a
 runCtl (Ctl m) = m >>= \case
   Pure a   -> pure a
-  Raise {} -> error "Unhandled operation"
-  Yield {} -> error "Unhandled operation"
+  Raise {} -> error "Sp.Ctl: Unhandled raise operation. Forgot to pair it with a prompt?"
+  Yield {} -> error "Sp.Ctl: Unhandled yield operation. Forgot to pair it with a prompt?"
 
 instance MonadIO Ctl where
   liftIO = Ctl . fmap Pure

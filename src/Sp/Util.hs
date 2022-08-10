@@ -25,9 +25,10 @@ import           Control.Applicative (Alternative (empty, (<|>)))
 import           Data.Atomics        (atomicModifyIORefCAS_)
 import           Data.Foldable       (for_)
 import           Data.IORef          (IORef, readIORef, writeIORef)
+import           Data.Kind           (Type)
 import           Sp.Internal.Monad
 
-data Reader r m a where
+data Reader (r :: Type) :: Effect where
   Ask :: Reader r m r
   Local :: (r -> r) -> m a -> Reader r m a
 
@@ -66,7 +67,7 @@ runState s m = unsafeState s \r -> do
   s' <- unsafeIO (readIORef r)
   pure (x, s')
 
-data Error e m a where
+data Error (e :: Type) :: Effect where
   Throw :: e -> Error e m a
   Catch :: m a -> (e -> m a) -> Error e m a
 
@@ -84,7 +85,7 @@ handleError ctx = \case
 runError :: forall e es a. Eff (Error e : es) a -> Eff es (Either e a)
 runError = interpret (handleError @e) . fmap Right
 
-data Writer w m a where
+data Writer (w :: Type) :: Effect where
   Tell :: w -> Writer w m ()
   Listen :: m a -> Writer w m (a, w)
 
@@ -110,7 +111,7 @@ runWriter m = unsafeState mempty \r -> do
   pure (x, w')
 {-# INLINABLE runWriter #-}
 
-data NonDet m a where
+data NonDet :: Effect where
   Empty :: NonDet m a
   Choice :: [a] -> NonDet m a
 

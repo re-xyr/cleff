@@ -22,20 +22,23 @@ module Sp.Internal.Monad
 
 import           Control.Monad          (ap, liftM)
 import           Control.Monad.IO.Class (MonadIO (liftIO))
+import           Data.IORef             (IORef)
 import           Data.Kind              (Type)
 import           Sp.Internal.Ctl
 import           Sp.Internal.Env        (Rec, (:>))
 import qualified Sp.Internal.Env        as Rec
 import           System.IO.Unsafe       (unsafeDupablePerformIO)
-import Data.IORef (IORef)
 
 type Effect = (Type -> Type) -> Type -> Type
 
-type Env es = Rec InternalHandler es
+type Env = Rec InternalHandler
 
-newtype Eff es a = Eff { unEff :: Env es -> Ctl a }
+type role Eff nominal representational
+newtype Eff (es :: [Effect]) (a :: Type) = Eff { unEff :: Env es -> Ctl a }
 
-newtype InternalHandler e = InternalHandler { runHandler :: forall es a. e :> es => e (Eff es) a -> Eff es a }
+type role InternalHandler nominal
+newtype InternalHandler e = InternalHandler
+  { runHandler :: forall es a. e :> es => e (Eff es) a -> Eff es a }
 
 instance Functor (Eff es) where
   fmap = liftM
@@ -47,14 +50,15 @@ instance Applicative (Eff es) where
 instance Monad (Eff es) where
   Eff m >>= f = Eff \es -> m es >>= \x -> unEff (f x) es
 
-data Handling esSend es r = Handling
+type role Handling nominal nominal representational
+data Handling (esSend :: [Effect]) (es :: [Effect]) (r :: Type) = Handling
   {-# UNPACK #-} !(Env esSend)
   {-# UNPACK #-} !(Marker r)
 
 type Handler e es r = forall esSend a. e :> esSend => Handling esSend es r -> e (Eff esSend) a -> Eff es a
 
--- This "unsafe" IO function is perfectly safe in the sense that it won't cause crashes or other undefined
--- behaviors itself; it is only unsafe in the sense that you can embed arbitrary IO actions in any effect environment
+-- This "unsafe" IO function is perfectly safe in the sense that it won't panic or otherwise cause undefined
+-- behaviors; it is only unsafe when it is used to embed arbitrary IO actions in any effect environment,
 -- therefore breaking effect abstraction.
 unsafeIO :: IO a -> Eff es a
 unsafeIO m = Eff (const $ liftIO m)
@@ -125,3 +129,7 @@ instance IOE :> es => MonadIO (Eff es) where
 runIOE :: Eff '[IOE] a -> IO a
 runIOE m = runCtl $ unEff (interpret (const $ \case) m) Rec.empty
 {-# INLINE runIOE #-}
+
+-- guard :: Env es -> Ctl a -> Eff es a
+-- guard es m = Eff \es' -> if es == es' then m
+--   else error "Sp.Eff: continuation used in a context other than its belonging scope"
