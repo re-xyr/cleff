@@ -11,7 +11,8 @@ module Sp.Internal.Monad
   , interpose
   , reinterpose
   , send
-  , toEff
+  , fromEff
+  , withToEff
   , control
   , abort
   , runEff
@@ -52,10 +53,10 @@ instance Monad (Eff es) where
 
 type role Handling nominal nominal representational
 data Handling (esSend :: [Effect]) (es :: [Effect]) (r :: Type) = Handling
-  {-# UNPACK #-} !(Env esSend)
+  {-# UNPACK #-} !(Env es)
   {-# UNPACK #-} !(Marker r)
 
-type Handler e es r = forall esSend a. e :> esSend => Handling esSend es r -> e (Eff esSend) a -> Eff es a
+type Handler e es r = forall esSend a. e :> esSend => Handling esSend es r -> e (Eff esSend) a -> Eff esSend a
 
 -- This "unsafe" IO function is perfectly safe in the sense that it won't panic or otherwise cause undefined
 -- behaviors; it is only unsafe when it is used to embed arbitrary IO actions in any effect environment,
@@ -69,7 +70,7 @@ unsafeState x0 f = Eff \es -> promptState x0 \ref -> unEff (f ref) es
 {-# INLINE unsafeState #-}
 
 toInternalHandler :: Marker r -> Env es -> Handler e es r -> InternalHandler e
-toInternalHandler mark es hdl = InternalHandler \e -> Eff \esSend -> unEff (hdl (Handling esSend mark) e) es
+toInternalHandler mark es hdl = InternalHandler \e -> hdl (Handling es mark) e
 {-# INLINE toInternalHandler #-}
 
 alter :: (Env es' -> Env es) -> Eff es a -> Eff es' a
@@ -104,16 +105,21 @@ send :: e :> es => e (Eff es) a -> Eff es a
 send e = Eff \es -> unEff (runHandler (Rec.index es) e) es
 {-# INLINE send #-}
 
-toEff :: Handling esSend es r -> Eff esSend a -> Eff es a
-toEff (Handling esSend _) = alter (const esSend)
-{-# INLINE toEff #-}
+data Localized (tag :: k) :: Effect
 
-control :: Handling esSend es r -> ((a -> Eff es r) -> Eff es r) -> Eff es a
-control (Handling _ mark) f = Eff \es -> yield mark \cont ->
-  unEff (f \x -> Eff (const $ cont x)) es
+fromEff :: Handling esSend es r -> Eff es a -> Eff esSend a
+fromEff (Handling es _) = alter (const es)
+{-# INLINE fromEff #-}
+
+withToEff :: Handling esSend es r -> (forall tag. (Eff esSend a -> Eff (Localized tag : es) a) -> Eff (Localized tag : es) a) -> Eff esSend a
+withToEff (Handling es _) f = Eff \esSend -> unEff (f \(Eff m) -> Eff (const $ m esSend)) (Rec.cons undefined es)
+{-# INLINE withToEff #-}
+
+control :: Handling esSend es r -> (forall tag. (Eff esSend a -> Eff (Localized tag : es) r) -> Eff (Localized tag : es) r) -> Eff esSend a
+control (Handling es mark) f = Eff \esSend -> yield mark \cont -> unEff (f \(Eff x) -> Eff (const $ cont $ x esSend)) (Rec.cons undefined es)
 {-# INLINE control #-}
 
-abort :: Handling esSend es r -> r -> Eff es a
+abort :: Handling esSend es r -> r -> Eff esSend a
 abort (Handling _ mark) x = Eff (const $ raise mark x)
 {-# INLINE abort #-}
 

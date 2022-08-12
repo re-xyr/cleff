@@ -8,7 +8,8 @@ module Sp.Eff
   , interpose
   , reinterpose
   , send
-  , toEff
+  , fromEff
+  , withToEff
   , control
   , abort
   , runEff

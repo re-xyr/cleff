@@ -39,9 +39,9 @@ local :: Reader r :> es => (r -> r) -> Eff es a -> Eff es a
 local f m = send (Local f m)
 
 handleReader :: r -> Handler (Reader r) es a
-handleReader r ctx = \case
+handleReader r _ = \case
   Ask       -> pure r
-  Local f m -> toEff ctx (interpose (handleReader (f r)) m)
+  Local f m -> interpose (handleReader (f r)) m
 
 runReader :: r -> Eff (Reader r : es) a -> Eff es a
 runReader r = interpret (handleReader r)
@@ -80,7 +80,7 @@ catch m h = send (Catch m h)
 handleError :: forall e es a. Handler (Error e) es (Either e a)
 handleError ctx = \case
   Throw e   -> abort ctx (Left e)
-  Catch m f -> toEff ctx (either f pure =<< interpose (handleError @e) (Right <$> m))
+  Catch m f -> either f pure =<< interpose (handleError @e) (Right <$> m)
 
 runError :: forall e es a. Eff (Error e : es) a -> Eff es (Either e a)
 runError = interpret (handleError @e) . fmap Right
@@ -96,10 +96,10 @@ listen :: Writer w :> es => Eff es a -> Eff es (a, w)
 listen m = send (Listen m)
 
 handleWriter :: forall w es a. Monoid w => [IORef w] -> Handler (Writer w) es a
-handleWriter rs ctx = \case
+handleWriter rs _ = \case
   Tell x   -> for_ rs \r -> unsafeIO (atomicModifyIORefCAS_ r (<> x))
   Listen m -> unsafeState mempty \r' -> do
-    x <- toEff ctx (interpose (handleWriter (r' : rs)) m)
+    x <- interpose (handleWriter (r' : rs)) m
     w' <- unsafeIO (readIORef r')
     pure (x, w')
 {-# INLINABLE handleWriter #-}
@@ -124,7 +124,7 @@ handleNonDet ctx = \case
   Choice etc -> control ctx \cont ->
     let collect [] acc = pure acc
         collect (e : etc') acc = do
-          xs <- cont e
+          xs <- cont (pure e)
           collect etc' $! (xs <|> acc)
     in collect etc empty
 {-# INLINABLE handleNonDet #-}

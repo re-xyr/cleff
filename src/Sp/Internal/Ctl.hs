@@ -29,7 +29,7 @@ type role Result representational
 data Result (a :: Type)
   = Pure a
   | forall (r :: Type). Raise !(Marker r) r
-  | forall (r :: Type) (b :: Type). Yield !(Marker r) ((b -> Ctl r) -> Ctl r) (b -> Ctl a)
+  | forall (r :: Type) (b :: Type). Yield !(Marker r) ((Ctl b -> Ctl r) -> Ctl r) (Ctl b -> Ctl a)
 
 type role Ctl representational
 newtype Ctl (a :: Type) = Ctl { unCtl :: IO (Result a) }
@@ -69,8 +69,8 @@ promptWith mark m = Ctl $ unCtl m >>= \case
     Nothing   -> pure $ Yield mark' ctl (promptWith mark . cont)
 
 -- yielding is not strict in f
-yield :: Marker r -> ((a -> Ctl r) -> Ctl r) -> Ctl a
-yield mark f = Ctl $ pure $ Yield mark f pure
+yield :: Marker r -> ((Ctl a -> Ctl r) -> Ctl r) -> Ctl a
+yield mark f = Ctl $ pure $ Yield mark f id
 
 -- raising is not strict in r
 raise :: Marker r -> r -> Ctl a
