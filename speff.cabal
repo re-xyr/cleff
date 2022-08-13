@@ -58,6 +58,7 @@ library
       ConstraintKinds
       FunctionalDependencies
       EmptyCase
+      TupleSections
   ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wpartial-fields -Wunused-type-patterns -ddump-hi -ddump-simpl -ddump-to-file -dsuppress-all -dsuppress-uniques
   build-depends:
       atomic-primops
@@ -99,6 +100,7 @@ benchmark speff-bench
       ConstraintKinds
       FunctionalDependencies
       EmptyCase
+      TupleSections
   ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wpartial-fields -Wunused-type-patterns -ddump-hi -ddump-simpl -ddump-to-file -dsuppress-all -dsuppress-uniques -rtsopts -with-rtsopts=-T
   build-depends:
       atomic-primops

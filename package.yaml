@@ -49,6 +49,7 @@ default-extensions:
 - ConstraintKinds
 - FunctionalDependencies
 - EmptyCase
+- TupleSections
 
 ghc-options:
 - -Wall

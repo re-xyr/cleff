@@ -130,18 +130,37 @@ runWriter m = unsafeState mempty \r -> do
 data NonDet :: Effect where
   Empty :: NonDet m a
   Choice :: [a] -> NonDet m a
+  -- Cut :: NonDet m ()
+  -- Cull :: m a -> NonDet m a
 
 choice :: NonDet :> es => [a] -> Eff es a
 choice etc = send (Choice etc)
 
+-- handleNonDet :: Alternative f => Handler NonDet es (Bool, f a)
+-- handleNonDet ctx = \case
+--   Empty -> abort ctx $ pure (False, empty)
+--   Choice etc -> control ctx \cont ->
+--     let collect [] acc = pure (False, acc)
+--         collect (e : etc') acc = do
+--           (isCut, xs) <- cont (pure e)
+--           if isCut
+--             then pure (True, acc <|> xs)
+--             else collect etc' $! (acc <|> xs)
+--     in collect etc empty
+  -- Cut -> control ctx \cont -> first (const True) <$> cont (pure ())
+  -- Cull m -> do
+  --   (isCut, x) <- interpose handleNonDet $ fmap ((False, ) . Just) m
+  --   control ctx \cont -> case x of
+  --     Nothing -> pure (isCut, empty)
+  --     Just x' -> first (isCut ||) <$> cont (pure x')
 handleNonDet :: Alternative f => Handler NonDet es (f a)
 handleNonDet ctx = \case
-  Empty      -> abort ctx $ pure empty
+  Empty -> abort ctx $ pure empty
   Choice etc -> control ctx \cont ->
     let collect [] acc = pure acc
         collect (e : etc') acc = do
           xs <- cont (pure e)
-          collect etc' $! (xs <|> acc)
+          collect etc' $! (acc <|> xs)
     in collect etc empty
 {-# INLINABLE handleNonDet #-}
 
