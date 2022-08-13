@@ -28,7 +28,7 @@ instance TestEquality Marker where
 type role Result representational
 data Result (a :: Type)
   = Pure a
-  | forall (r :: Type). Raise !(Marker r) r
+  | forall (r :: Type). Raise !(Marker r) (Ctl r)
   | forall (r :: Type) (b :: Type). Yield !(Marker r) ((Ctl b -> Ctl r) -> Ctl r) (Ctl b -> Ctl a)
 
 type role Ctl representational
@@ -62,7 +62,7 @@ promptWith :: Marker a -> Ctl a -> Ctl a
 promptWith mark m = Ctl $ unCtl m >>= \case
   Pure a -> pure $ Pure a
   Raise mark' r -> case testEquality mark mark' of
-    Just Refl -> pure $ Pure r
+    Just Refl -> unCtl r
     Nothing   -> pure $ Raise mark' r
   Yield mark' ctl cont -> case testEquality mark mark' of
     Just Refl -> unCtl $ ctl (promptWith mark . cont)
@@ -73,7 +73,7 @@ yield :: Marker r -> ((Ctl a -> Ctl r) -> Ctl r) -> Ctl a
 yield mark f = Ctl $ pure $ Yield mark f id
 
 -- raising is not strict in r
-raise :: Marker r -> r -> Ctl a
+raise :: Marker r -> Ctl r -> Ctl a
 raise mark r = Ctl $ pure $ Raise mark r
 
 promptState :: forall s r. s -> (IORef s -> Ctl r) -> Ctl r

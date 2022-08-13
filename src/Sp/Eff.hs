@@ -1,19 +1,28 @@
 module Sp.Eff
-  ( Eff
+  ( -- * Basic operations
+    Effect
+  , Eff
+  , (:>)
+    -- ** Performing effects
+  , send
+    -- ** Trivial transformations
+  , lift
+  , runEff
+    -- * Effect handling
   , Handling
   , Handler
-  , lift
+    -- ** Providing handlers
   , interpret
   , reinterpret
   , interpose
   , reinterpose
-  , send
-  , fromEff
-  , withToEff
-  , control
+    -- ** Combinators to use in handlers
+  , embed
+  , withUnembed
   , abort
-  , runEff
-  , (:>)
+  , control
+  , Localized
+    -- * @IO@ support
   , IOE
   , runIOE
   ) where

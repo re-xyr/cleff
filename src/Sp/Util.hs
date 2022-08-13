@@ -1,31 +1,39 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Sp.Util
-  ( Reader (..)
+  ( -- * Reader
+    Reader (..)
   , ask
   , local
   , runReader
+    -- * State
   , State (..)
   , get
   , put
+  , state
   , runState
+    -- * Error
   , Error (..)
   , throw
   , catch
+  , try
   , runError
+    -- * Writer
   , Writer (..)
   , tell
   , listen
   , runWriter
+    -- * Nondeterminism
   , NonDet (..)
   , choice
   , runNonDet
   ) where
 
 import           Control.Applicative (Alternative (empty, (<|>)))
-import           Data.Atomics        (atomicModifyIORefCAS_)
+import           Data.Atomics        (atomicModifyIORefCAS, atomicModifyIORefCAS_)
 import           Data.Foldable       (for_)
 import           Data.IORef          (IORef, readIORef, writeIORef)
 import           Data.Kind           (Type)
+import           Data.Tuple          (swap)
 import           Sp.Internal.Monad
 
 data Reader (r :: Type) :: Effect where
@@ -49,6 +57,7 @@ runReader r = interpret (handleReader r)
 data State s m a where
   Get :: State s m s
   Put :: s -> State s m ()
+  State :: (s -> (a, s)) -> State s m a
 
 get :: State s :> es => Eff es s
 get = send Get
@@ -56,10 +65,14 @@ get = send Get
 put :: State s :> es => s -> Eff es ()
 put x = send (Put x)
 
+state :: State s :> es => (s -> (a, s)) -> Eff es a
+state f = send (State f)
+
 handleState :: IORef s -> Handler (State s) es a
 handleState r _ = \case
-  Get   -> unsafeIO (readIORef r)
-  Put s -> unsafeIO (writeIORef r s)
+  Get     -> unsafeIO (readIORef r)
+  Put s   -> unsafeIO (writeIORef r s)
+  State f -> unsafeIO (atomicModifyIORefCAS r (swap . f))
 
 runState :: s -> Eff (State s : es) a -> Eff es (a, s)
 runState s m = unsafeState s \r -> do
@@ -77,9 +90,12 @@ throw e = send (Throw e)
 catch :: Error e :> es => Eff es a -> (e -> Eff es a) -> Eff es a
 catch m h = send (Catch m h)
 
+try :: Error e :> es => Eff es a -> Eff es (Either e a)
+try m = catch (Right <$> m) (pure . Left)
+
 handleError :: forall e es a. Handler (Error e) es (Either e a)
 handleError ctx = \case
-  Throw e   -> abort ctx (Left e)
+  Throw e   -> abort ctx (pure $ Left e)
   Catch m f -> either f pure =<< interpose (handleError @e) (Right <$> m)
 
 runError :: forall e es a. Eff (Error e : es) a -> Eff es (Either e a)
@@ -120,7 +136,7 @@ choice etc = send (Choice etc)
 
 handleNonDet :: Alternative f => Handler NonDet es (f a)
 handleNonDet ctx = \case
-  Empty      -> abort ctx empty
+  Empty      -> abort ctx $ pure empty
   Choice etc -> control ctx \cont ->
     let collect [] acc = pure acc
         collect (e : etc') acc = do
