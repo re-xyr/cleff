@@ -1,108 +1,93 @@
-cabal-version: 1.12
+cabal-version: 3.0
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
---
--- see: https://github.com/sol/hpack
+name:          cleff-plugin
+version:       0.1.1.0
+author:        Xy Ren
+maintainer:    xy.r@outlook.com
+license:       BSD-3-Clause
+copyright:     2022 Xy Ren
+homepage:      https://github.com/re-xyr/cleff
+bug-reports:   https://github.com/re-xyr/cleff/issues
+tested-with:   GHC == {9.2.5, 9.0.2, 8.10.7, 8.8.4}
+category:      Control, Effect, Language
+synopsis:      Automatic disambiguation for extensible effects
+license-file:  LICENSE
 
-name:           cleff-plugin
-version:        0.1.1.0
-synopsis:       Automatic disambiguation for extensible effects
-description:    Please see the README on GitHub at <https://github.com/re-xyr/cleff/tree/master/cleff-plugin#readme>
-category:       Control, Effect, Language
-homepage:       https://github.com/re-xyr/cleff#readme
-bug-reports:    https://github.com/re-xyr/cleff/issues
-author:         Xy Ren
-maintainer:     xy.r@outlook.com
-copyright:      2022 Xy Ren
-license:        BSD3
-license-file:   LICENSE
-build-type:     Simple
-tested-with:
-    GHC == 8.6.5
-  , GHC == 8.8.4
-  , GHC == 8.10.7
-  , GHC == 9.0.2
-  , GHC == 9.2.2
 extra-source-files:
-    CHANGELOG.md
-    README.md
+  CHANGELOG.md
+  README.md
+
+description:
+  Please see the README on GitHub at <https://github.com/re-xyr/cleff/tree/master/cleff-plugin#readme>
 
 source-repository head
-  type: git
-  location: https://github.com/re-xyr/cleff
+  type:      git
+  location:  https://github.com/re-xyr/cleff
+
+common lang
+  default-language: Haskell2010
+  build-depends:
+    base                 >= 4.12 && < 4.18,
+    cleff                >= 0.1 && < 0.4,
+    containers           >= 0.5 && < 0.7,
+    ghc                  >= 8.6 && < 9.3,
+    ghc-tcplugins-extra  >= 0.3 && < 0.5,
+  ghc-options:
+    -Wall
+    -Widentities
+    -Wincomplete-record-updates
+    -Wincomplete-uni-patterns
+    -Wno-unticked-promoted-constructors
+    -Wpartial-fields
+    -Wunused-type-patterns
+  if impl(ghc >= 8.8)
+    ghc-options: -Wmissing-deriving-strategies
+  default-extensions:
+    BangPatterns
+    BlockArguments
+    DerivingStrategies
+    EmptyCase
+    FlexibleContexts
+    FlexibleInstances
+    LambdaCase
+    NoStarIsType
+    PolyKinds
+    ScopedTypeVariables
+    TupleSections
+    UnicodeSyntax
 
 library
+  import:          lang
+  hs-source-dirs:  src
+  ghc-options:
+    -Wmissing-export-lists
   exposed-modules:
-      Cleff.Plugin
-      Cleff.Plugin.Internal
-  other-modules:
-      Paths_cleff_plugin
-  hs-source-dirs:
-      src
-  default-extensions:
-      BangPatterns
-      BlockArguments
-      DerivingStrategies
-      EmptyCase
-      FlexibleContexts
-      FlexibleInstances
-      LambdaCase
-      NoStarIsType
-      PolyKinds
-      ScopedTypeVariables
-      TupleSections
-      UnicodeSyntax
-  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wpartial-fields -Wunused-type-patterns -Wmissing-export-lists
-  build-depends:
-      base >=4.12 && <4.17
-    , cleff >=0.1 && <0.4
-    , containers >=0.5 && <0.7
-    , ghc >=8.6 && <9.3
-    , ghc-tcplugins-extra >=0.3 && <0.5
-  if impl(ghc >= 8.8)
-    ghc-options: -Wmissing-deriving-strategies
-  default-language: Haskell2010
+    Cleff.Plugin
+    Cleff.Plugin.Internal
 
 test-suite cleff-plugin-test
-  type: exitcode-stdio-1.0
-  main-is: Main.hs
-  other-modules:
-      CleffSpec
-      Paths_cleff_plugin
-  hs-source-dirs:
-      test
-  default-extensions:
-      BangPatterns
-      BlockArguments
-      DerivingStrategies
-      EmptyCase
-      FlexibleContexts
-      FlexibleInstances
-      LambdaCase
-      NoStarIsType
-      PolyKinds
-      ScopedTypeVariables
-      TupleSections
-      UnicodeSyntax
-      DataKinds
-      FunctionalDependencies
-      TemplateHaskell
-      GADTs
-      GeneralizedNewtypeDeriving
-      KindSignatures
-      RankNTypes
-      TypeApplications
-      TypeFamilies
-      TypeOperators
-      UndecidableInstances
-  ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N
+  import:          lang
+  type:            exitcode-stdio-1.0
+  hs-source-dirs:  test
+  main-is:         Main.hs
+  ghc-options:
+    -threaded
+    -rtsopts
+    -with-rtsopts=-N
   build-depends:
-      base >=4.12 && <4.17
-    , cleff
-    , cleff-plugin
-    , containers >=0.5 && <0.7
-    , ghc >=8.6 && <9.3
-    , ghc-tcplugins-extra >=0.3 && <0.5
-  if impl(ghc >= 8.8)
-    ghc-options: -Wmissing-deriving-strategies
-  default-language: Haskell2010
+    cleff,
+    cleff-plugin,
+  default-extensions:
+    DataKinds
+    FunctionalDependencies
+    TemplateHaskell
+    GADTs
+    GeneralizedNewtypeDeriving
+    KindSignatures
+    RankNTypes
+    TypeApplications
+    TypeFamilies
+    TypeOperators
+    UndecidableInstances
+  other-modules:
+    CleffSpec

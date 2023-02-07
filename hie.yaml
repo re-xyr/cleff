@@ -1,12 +1,12 @@
 cradle:
-  stack:
-  - path: "./src"
-    component: "cleff:lib"
-  - path: "./test"
-    component: "cleff:test:cleff-test"
-  - path: "./example"
-    component: "cleff:test:cleff-example"
-  - path: "./cleff-plugin/src"
-    component: "cleff-plugin:lib"
-  - path: "./cleff-plugin/test"
-    component: "cleff-plugin:test:cleff-plugin-test"
+  cabal:
+    - path: "src"
+      component: "lib:cleff"
+    - path: "example"
+      component: "cleff:test:cleff-example"
+    - path: "test"
+      component: "cleff:test:cleff-test"
+    - path: "cleff-plugin/src"
+      component: "lib:cleff-plugin"
+    - path: "cleff-plugin/test"
+      component: "cleff-plugin:test:cleff-plugin-test"

@@ -14,19 +14,15 @@ jobs:
     strategy:
       matrix:
         ghc:
-          - 8.6.5
           - 8.8.4
           - 8.10.7
           - 9.0.2
-          - 9.2.2
+          - 9.2.5
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Copy stack.yaml
-        run: |
-          rm stack.yaml
-          rm stack.yaml.lock
-          cp .github/stack-${{ matrix.ghc }}.yaml stack.yaml
+        run: cp .github/stack-${{ matrix.ghc }}.yaml stack.yaml
       - uses: actions/cache@v2
         name: Cache ~/.stack/
         with:

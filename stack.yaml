@@ -1,9 +1,0 @@
-resolver: lts-18.28
-
-packages:
-- .
-- ./cleff-plugin
-
-ghc-options:
-  "$targets": -dynamic
-  "$everything": -haddock

@@ -1,0 +1,13 @@
+packages:
+  cleff.cabal
+  cleff-plugin/cleff-plugin.cabal
+
+jobs:               $ncpus
+tests:              True
+test-show-details:  direct
+
+program-options
+  ghc-options: -dynamic
+
+package *
+  ghc-options: -haddock
