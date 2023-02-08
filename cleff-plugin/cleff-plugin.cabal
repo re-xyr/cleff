@@ -1,4 +1,4 @@
-cabal-version: 3.0
+cabal-version: 2.2
 
 name:          cleff-plugin
 version:       0.1.1.0
@@ -8,7 +8,7 @@ license:       BSD-3-Clause
 copyright:     2022 Xy Ren
 homepage:      https://github.com/re-xyr/cleff
 bug-reports:   https://github.com/re-xyr/cleff/issues
-tested-with:   GHC == {9.2.5, 9.0.2, 8.10.7, 8.8.4}
+tested-with:   GHC == 9.2.5, GHC == 9.0.2, GHC == 8.10.7, GHC == 8.8.4, GHC == 8.6.5
 category:      Control, Effect, Language
 synopsis:      Automatic disambiguation for extensible effects
 license-file:  LICENSE

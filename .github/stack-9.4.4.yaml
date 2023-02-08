@@ -1,8 +1,0 @@
-resolver: nightly-2023-02-06
-
-packages:
-- .
-- ./cleff-plugin
-
-ghc-options:
-  "$everything": -haddock

@@ -1,8 +1,0 @@
-resolver: lts-16.31
-
-packages:
-- .
-- ./cleff-plugin
-
-ghc-options:
-  "$everything": -haddock

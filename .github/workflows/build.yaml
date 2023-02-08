@@ -13,26 +13,27 @@ jobs:
   build:
     strategy:
       matrix:
-        ghc:
-          - 8.8.4
-          - 8.10.7
-          - 9.0.2
-          - 9.2.5
+        snapshot:
+          - lts-14.27  # 8.6.5
+          - lts-16.31  # 8.8.4
+          - lts-18.28  # 8.10.7
+          - lts-19.33  # 9.0.2
+          - lts-20.10  # 9.2.5
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Copy stack.yaml
-        run: cp .github/stack-${{ matrix.ghc }}.yaml stack.yaml
-      - uses: actions/cache@v2
-        name: Cache ~/.stack/
+      - uses: actions/checkout@v3
+      - name: Write stack.yaml
+        run: |
+          echo >>stack.yaml "resolver: ${{ matrix.snapshot }}"
+          echo >>stack.yaml "packages: [., ./cleff-plugin]"
+          echo >>stack.yaml "ghc-options: { '\$everything': -haddock }"
+      - uses: actions/cache@v3
+        name: Cache build files
         with:
-          path: ~/.stack
-          key: ${{ matrix.ghc }}-stack-root
-      - uses: actions/cache@v2
-        name: Cache .stack-work/
-        with:
-          path: .stack-work
-          key: ${{ matrix.ghc }}-stack-work
+          path: |
+            ~/.stack/
+            ./.stack-work/
+          key: ${{ matrix.snapshot }}-build
       - name: Build
         run: stack build
       - name: Run tests
