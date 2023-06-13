@@ -54,10 +54,10 @@ library
       UnicodeSyntax
   ghc-options: -Wall -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wpartial-fields -Wunused-type-patterns -Wmissing-export-lists
   build-depends:
-      base >=4.12 && <4.17
+      base >=4.12 && <4.18
     , cleff >=0.1 && <0.4
     , containers >=0.5 && <0.7
-    , ghc >=8.6 && <9.3
+    , ghc >=8.6 && <9.4.6
     , ghc-tcplugins-extra >=0.3 && <0.5
   if impl(ghc >= 8.8)
     ghc-options: -Wmissing-deriving-strategies

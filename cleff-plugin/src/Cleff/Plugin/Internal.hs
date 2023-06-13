@@ -23,14 +23,15 @@ import           GHC.Core.Unify          (tcUnifyTy)
 import           GHC.Plugins             (Outputable (ppr), Plugin (pluginRecompile, tcPlugin), PredType,
                                           Role (Nominal), TCvSubst, Type, defaultPlugin, eqType, fsLit, mkModuleName,
                                           mkTcOcc, nonDetCmpType, purePlugin, showSDocUnsafe, splitAppTys, substTys,
-                                          tyConClass_maybe)
+                                          tyConClass_maybe, emptyUFM)
 import           GHC.Tc.Plugin           (tcLookupClass, tcPluginIO)
-import           GHC.Tc.Solver.Monad     (newWantedEq, runTcSDeriveds)
+import           GHC.Tc.Solver.Monad     (newWantedEq, runTcS)
 import           GHC.Tc.Types            (TcM, TcPlugin (TcPlugin, tcPluginInit, tcPluginSolve, tcPluginStop),
-                                          TcPluginM, TcPluginResult (TcPluginOk), unsafeTcPluginTcM)
-import           GHC.Tc.Types.Constraint (Ct (CDictCan, CNonCanonical), CtEvidence (CtWanted), CtLoc, ctPred)
+                                          TcPluginM, unsafeTcPluginTcM, TcPluginSolveResult (TcPluginOk), tcPluginRewrite)
+import           GHC.Tc.Types.Constraint (Ct (CDictCan, CNonCanonical), CtEvidence (CtWanted), CtLoc, ctPred, emptyRewriterSet)
 import           GHC.Tc.Utils.Env        (tcGetInstEnvs)
 import           GHC.Tc.Utils.TcType     (tcSplitTyConApp)
+import GHC.Tc.Types.Evidence (EvBindsVar)
 
 #else
 import           Class                   (Class)
@@ -76,6 +77,7 @@ fakedep :: Names -> TcPlugin
 fakedep names = TcPlugin
   { tcPluginInit = initFakedep names
   , tcPluginSolve = solveFakedepForAllElemClasses
+  , tcPluginRewrite = \ _ -> emptyUFM
   , tcPluginStop = const $ pure ()
   }
 
@@ -117,8 +119,8 @@ instance Eq OrdType where
 instance Ord OrdType where
   compare = nonDetCmpType `on` unOrdType
 
-solveFakedepForAllElemClasses :: ([Class], IORef VisitedSet) -> [Ct] -> [Ct] -> [Ct] -> TcPluginM TcPluginResult
-solveFakedepForAllElemClasses (elemClasses, visitedRef) givens _ wanteds = do
+solveFakedepForAllElemClasses :: ([Class], IORef VisitedSet) -> EvBindsVar -> [Ct] -> [Ct] -> TcPluginM TcPluginSolveResult
+solveFakedepForAllElemClasses (elemClasses, visitedRef) _  givens wanteds = do
   solns <- concat <$> for elemClasses \elemCls -> solveFakedep (elemCls, visitedRef) givens wanteds
   pure $ TcPluginOk [] solns
 
@@ -151,8 +153,8 @@ solveFakedep (elemCls, visitedRef) allGivens allWanteds = do
   -- Now we need to tell GHC the solutions. The way we do this is to generate a new equality constraint, like
   -- 'Elem (State e) es ~ Elem (State Int) es', so that GHC's constraint solver will know that 'e' must be 'Int'.
   eqns <- for solns \(FakedepWanted (FakedepGiven _ goalEff _) loc, FakedepGiven _ solnEff _)  -> do
-    (eqn, _) <- liftTc $ runTcSDeriveds $ newWantedEq loc Nominal goalEff solnEff
-    pure (CNonCanonical eqn, (OrdType goalEff, OrdType solnEff))
+    ((ev,_), _) <- liftTc $ runTcS $ newWantedEq loc emptyRewriterSet Nominal goalEff solnEff
+    pure (CNonCanonical ev, (OrdType goalEff, OrdType solnEff))
 
   -- For any solution we've generated, we need to be careful not to generate it again, or we might end up generating
   -- infinitely many solutions. So, we record any already generated solution in a set.
@@ -203,17 +205,17 @@ solveFakedep (elemCls, visitedRef) allGivens allWanteds = do
 
     -- Determine whether a given constraint is of form 'Elem e es'.
     relevantGiven :: Ct -> Maybe FakedepGiven
-    relevantGiven (CDictCan _ cls [_kind, eff, es] _) -- Polymorphic case
+    relevantGiven (CDictCan _ cls [_kind, eff, es] _ _) -- Polymorphic case
       | cls == elemCls = Just $ FakedepGiven (fst $ splitAppTys eff) eff es
-    relevantGiven (CDictCan _ cls [eff, es] _) -- Monomorphic case
+    relevantGiven (CDictCan _ cls [eff, es] _ _) -- Monomorphic case
       | cls == elemCls = Just $ FakedepGiven (fst $ splitAppTys eff) eff es
     relevantGiven _ = Nothing
 
     -- Determine whether a wanted constraint is of form 'Elem e es'.
     relevantWanted :: Ct -> Maybe FakedepWanted
-    relevantWanted (CDictCan (CtWanted _ _ _ loc) cls [_kind, eff, es] _) -- Polymorphic case
+    relevantWanted (CDictCan (CtWanted _ _ loc _) cls [_kind, eff, es] _ _ ) -- Polymorphic case
       | cls == elemCls = Just $ FakedepWanted (FakedepGiven (fst $ splitAppTys eff) eff es) loc
-    relevantWanted (CDictCan (CtWanted _ _ _ loc) cls [eff, es] _) -- Monomorphic case
+    relevantWanted (CDictCan (CtWanted _ _ loc _) cls [eff, es] _ _ ) -- Monomorphic case
       | cls == elemCls = Just $ FakedepWanted (FakedepGiven (fst $ splitAppTys eff) eff es) loc
     relevantWanted _ = Nothing
 
